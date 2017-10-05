@@ -8,6 +8,8 @@ Ensuring the dataset is devoid of PII is ultimately still your responsibility. B
 
 ### How to Use
 
+### Methodology
+
 ### Help and Support
 
 For simple issues you can consult the FAQ in the documentation. If your issue is not suitably resolved there, please check the issues on GitHub. Finally, if no solution is available there feel free to open an issue; the authors will attempt to respond in a reasonably timely fashion. If your request is urgent you may contact researchsupport@poverty-action.org
