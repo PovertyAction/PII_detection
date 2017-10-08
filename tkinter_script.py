@@ -63,10 +63,12 @@ def file_select():
 
     if __name__ == '__main__':
         queue = mp.Queue()
-        proc = mp.Process(target=PII_data_processor.do_nothing, args=(queue,))
+        queue.put(dataset_path)
+        proc = mp.Process(target=PII_data_processor.import_dataset, args=(queue,))
         proc.daemon = True
         proc.start()  # This launches the child process, calling child.run()
-        queue.put(str(entry.get()))  # Get results from child.run
+        tkinter_display(queue.get())
+        #queue.put(str(entry.get()))  # Get results from child.run
 
     #import_results = import_dataset(dataset_path)  # dataset, label_dict, value_label_dict
 

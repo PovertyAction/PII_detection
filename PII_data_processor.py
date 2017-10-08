@@ -35,7 +35,7 @@ def send(the_message):
     if __name__ == "__main__":
         print(the_message)
     else:
-        tkinter_display
+        queue.put(the_message)
 
 # In[2]:
 
@@ -49,6 +49,10 @@ def send(the_message):
 def import_dataset(dataset_path):
     # returns dataset
     
+    if __name__ != "__main__":
+        print('triggered')
+        dataset_path = dataset_path.get()
+
     dataset, label_dict, value_label_dict = False, False, False
     raise_error = False
     status_message = False
@@ -484,13 +488,8 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported):
 
 # In[15]:
 
-def driver():
-    try:
-        Label(frame, text='Recoding').pack()
-    except NameError:
-        dataset_path = input('What is the path to your dataset? (example: C:\Datasets\\file.xlsx)   ')
-
-    import_results = import_dataset(dataset_path) #dataset, label_dict, value_label_dict
+def driver(queue=None):
+    import_results = import_dataset(queue.get()) #dataset, label_dict, value_label_dict
     dataset = import_results[0]
     dataset_path = import_results[1]
 
@@ -508,7 +507,10 @@ def driver():
     log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
 if __name__ == "__main__":
-    driver()
+    dataset_path = input('What is the path to your dataset? (example: C:\Datasets\\file.xlsx)   ')
+    q = queue.Queue()
+    q.put(dataset_path)
+    driver(q)
 
 # In[ ]:
 
