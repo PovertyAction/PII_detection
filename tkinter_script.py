@@ -4,7 +4,7 @@ from tkinter.filedialog import askopenfilename
 from tkinter import ttk
 from nltk.stem.porter import *
 import time
-import multiprocessing as mp
+from multiprocessing import Process, Pipe
 import PII_data_processor
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
@@ -25,12 +25,6 @@ def input(the_message):
 
         def evaluate(event=None):
             pass
-            # if __name__ == '__main__':
-            #     queue = mp.Queue()
-            #     #proc = mp.Process(target=PII_data_processor.driver, args=(queue,))
-            #     proc.daemon = True
-            #     proc.start()  # This launches the child process, calling child.run()
-            #     queue.put(str(entry.get()))  # Get results from child.run
 
             #if entry.get() in ['y', 'yes']:
             #    return True
@@ -52,22 +46,24 @@ def input(the_message):
 
 
 def tkinter_display(the_message):
-    ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel')  # .pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-
+    ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
 def file_select():
 
     dataset_path = askopenfilename()
 
-    print('The script is running...')
+    tkinter_display('The script is running...')
 
     if __name__ == '__main__':
-        queue = mp.Queue()
-        queue.put(dataset_path)
-        proc = mp.Process(target=PII_data_processor.import_dataset, args=(queue,))
-        proc.daemon = True
-        proc.start()  # This launches the child process, calling child.run()
-        tkinter_display(queue.get())
+        messages_pipe = Pipe()
+        dataset_path_pipe = Pipe()
+        dataset_path_pipe.put(dataset_path)
+        import_ds_proc = mp.Process(target=PII_data_processor.import_dataset, args=(dataset_path_pipe,messages_pipe,))
+        import_ds_proc.daemon = True
+        import_ds_proc.start()  # This launches the child process, calling child.run()
+
+        tkinter_display('the path came from here')#dataset_path_queue.get())
+        #tkinter_display(dataset_path_queue.get())
         #queue.put(str(entry.get()))  # Get results from child.run
 
     #import_results = import_dataset(dataset_path)  # dataset, label_dict, value_label_dict
@@ -89,36 +85,46 @@ def file_select():
     # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
 
-# GUI
-root = Tk()  # creates GUI window
+if __name__ == '__main__':
+
+    # GUI
+
+    root = Tk()  # creates GUI window
 
 
-my_gui = GUI(root)  # runs code in class GUI
+    my_gui = GUI(root)  # runs code in class GUI
 
-# Styles
-root.configure(background='light gray')
-root.style = ttk.Style()
-# root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
-root.style.configure('my.TButton', font=("Calibri", 11, 'bold'), background='white')
-root.style.configure('my.TLabel', background='white')
+    # Styles
+    root.configure(background='light gray')
+    root.style = ttk.Style()
+    # root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+    root.style.configure('my.TButton', font=("Calibri", 11, 'bold'), background='white')
+    root.style.configure('my.TLabel', background='white')
 
-# Display
+    # Display
 
-frame = Frame(width=606, height=636, bg="white")
-frame.place(x=30, y=30)
-frame.pack_propagate(False)
-frame.pack()
+    frame = Frame(width=606, height=636, bg="white")
+    frame.place(x=30, y=30)
+    frame.pack_propagate(False)
+    frame.pack()
 
-# Instructions
+    # Instructions
 
-ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
-ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
+    ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
-# Listener
+    # Listener
 
-root.mainloop()  # constantly looping event listener
+    root.mainloop()  # constantly looping event listener
+
+try:
+    if len(messages_pipe) != 0:
+        ttk.Label(frame, text=messages_pipe.get(), wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+except NameError:
+    pass
+
 
 # Extra code
 

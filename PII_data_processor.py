@@ -17,7 +17,7 @@
 
 # In[1]:
 
-from __main__ import *
+#from __main__ import *
 #from tkinter_script import tkinter_display
 
 import nltk
@@ -31,11 +31,11 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
 
-def send(the_message):
+def send(the_message, messages_pipe):
     if __name__ == "__main__":
         print(the_message)
     else:
-        queue.put(the_message)
+        messages_pipe.put(the_message)
 
 # In[2]:
 
@@ -46,12 +46,13 @@ def send(the_message):
 #         print(the_message)
 
 # This should be able to use variables specified in my original file
-def import_dataset(dataset_path):
+def import_dataset(dataset_path_var, messages_pipe):
     # returns dataset
     
     if __name__ != "__main__":
-        print('triggered')
-        dataset_path = dataset_path.get()
+        dataset_path = dataset_path_var.get()
+    else:
+        dataset_path = dataset_path_var
 
     dataset, label_dict, value_label_dict = False, False, False
     raise_error = False
@@ -61,6 +62,9 @@ def import_dataset(dataset_path):
         dataset_path = dataset_path[1:-1] 
 
     dataset_path_l = dataset_path.lower()
+
+    send('before try')
+    print('print test')
 
     try:
         if dataset_path_l.endswith(('xlsx', 'xls')):
@@ -88,14 +92,26 @@ def import_dataset(dataset_path):
     except (FileNotFoundError, Exception):
         if status_message is False:
             status_message = '**ERROR**: This path appears to be invalid. If your folders or filename contain colons or commas, try renaming them or moving the file to a different location.'
-        send(status_message)
+        send(status_message, messages_pipe)
         raise
        
     status_message = '**SUCCESS**: The dataset has been read successfully.'
-    send(status_message)
+    send(status_message, messages_pipe)
 
-    return dataset, dataset_path, label_dict, value_label_dict
+    print('before listing')
+    pass
 
+    # ADJUST FOR THIS ON THE JUPYTER SIDE
+    dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
+
+    if __name__ != "__main__":
+        print('put part triggered')
+        for i in dataset_read_return:
+            print(i)
+            dataset_path_var.put(i)
+    else:
+        print('in return')
+        return dataset_read_return
 
 # In[3]:
 
@@ -488,6 +504,8 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported):
 
 # In[15]:
 
+#queue to pipe?
+
 def driver(queue=None):
     import_results = import_dataset(queue.get()) #dataset, label_dict, value_label_dict
     dataset = import_results[0]
@@ -508,11 +526,7 @@ def driver(queue=None):
 
 if __name__ == "__main__":
     dataset_path = input('What is the path to your dataset? (example: C:\Datasets\\file.xlsx)   ')
-    q = queue.Queue()
-    q.put(dataset_path)
-    driver(q)
-
-# In[ ]:
+    driver(dataset_path)
 
 # clean this up with consistent variable naming, better commenting, better documentation
 
