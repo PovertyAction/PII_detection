@@ -55,16 +55,19 @@ def file_select():
     tkinter_display('The script is running...')
 
     if __name__ == '__main__':
-        messages_pipe = Pipe()
-        dataset_path_pipe = Pipe()
-        dataset_path_pipe.put(dataset_path)
-        import_ds_proc = mp.Process(target=PII_data_processor.import_dataset, args=(dataset_path_pipe,messages_pipe,))
-        import_ds_proc.daemon = True
-        import_ds_proc.start()  # This launches the child process, calling child.run()
 
-        tkinter_display('the path came from here')#dataset_path_queue.get())
-        #tkinter_display(dataset_path_queue.get())
-        #queue.put(str(entry.get()))  # Get results from child.run
+        from multiprocessing import Process, Pipe
+
+        tkinter_import_conn, datap_import_conn = Pipe()
+        tkinter_messages_conn, datap_messages_conn = Pipe()
+
+        tkinter_import_conn.send(dataset_path)
+
+        p = Process(target=PII_data_processor.import_dataset, args=(datap_import_conn, datap_messages_conn))
+        p.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+        #tkinter_display(tkinter_import_conn.recv())
 
     #import_results = import_dataset(dataset_path)  # dataset, label_dict, value_label_dict
 

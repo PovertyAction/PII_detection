@@ -31,26 +31,18 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
 
-def send(the_message, messages_pipe):
+def send(the_message, messages_pipe = None):
     if __name__ == "__main__":
         print(the_message)
     else:
-        messages_pipe.put(the_message)
-
-# In[2]:
-
-# def send(the_message):
-#     try:
-#         ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-#     except NameError:
-#         print(the_message)
+        messages_pipe.send(the_message)
 
 # This should be able to use variables specified in my original file
-def import_dataset(dataset_path_var, messages_pipe):
+def import_dataset(dataset_path_var, messages_pipe = None):
     # returns dataset
     
     if __name__ != "__main__":
-        dataset_path = dataset_path_var.get()
+        dataset_path = dataset_path_var.recv()
     else:
         dataset_path = dataset_path_var
 
@@ -62,9 +54,6 @@ def import_dataset(dataset_path_var, messages_pipe):
         dataset_path = dataset_path[1:-1] 
 
     dataset_path_l = dataset_path.lower()
-
-    send('before try')
-    print('print test')
 
     try:
         if dataset_path_l.endswith(('xlsx', 'xls')):
@@ -94,24 +83,21 @@ def import_dataset(dataset_path_var, messages_pipe):
             status_message = '**ERROR**: This path appears to be invalid. If your folders or filename contain colons or commas, try renaming them or moving the file to a different location.'
         send(status_message, messages_pipe)
         raise
-       
+
     status_message = '**SUCCESS**: The dataset has been read successfully.'
     send(status_message, messages_pipe)
-
-    print('before listing')
-    pass
 
     # ADJUST FOR THIS ON THE JUPYTER SIDE
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
 
-    if __name__ != "__main__":
-        print('put part triggered')
-        for i in dataset_read_return:
-            print(i)
-            dataset_path_var.put(i)
-    else:
-        print('in return')
-        return dataset_read_return
+    # if __name__ != "__main__":
+    #     print('put part triggered')
+    #     for i in dataset_read_return:
+    #         print(i)
+    #         dataset_path_var.put(i)
+    # else:
+    #     print('in return')
+    #     return dataset_read_return
 
 # In[3]:
 
