@@ -46,6 +46,7 @@ def input(the_message):
 
 
 def tkinter_display(the_message):
+    # consider adding timestamp to beginning of every message
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
 def file_select():
@@ -56,31 +57,71 @@ def file_select():
 
     if __name__ == '__main__':
 
-        from multiprocessing import Process, Pipe
-
-        tkinter_import_conn, datap_import_conn = Pipe()
+        tkinter_functions_conn, datap_functions_conn = Pipe()
         tkinter_messages_conn, datap_messages_conn = Pipe()
 
-        tkinter_import_conn.send(dataset_path)
+        ### Importing dataset and printing messages ###
+        tkinter_functions_conn.send(dataset_path)
 
-        p = Process(target=PII_data_processor.import_dataset, args=(datap_import_conn, datap_messages_conn))
-        p.start()
+        p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
+        p_import.start()
 
         tkinter_display(tkinter_messages_conn.recv())
-        #tkinter_display(tkinter_import_conn.recv())
 
-    #import_results = import_dataset(dataset_path)  # dataset, label_dict, value_label_dict
+        import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
+        dataset = import_results[0]
+        dataset_path = import_results[1]
 
-    # dataset = import_results[0]
-    # dataset_path = import_results[1]
+        
+        ### Initialization of lists ###
+        p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
+        p_initialize_vars.start()
 
-    # identified_pii, restricted_vars = initialize_lists()
-    # restricted_vars, stemmer = stem_restricted(restricted_vars)
+        initialize_results = tkinter_functions_conn.recv()
+        identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
 
-    # identified_pii = word_match_stemming(identified_pii, restricted_vars, dataset, stemmer)
-    # identified_pii = fuzzy_partial_stem_match(identified_pii, restricted_vars, dataset, stemmer, threshold=0.75)
-    # identified_pii = unique_entries(identified_pii, dataset, min_entries_threshold=0.5)
-    # identified_pii = date_detection(identified_pii, dataset)
+        ### Stemming of restricted list ###
+        p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
+        p_stemming_rl.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+
+        stemming_rl_results = tkinter_functions_conn.recv()
+        restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+
+        ### Word Match Stemming ###
+        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
+        p_wordm_stem.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
+
+        ### Fuzzy Partial Stem Match ###
+        threshold = 0.75
+        p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
+        p_fpsm.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
+
+        ### Unique Entries Detection ###
+        min_entries_threshold = 0.5
+        p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
+        p_uniques.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
+
+        ### Date Detection ###
+        p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
+        p_dates.start()
+
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
 
     # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
     # dataset, recoded_fields = recode(dataset)

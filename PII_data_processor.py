@@ -31,11 +31,20 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
 
-def send(the_message, messages_pipe = None):
+def smart_print(the_message, messages_pipe = None):
     if __name__ == "__main__":
         print(the_message)
     else:
         messages_pipe.send(the_message)
+
+def smart_return(to_return, function_pipe = None):
+    if __name__ != "__main__":
+        function_pipe.send(to_return)
+    else:
+        if len(to_return) == 2:
+            return to_return[0], to_return[1]
+        else:
+            return to_return
 
 # This should be able to use variables specified in my original file
 def import_dataset(dataset_path_var, messages_pipe = None):
@@ -81,29 +90,22 @@ def import_dataset(dataset_path_var, messages_pipe = None):
     except (FileNotFoundError, Exception):
         if status_message is False:
             status_message = '**ERROR**: This path appears to be invalid. If your folders or filename contain colons or commas, try renaming them or moving the file to a different location.'
-        send(status_message, messages_pipe)
+        smart_print(status_message, messages_pipe)
         raise
 
     status_message = '**SUCCESS**: The dataset has been read successfully.'
-    send(status_message, messages_pipe)
+    smart_print(status_message, messages_pipe)
 
     # ADJUST FOR THIS ON THE JUPYTER SIDE
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
 
-    # if __name__ != "__main__":
-    #     print('put part triggered')
-    #     for i in dataset_read_return:
-    #         print(i)
-    #         dataset_path_var.put(i)
-    # else:
-    #     print('in return')
-    #     return dataset_read_return
+    smart_return(dataset_read_return, dataset_path_var)
 
 # In[3]:
 
-def initialize_lists():
+def initialize_lists(function_pipe = None):
     # returns possible_pii, restricted
-    send('Initializing the variables.')
+    #smart_print('Initializing the variables.')
     
     possible_pii = []
     global yes_strings
@@ -127,17 +129,16 @@ def initialize_lists():
     restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions
     restricted = list(set(restricted))
     
-    return possible_pii, restricted
-
+    smart_return([possible_pii, restricted], function_pipe)
 
 # # String search with stemming
 
 # In[4]:
 
-def stem_restricted(restricted):
+def stem_restricted(restricted, function_pipe = None, messages_pipe = None):
 # Identifies stems of restricted words and adds the stems to restricted list
 
-    send('Creating stems of restricted variable names.')
+    smart_print('Creating stems of restricted variable names.', messages_pipe)
 
     initialized_stemmer = PorterStemmer()
     restricted_stems = []
@@ -147,23 +148,22 @@ def stem_restricted(restricted):
     restricted = restricted + restricted_stems
     restricted = list(set(restricted))
     
-    return restricted, initialized_stemmer
-
+    smart_return([restricted, initialized_stemmer], function_pipe)
 
 # In[5]:
 
-def word_match_stemming(possible_pii, restricted, dataset, stemmer):
+def word_match_stemming(possible_pii, restricted, dataset, stemmer, function_pipe = None, messages_pipe = None):
 # Looks for matches between variable names, variable name stems, restricted words, and restricted word stems
-    send('The word match with stemming algorithm is now running.')
+    smart_print('The word match with stemming algorithm is now running.', messages_pipe)
     
     for v in tqdm(dataset.columns):
         for r in restricted:
             if v.lower() in r or stemmer.stem(v).lower() in r:
                 possible_pii.append(v)
     
-    send('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.")
+    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     
-    return possible_pii
+    smart_return(possible_pii, function_pipe)
 
 
 # # Fuzzy and Intelligent Partial Match
@@ -276,11 +276,11 @@ def run_fuzzy_query(term, fuzzy_threshold, restricted):
 
 # In[7]:
 
-def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, threshold = 0.75):
+def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, threshold = 0.75, function_pipe = None, messages_pipe = None):
 # Looks for fuzzy and intelligent partial matches
 # Recommended value is 0.75. Higher numbers (i.e. 4) will identify more possible PII, while lower numbers (i.e. 0.5) will identify less potential PII.
 
-    send('The fuzzy and intelligent partial matches with stemming algorithm is now running.')
+    smart_print('The fuzzy and intelligent partial matches with stemming algorithm is now running.', messages_pipe)
 
     for v in tqdm(dataset.columns):
         if run_fuzzy_query(v.lower(), threshold, restricted) != False:
@@ -288,28 +288,28 @@ def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, thresho
         if run_fuzzy_query(stemmer.stem(v).lower(), threshold, restricted) != False:
             possible_pii.append(v)
             
-    send('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.")
+    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
 
-    return possible_pii
+    smart_return(possible_pii, function_pipe)
 
 
 # # All Uniques
 
 # In[8]:
 
-def unique_entries(possible_pii, dataset, min_entries_threshold = 0.5):
+def unique_entries(possible_pii, dataset, min_entries_threshold = 0.5, function_pipe = None, messages_pipe = None):
     # .5 (50%) is the minimum percent of values that must exist for a field to be considered as potential PII 
     # based on having unique values for each entry, you may customize this as desired (0.0-1.0)
     
-    send('The unique entries algorithm is now running.')
+    smart_print('The unique entries algorithm is now running.', messages_pipe)
     
     for v in tqdm(dataset.columns):
         if len(dataset[v]) == len(set(dataset[v])) and len(dataset[v].dropna())/len(dataset) > min_entries_threshold:
             possible_pii.append(v)
     
-    send('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.")
+    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     
-    return possible_pii
+    smart_return(possible_pii, function_pipe)
 
 
 # # Corpus Search & Categorization
@@ -338,15 +338,15 @@ def unique_entries(possible_pii, dataset, min_entries_threshold = 0.5):
 
 # In[10]:
 
-def date_detection(possible_pii, dataset):
+def date_detection(possible_pii, dataset, function_pipe = None, messages_pipe = None):
     
-    send('The date detection algorithm is now running.')
+    smart_print('The date detection algorithm is now running.', messages_pipe)
     
     possible_pii = possible_pii + list(dataset.select_dtypes(include=['datetime']).columns)
     
-    send('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.")
+    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     
-    return possible_pii
+    smart_return(possible_pii, function_pipe)
 
 
 # # Review PII, Confirm & Clean, Recode, and Export
@@ -393,7 +393,7 @@ def recode(dataset):
         if input('Would you like any variables to have their values recoded / anonymized?   ') in yes_strings:
             var_names = input('Which variable names? Enter each now, separated by a comma, or respond with "list" to see all variable names.  ').lower()
             if var_names.lower() in ['list', "'list'", '"list"']:
-                send(list(dataset.columns))
+                smart_print(list(dataset.columns))
                 time.sleep(5) #puts the next prompt in proper order
                 var_names = input('Which variables would you like to recode? Enter them now, or write "none" to cancel.  ').lower()
 
@@ -424,11 +424,11 @@ def recode(dataset):
                     # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
                     #dataset[var] = pd.factorize(dataset[var])[0] + 1
 
-                    send(var + ' has been successfully recoded.')
+                    smart_print(var + ' has been successfully recoded.')
                     recoded_vars.append(var)
 
                 else:
-                    send(var + ' is not a valid variable. It will not be recoded.')
+                    smart_print(var + ' is not a valid variable. It will not be recoded.')
     return dataset, recoded_vars
 
 
@@ -477,7 +477,7 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported):
     except NameError:
         if input('Would you like to see the log of this script session?  ') in yes_strings:
             for l in log_lines:
-                send(l)
+                smart_print(l)
 
         if input('Would you like to export this log as a .txt file?  ') in yes_strings:
             log_path = dataset_path.split('.')[0] + '_log.txt'
@@ -485,7 +485,7 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported):
             with open(log_path, 'w') as f:
                 f.write('\n'.join(log_lines))
 
-            send("The log has been exported at: " + log_path)
+            smart_print("The log has been exported at: " + log_path)
 
 
 # In[15]:
