@@ -5,6 +5,7 @@ from tkinter import ttk
 import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
+from datetime import datetime
 from multiprocessing import Process, Pipe
 import PII_data_processor
 
@@ -47,7 +48,7 @@ def input(the_message):
 
 
 def tkinter_display(the_message):
-    # consider adding timestamp to beginning of every message
+    the_message = datetime.now().strftime("%H:%M:%S") + '     ' + the_message
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
 
