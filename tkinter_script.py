@@ -2,6 +2,7 @@
 from tkinter import *
 from tkinter.filedialog import askopenfilename
 from tkinter import ttk
+import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
 from multiprocessing import Process, Pipe
@@ -17,7 +18,7 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
-        master.minsize(width=666, height=666)
+        master.minsize(width=686, height=666)
 
 def input(the_message):
     try:
@@ -48,6 +49,7 @@ def input(the_message):
 def tkinter_display(the_message):
     # consider adding timestamp to beginning of every message
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    frame.update()
 
 def file_select():
 
@@ -86,6 +88,8 @@ def file_select():
 
         tkinter_display(tkinter_messages_conn.recv())
 
+        time.sleep(2)
+
         stemming_rl_results = tkinter_functions_conn.recv()
         restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
@@ -115,13 +119,18 @@ def file_select():
         tkinter_display(tkinter_messages_conn.recv())
         identified_pii = tkinter_functions_conn.recv()
 
-        ### Date Detection ###
-        p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
-        p_dates.start()
+        root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
+    ### Date Detection ###
+    tkinter_display('in next steps')
+
+    p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
+    p_dates.start()
+
+    tkinter_display(tkinter_messages_conn.recv())
+    tkinter_display(tkinter_messages_conn.recv())
+    identified_pii = tkinter_functions_conn.recv()
 
     # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
     # dataset, recoded_fields = recode(dataset)
@@ -147,10 +156,24 @@ if __name__ == '__main__':
 
     # Display
 
-    frame = Frame(width=606, height=636, bg="white")
+    def onFrameConfigure(canvas):
+        '''Reset the scroll region to encompass the inner frame'''
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    canvas = Canvas(root)
+    frame = Frame(canvas, width=606, height=636, bg="white")
     frame.place(x=30, y=30)
-    frame.pack_propagate(False)
-    frame.pack()
+    #frame.pack_propagate(False)
+    #frame.pack()
+
+    vsb = Scrollbar(root, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=vsb.set)
+
+    vsb.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True)
+    canvas.create_window((35,30), window=frame, anchor="nw")
+
+    frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
     # Instructions
 
