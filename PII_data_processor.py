@@ -31,12 +31,17 @@ from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
 
+if __name__ != "__main__":
+    from multiprocessing import Process, Pipe
+    import tkinter_script
+    datap_input_conn, tkinter_input_conn = Pipe()
+
 def smart_print(the_message, messages_pipe = None):
     if __name__ == "__main__":
         print(the_message)
     else:
         messages_pipe.send(the_message)
-
+        
 def smart_return(to_return, function_pipe = None):
     if __name__ != "__main__":
         function_pipe.send(to_return)
@@ -45,6 +50,14 @@ def smart_return(to_return, function_pipe = None):
             return to_return[0], to_return[1]
         else:
             return to_return
+
+def smart_input(prompt):
+    if __name__ == "__main__":
+        return input(prompt)
+    else:
+        p_smart_import = Process(target=tkinter_script.tkinter_input, args=(prompt, datap_input_conn))
+        p_smart_import.start()
+        
 
 # This should be able to use variables specified in my original file
 def import_dataset(dataset_path_var, messages_pipe = None):
@@ -108,7 +121,6 @@ def initialize_lists(function_pipe = None):
     #smart_print('Initializing the variables.')
     
     possible_pii = []
-    global yes_strings
     yes_strings = ['y', 'yes', 'Y', 'Yes']
 
     # Flagged strings from R script
@@ -129,7 +141,7 @@ def initialize_lists(function_pipe = None):
     restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions
     restricted = list(set(restricted))
     
-    smart_return([possible_pii, restricted], function_pipe)
+    smart_return([possible_pii, restricted, yes_strings], function_pipe)
 
 # # String search with stemming
 
@@ -353,83 +365,121 @@ def date_detection(possible_pii, dataset, function_pipe = None, messages_pipe = 
 
 # In[11]:
 
+def input_conduit(next_function):
+    eval(next_function)
+
 #Reviewing and confirming PII
-def review_potential_pii(possible_pii, dataset):
+def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = None, messages_pipe = None, input_pipe = None):
     #first does the GUI approach, and then does the command line / notebook approach
     confirmed_pii = []
     removed = False
-    
-    try:
-        Label(frame, text="Your Expression:").pack()
-    
-    except NameError:
-        if input('There are ' + str(len(set(possible_pii))) + ' variables that may contain PII. Would you like to review them and decide which to delete?') in yes_strings:
-            count = 0
-            for v in set(possible_pii):
-                count += 1
-                display(dataset[v].dropna()[:8])
-                if input('Does this look like PII? (' + str(len(set(possible_pii))-count) + ' variables left to review.)  ') in yes_strings:
-                    confirmed_pii.append(v)
+    review_message = 'There are ' + str(len(set(possible_pii))) + ' variables that may contain PII. Would you like to review them and decide which to delete?'
+
+    if __name__ == "__main__":
+        review_response = input(review_message)
+    else:
+        smart_print(review_message, input_pipe)
+        while input_pipe.poll() != True:
+            time.sleep(0.1)
+
+        review_response = input_pipe.recv()
+        
+    if review_response in yes_strings:
+        count = 0
+        for v in set(possible_pii):
+            count += 1
+            smart_print(dataset[v].dropna()[:8])
+            var_review_message = 'Does this look like PII? (' + str(len(set(possible_pii))-count) + ' variables left to review.)  '
+
+            if __name__ == "__main__":
+                var_review_response = input(var_review_message)
+            else:
+                smart_print(var_review_message, input_pipe)
+                while messages_pipe.poll() != True:
+                    time.sleep(0.1)
+
+                var_review_response = input_pipe.recv()
+
+            if var_review_response in yes_strings:
+                confirmed_pii.append(v)
 
         # Option to remove PII
-        if input('Would you like to remove the columns identified as PII?   ') in yes_strings:
-            for pii in confirmed_pii:
-                del dataset[pii]
-            removed = True
-    
-    return confirmed_pii, removed
+        remove_message = 'Would you like to remove the columns identified as PII?   '
+
+        if __name__ == "__main__":
+            remove_response = input(remove_message)
+        else:
+            smart_print(remove_message, input_pipe)
+            while input_pipe.poll() != True:
+                time.sleep(0.1)
+
+            remove_response = input_pipe.recv()
+
+
+        if remove_response in yes_strings:
+           for pii in confirmed_pii:
+               del dataset[pii]
+           removed = True
+
+    smart_return([dataset, confirmed_pii, removed], function_pipe)
 
 
 # In[12]:
 
-def recode(dataset):
+def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None):
     recoded_vars = []
+    recode_message = 'Would you like any variables to have their values recoded / anonymized?   '
+
+    if __name__ == "__main__":
+        recode_response = input(recode_message)
+    else:
+        smart_print(recode_message, messages_pipe)
+        while messages_pipe.poll() != True:
+            time.sleep(0.1)
+
+        recode_response = messages_pipe.recv()
     
-    try:
-        Label(frame, text='Recoding').pack()
-    
-    except NameError:
-        # Option to recode columns
-        if input('Would you like any variables to have their values recoded / anonymized?   ') in yes_strings:
-            var_names = input('Which variable names? Enter each now, separated by a comma, or respond with "list" to see all variable names.  ').lower()
-            if var_names.lower() in ['list', "'list'", '"list"']:
-                smart_print(list(dataset.columns))
-                time.sleep(5) #puts the next prompt in proper order
-                var_names = input('Which variables would you like to recode? Enter them now, or write "none" to cancel.  ').lower()
+    # Option to recode columns
+    if recode_response in yes_strings:
+        var_names = input('Which variable names? Enter each now, separated by a comma, or respond with "list" to see all variable names.  ').lower()
+        if var_names.lower() in ['list', "'list'", '"list"']:
+            smart_print(list(dataset.columns))
+            time.sleep(5) #puts the next prompt in proper order
+            var_names = input('Which variables would you like to recode? Enter them now, or write "none" to cancel.  ').lower()
 
-            var_names = var_names.split(',')
-            for var in var_names:
-                var = var.replace("'","")
-                var = var.strip()
-                if var in dataset.columns:
-                    dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
-                    dataset.rename(columns={'index':var + '_index'}, inplace=True)
+        var_names = var_names.split(',')
+        for var in var_names:
+            var = var.replace("'","")
+            var = var.strip()
+            if var in dataset.columns:
+                dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
+                dataset.rename(columns={'index':var + '_index'}, inplace=True)
 
-                    # The method currently employed is used in order to more easily export the original/recoded value pairs. 
-                    # It is likely slower than the other recoding option, commented out below.
-                    # If speed is important and the user is ok not exporting value pairs, feel free to disable this approach,
-                    # and enable the alternative below.
+                # The method currently employed is used in order to more easily export the original/recoded value pairs. 
+                # It is likely slower than the other recoding option, commented out below.
+                # If speed is important and the user is ok not exporting value pairs, feel free to disable this approach,
+                # and enable the alternative below.
 
-                    # Make dictionary of old and new values
-                    value_replacer = 1
-                    values_dict = {}   
-                    for unique_val in dataset[var].unique():
-                        values_dict[unique_val] = value_replacer
-                        value_replacer += 1
+                # Make dictionary of old and new values
+                value_replacer = 1
+                values_dict = {}   
+                for unique_val in dataset[var].unique():
+                    values_dict[unique_val] = value_replacer
+                    value_replacer += 1
 
-                    # Replace old values with new
-                    for k, v in values_dict.items():
-                        dataset[var].replace(to_replace=k, value=v, inplace=True)
+                # Replace old values with new
+                for k, v in values_dict.items():
+                    dataset[var].replace(to_replace=k, value=v, inplace=True)
 
-                    # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
-                    #dataset[var] = pd.factorize(dataset[var])[0] + 1
+                # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
+                #dataset[var] = pd.factorize(dataset[var])[0] + 1
 
-                    smart_print(var + ' has been successfully recoded.')
-                    recoded_vars.append(var)
+                smart_print(var + ' has been successfully recoded.')
+                recoded_vars.append(var)
 
-                else:
-                    smart_print(var + ' is not a valid variable. It will not be recoded.')
-    return dataset, recoded_vars
+            else:
+                smart_print(var + ' is not a valid variable. It will not be recoded.')
+    smart_return([dataset, recoded_vars], function_pipe)
 
 
 # In[13]:
@@ -505,7 +555,7 @@ def driver(queue=None):
     identified_pii = unique_entries(identified_pii, min_entries_threshold = 0.5) 
     identified_pii = date_detection(identified_pii) 
 
-    reviewed_pii, removed_status = review_potential_pii(identified_pii)
+    dataset, reviewed_pii, removed_status = review_potential_pii(identified_pii)
     dataset, recoded_fields = recode(dataset)
     path, export_status = export(dataset)
     log(reviewed_pii, removed_status, recoded_fields, path, export_status)

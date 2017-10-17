@@ -20,36 +20,27 @@ class GUI:
         master.title(app_title)
         master.minsize(width=686, height=666)
 
-def input(the_message):
-    try:
-        ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-
-        def evaluate(event=None):
-            pass
-
-            #if entry.get() in ['y', 'yes']:
-            #    return True
-            #res.configure(text="Ergebnis: " + )
-
-    except:  # ## add specific Jupyter error here
-        pass
-
-    Label(frame, text="Your Expression:").pack()
-    entry = Entry(frame)
-    entry.bind("<Return>", evaluate)
-    if ttk.Button(frame, text="Submit", command=evaluate, style='my.TButton').pack() is True:
-        return True
-    entry.pack()
-    time.sleep(8)
-    res = Label(frame)
-    res.pack()
-    return ('No')
-
-
 def tkinter_display(the_message):
     # consider adding timestamp to beginning of every message
-    ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
+
+def tkinter_input(the_message, input_pipe):
+    def input_accepted(event=None):
+        tkinter_display("User input: " + str(entry.get()))
+        entry.pack_forget()
+        input_label.pack_forget()
+        submit_button.pack_forget()
+        input_pipe.send(entry.get())
+        input_listener(input_pipe)
+
+    entry = Entry(frame)
+    input_label = ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Bold", 11), style='my.TLabel')
+    entry.bind("<Return>", input_accepted)
+    submit_button = ttk.Button(frame, text="Submit", width=10, command=input_accepted, style='my.TButton')
+    input_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    entry.pack(anchor='nw', padx=(30, 30))
+    submit_button.pack(anchor='nw')
 
 def file_select():
 
@@ -58,9 +49,9 @@ def file_select():
     tkinter_display('The script is running...')
 
     if __name__ == '__main__':
-
         tkinter_functions_conn, datap_functions_conn = Pipe()
         tkinter_messages_conn, datap_messages_conn = Pipe()
+        tkinter_input_conn, datap_input_conn = Pipe()
 
         ### Importing dataset and printing messages ###
         tkinter_functions_conn.send(dataset_path)
@@ -80,46 +71,70 @@ def file_select():
         p_initialize_vars.start()
 
         initialize_results = tkinter_functions_conn.recv()
-        identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
+        identified_pii, restricted_vars, yes_strings = initialize_results[0], initialize_results[1], initialize_results[2]
 
-        ### Stemming of restricted list ###
-        p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
-        p_stemming_rl.start()
+        ### Review Potential PII ###
+        p_review_PII = Process(target=PII_data_processor.review_potential_pii, args=(identified_pii, dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
+        p_review_PII.start()
 
-        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
 
-        time.sleep(2)
+        review_results = tkinter_functions_conn.recv()
+        dataset, reviewed_pii, removed_status = review_results[0], review_results[1], review_results[2]
+        
+        ### Recode Potential PII ###
+        p_recode_PII = Process(target=PII_data_processor.recode, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn))
+        p_recode_PII.start()
 
-        stemming_rl_results = tkinter_functions_conn.recv()
-        restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+        # tkinter_input(tkinter_messages_conn.recv(), tkinter_messages_conn) ### shouldn't be necessary, since it's permanently listening now
 
-        ### Word Match Stemming ###
-        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
-        p_wordm_stem.start()
+        review_results = tkinter_functions_conn.recv()
+        reviewed_pii, removed_status = review_results[0], review_results[1]
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
 
-        ### Fuzzy Partial Stem Match ###
-        threshold = 0.75
-        p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
-        p_fpsm.start()
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+        dataset, recoded_fields = recode(dataset)
+        path, export_status = export(dataset)
+        log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
-        ### Unique Entries Detection ###
-        min_entries_threshold = 0.5
-        p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
-        p_uniques.start()
+        # ### Stemming of restricted list ###
+        # p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
+        # p_stemming_rl.start()
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+        # tkinter_display(tkinter_messages_conn.recv())
 
-        root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
+        # time.sleep(2)
+
+        # stemming_rl_results = tkinter_functions_conn.recv()
+        # restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+
+        # ### Word Match Stemming ###
+        # p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
+        # p_wordm_stem.start()
+
+        # tkinter_display(tkinter_messages_conn.recv())
+        # tkinter_display(tkinter_messages_conn.recv())
+        # identified_pii = tkinter_functions_conn.recv()
+
+        # ### Fuzzy Partial Stem Match ###
+        # threshold = 0.75
+        # p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
+        # p_fpsm.start()
+
+        # tkinter_display(tkinter_messages_conn.recv())
+        # tkinter_display(tkinter_messages_conn.recv())
+        # identified_pii = tkinter_functions_conn.recv()
+
+        # ### Unique Entries Detection ###
+        # min_entries_threshold = 0.5
+        # p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
+        # p_uniques.start()
+
+        # tkinter_display(tkinter_messages_conn.recv())
+        # tkinter_display(tkinter_messages_conn.recv())
+        # identified_pii = tkinter_functions_conn.recv()
+
+        # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
@@ -132,11 +147,11 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
 
-    # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
-    # dataset, recoded_fields = recode(dataset)
-    # path, export_status = export(dataset)
-    # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
+def input_listener(pipe_to_ping):
+    while pipe_to_ping.poll() != True:
+        time.sleep(0.1)
 
+    tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
 
 if __name__ == '__main__':
 
