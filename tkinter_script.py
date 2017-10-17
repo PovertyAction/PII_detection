@@ -20,10 +20,11 @@ class GUI:
         master.title(app_title)
         master.minsize(width=686, height=666)
 
-def tkinter_display(the_message):
+def tkinter_display(the_message, display_pipe):
     # consider adding timestamp to beginning of every message
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
+    display_listener(display_pipe)
 
 def tkinter_input(the_message, input_pipe):
     def input_accepted(event=None):
@@ -59,7 +60,7 @@ def file_select():
         p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
         p_import.start()
 
-        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv(), tkinter_messages_conn)
 
         import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
         dataset = import_results[0]
@@ -103,6 +104,8 @@ def file_select():
         p_log.start()
 
         ### Exit Gracefully ###
+        tkinter_display('Process complete.')
+        ## Ask about restarting?
 
 
 
@@ -110,7 +113,7 @@ def file_select():
         # p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
         # p_stemming_rl.start()
 
-        # tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
 
         # time.sleep(2)
 
@@ -121,8 +124,8 @@ def file_select():
         # p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
         # p_wordm_stem.start()
 
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
         # identified_pii = tkinter_functions_conn.recv()
 
         # ### Fuzzy Partial Stem Match ###
@@ -130,8 +133,8 @@ def file_select():
         # p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
         # p_fpsm.start()
 
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
         # identified_pii = tkinter_functions_conn.recv()
 
         # ### Unique Entries Detection ###
@@ -139,22 +142,28 @@ def file_select():
         # p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
         # p_uniques.start()
 
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
+        # #tkinter_display(tkinter_messages_conn.recv())
         # identified_pii = tkinter_functions_conn.recv()
 
         # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
-    tkinter_display('in next steps')
+    #tkinter_display('in next steps')
 
     p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
     p_dates.start()
 
-    tkinter_display(tkinter_messages_conn.recv())
-    tkinter_display(tkinter_messages_conn.recv())
+    #tkinter_display(tkinter_messages_conn.recv())
+    #tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
+
+def display_listener(pipe_to_ping):
+    while pipe_to_ping.poll() != True:
+        time.sleep(0.1)
+
+    tkinter_display(pipe_to_ping.recv(), pipe_to_ping)
 
 def input_listener(pipe_to_ping):
     while pipe_to_ping.poll() != True:
