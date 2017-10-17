@@ -83,19 +83,28 @@ def file_select():
         dataset, reviewed_pii, removed_status = review_results[0], review_results[1], review_results[2]
         
         ### Recode Potential PII ###
-        p_recode_PII = Process(target=PII_data_processor.recode, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn))
+        p_recode_PII = Process(target=PII_data_processor.recode, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
         p_recode_PII.start()
 
         # tkinter_input(tkinter_messages_conn.recv(), tkinter_messages_conn) ### shouldn't be necessary, since it's permanently listening now
 
-        review_results = tkinter_functions_conn.recv()
-        reviewed_pii, removed_status = review_results[0], review_results[1]
+        recode_results = tkinter_functions_conn.recv()
+        dataset, recoded_fields = recode_results[0], recode_results[1]
+
+        ### Export Dataset ###
+        p_export = Process(target=PII_data_processor.export, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
+        p_export.start()
+
+        export_results = tkinter_functions_conn.recv()
+        path, export_status = export_results[0], export_results[1]
+
+        ### Generate Log of Actions Performed ###
+        p_log = Process(target=PII_data_processor.log, args=(reviewed_pii, removed_status, recoded_fields, path, export_status, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
+        p_log.start()
+
+        ### Exit Gracefully ###
 
 
-
-        dataset, recoded_fields = recode(dataset)
-        path, export_status = export(dataset)
-        log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
         # ### Stemming of restricted list ###
         # p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
