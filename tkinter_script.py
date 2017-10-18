@@ -103,6 +103,8 @@ def file_select():
         p_log.start()
 
         ### Exit Gracefully ###
+        # Consider adding option to restart script.
+        tkinter_display('Processing complete.')
 
 
 
