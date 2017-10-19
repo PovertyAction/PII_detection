@@ -1,12 +1,14 @@
 # Imports and Set-up
 from tkinter import *
+import tkinter
 from tkinter.filedialog import askopenfilename
 from tkinter import ttk
 import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, connection
 import PII_data_processor
+from PIL import ImageTk, Image
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
@@ -18,6 +20,7 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
+        master.iconbitmap("D:\Pictures\IPA-Asia-Logo-Image.ico")
         master.minsize(width=686, height=666)
 
 def tkinter_display(the_message):
@@ -32,7 +35,7 @@ def tkinter_input(the_message, input_pipe):
         input_label.pack_forget()
         submit_button.pack_forget()
         input_pipe.send(entry.get())
-        input_listener(input_pipe)
+        #input_listener(input_pipe)
 
     entry = Entry(frame)
     input_label = ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Bold", 11), style='my.TLabel')
@@ -51,7 +54,6 @@ def file_select():
     if __name__ == '__main__':
         tkinter_functions_conn, datap_functions_conn = Pipe()
         tkinter_messages_conn, datap_messages_conn = Pipe()
-        tkinter_input_conn, datap_input_conn = Pipe()
 
         ### Importing dataset and printing messages ###
         tkinter_functions_conn.send(dataset_path)
@@ -76,8 +78,12 @@ def file_select():
         ### Review Potential PII ###
         p_review_PII = Process(target=PII_data_processor.review_potential_pii, args=(identified_pii, dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
         p_review_PII.start()
+        tkinter_display('got here')
 
-        tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
+        connection.wait([tkinter_input_conn], timeout=None)
+        tkinter_display('past wait')
+        tkinter_input('test', tkinter_input_conn)
+        #tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
 
         review_results = tkinter_functions_conn.recv()
         dataset, reviewed_pii, removed_status = review_results[0], review_results[1], review_results[2]
@@ -159,17 +165,15 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     identified_pii = tkinter_functions_conn.recv()
 
 def input_listener(pipe_to_ping):
-    while pipe_to_ping.poll() != True:
-        time.sleep(0.1)
-
-    tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
+    pass
+    #connection.wait([pipe_to_ping], timeout=None)
+    #tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
 
 if __name__ == '__main__':
 
     # GUI
 
     root = Tk()  # creates GUI window
-
 
     my_gui = GUI(root)  # runs code in class GUI
 
@@ -203,20 +207,22 @@ if __name__ == '__main__':
 
     # Instructions
 
-    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
+    tkinter_input_conn, datap_input_conn = Pipe()
+
+    logo = ImageTk.PhotoImage(Image.open("D:\Pictures\ipa logo.jpg").resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+
+    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor="nw", padx=(30, 0), pady=(0, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    
+
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
     # Listener
 
+    #root.after(5, input_listener(tkinter_input_conn))
     root.mainloop()  # constantly looping event listener
-
-try:
-    if len(messages_pipe) != 0:
-        ttk.Label(frame, text=messages_pipe.get(), wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-except NameError:
-    pass
 
 
 # Extra code

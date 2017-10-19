@@ -30,6 +30,7 @@ from IPython.display import display, HTML
 from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
+from multiprocessing import connection
 
 if __name__ != "__main__":
     from multiprocessing import Process, Pipe
@@ -373,11 +374,11 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
     if __name__ == "__main__":
         review_response = input(review_message)
     else:
+        #smart_print('at first return', messages_pipe)
         smart_print(review_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
-
-        review_response = input_pipe.recv()
+        connection.wait([input_pipe], timeout=None)
+        smart_print('at sp', messages_pipe)
+        review_response = 'Yes'#input_pipe.recv()
         
     if review_response in yes_strings:
         count = 0
@@ -390,9 +391,7 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
                 var_review_response = input(var_review_message)
             else:
                 smart_print(var_review_message, input_pipe)
-                while messages_pipe.poll() != True:
-                    time.sleep(0.1)
-
+                connection.wait([input_pipe], timeout=None)
                 var_review_response = input_pipe.recv()
 
             if var_review_response in yes_strings:
@@ -405,9 +404,7 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
             remove_response = input(remove_message)
         else:
             smart_print(remove_message, input_pipe)
-            while input_pipe.poll() != True:
-                time.sleep(0.1)
-
+            connection.wait([input_pipe], timeout=None)
             remove_response = input_pipe.recv()
 
 
@@ -429,9 +426,7 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
         recode_response = input(recode_message)
     else:
         smart_print(recode_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
-
+        connection.wait([input_pipe], timeout=None)
         recode_response = input_pipe.recv()
     
     # Option to recode columns
@@ -442,9 +437,7 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
             vars_response = input(vars_message).lower()
         else:
             smart_print(vars_message, input_pipe)
-            while input_pipe.poll() != True:
-                time.sleep(0.1)
-
+            connection.wait([input_pipe], timeout=None)
             vars_response = input_pipe.recv().lower()
 
         if vars_response.lower() in ['list', "'list'", '"list"']:
@@ -455,9 +448,7 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
                 vars_response = input(vars_message_2).lower()
             else:
                 smart_print(vars_message_2, input_pipe)
-                while input_pipe.poll() != True:
-                    time.sleep(0.1)
-
+                connection.wait([input_pipe], timeout=None)
                 vars_response = input_pipe.recv().lower()
 
         var_names = vars_response.split(',')
@@ -505,9 +496,7 @@ def export(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
         export_response = input(export_message)
     else:
         smart_print(export_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
-
+        connection.wait([input_pipe], timeout=None)
         export_response = input_pipe.recv()
 
     if export_response in yes_strings:
@@ -544,9 +533,7 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported, yes_strings, f
         log_response = input(log_message)
     else:
         smart_print(log_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
-
+        connection.wait([input_pipe], timeout=None)
         log_response = input_pipe.recv()
 
     if log_response in yes_strings:
@@ -559,9 +546,7 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported, yes_strings, f
         log_export_response = input(log_export_message)
     else:
         smart_print(log_export_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
-
+        connection.wait([input_pipe], timeout=None)
         log_export_response = input_pipe.recv()
 
     if log_export_response in yes_strings:
