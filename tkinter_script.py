@@ -1,14 +1,13 @@
 # Imports and Set-up
 from tkinter import *
-import tkinter
 from tkinter.filedialog import askopenfilename
 from tkinter import ttk
 import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
-from multiprocessing import Process, Pipe, connection
+from datetime import datetime
+from multiprocessing import Process, Pipe
 import PII_data_processor
-from PIL import ImageTk, Image
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
@@ -20,30 +19,38 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
-        master.iconbitmap("D:\Pictures\IPA-Asia-Logo-Image.ico")
         master.minsize(width=686, height=666)
 
+def input(the_message):
+    try:
+        ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+
+        def evaluate(event=None):
+            pass
+
+            #if entry.get() in ['y', 'yes']:
+            #    return True
+            #res.configure(text="Ergebnis: " + )
+
+    except:  # ## add specific Jupyter error here
+        pass
+
+    Label(frame, text="Your Expression:").pack()
+    entry = Entry(frame)
+    entry.bind("<Return>", evaluate)
+    if ttk.Button(frame, text="Submit", command=evaluate, style='my.TButton').pack() is True:
+        return True
+    entry.pack()
+    time.sleep(8)
+    res = Label(frame)
+    res.pack()
+    return ('No')
+
+
 def tkinter_display(the_message):
-    # consider adding timestamp to beginning of every message
+    the_message = datetime.now().strftime("%H:%M:%S") + '     ' + the_message
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
-
-def tkinter_input(the_message, input_pipe):
-    def input_accepted(event=None):
-        tkinter_display("User input: " + str(entry.get()))
-        entry.pack_forget()
-        input_label.pack_forget()
-        submit_button.pack_forget()
-        input_pipe.send(entry.get())
-        #input_listener(input_pipe)
-
-    entry = Entry(frame)
-    input_label = ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Bold", 11), style='my.TLabel')
-    entry.bind("<Return>", input_accepted)
-    submit_button = ttk.Button(frame, text="Submit", width=10, command=input_accepted, style='my.TButton')
-    input_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    entry.pack(anchor='nw', padx=(30, 30))
-    submit_button.pack(anchor='nw')
 
 def file_select():
 
@@ -52,6 +59,7 @@ def file_select():
     tkinter_display('The script is running...')
 
     if __name__ == '__main__':
+
         tkinter_functions_conn, datap_functions_conn = Pipe()
         tkinter_messages_conn, datap_messages_conn = Pipe()
 
@@ -73,85 +81,46 @@ def file_select():
         p_initialize_vars.start()
 
         initialize_results = tkinter_functions_conn.recv()
-        identified_pii, restricted_vars, yes_strings = initialize_results[0], initialize_results[1], initialize_results[2]
+        identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
 
-        ### Review Potential PII ###
-        p_review_PII = Process(target=PII_data_processor.review_potential_pii, args=(identified_pii, dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
-        p_review_PII.start()
-        tkinter_display('got here')
+        ### Stemming of restricted list ###
+        p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
+        p_stemming_rl.start()
 
-        connection.wait([tkinter_input_conn], timeout=None)
-        tkinter_display('past wait')
-        tkinter_input('test', tkinter_input_conn)
-        #tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
+        tkinter_display(tkinter_messages_conn.recv())
 
-        review_results = tkinter_functions_conn.recv()
-        dataset, reviewed_pii, removed_status = review_results[0], review_results[1], review_results[2]
-        
-        ### Recode Potential PII ###
-        p_recode_PII = Process(target=PII_data_processor.recode, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
-        p_recode_PII.start()
+        time.sleep(2)
 
-        # tkinter_input(tkinter_messages_conn.recv(), tkinter_messages_conn) ### shouldn't be necessary, since it's permanently listening now
+        stemming_rl_results = tkinter_functions_conn.recv()
+        restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
-        recode_results = tkinter_functions_conn.recv()
-        dataset, recoded_fields = recode_results[0], recode_results[1]
+        ### Word Match Stemming ###
+        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
+        p_wordm_stem.start()
 
-        ### Export Dataset ###
-        p_export = Process(target=PII_data_processor.export, args=(dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
-        p_export.start()
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
 
-        export_results = tkinter_functions_conn.recv()
-        path, export_status = export_results[0], export_results[1]
+        ### Fuzzy Partial Stem Match ###
+        threshold = 0.75
+        p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
+        p_fpsm.start()
 
-        ### Generate Log of Actions Performed ###
-        p_log = Process(target=PII_data_processor.log, args=(reviewed_pii, removed_status, recoded_fields, path, export_status, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
-        p_log.start()
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
 
-        ### Exit Gracefully ###
-        # Consider adding option to restart script.
-        tkinter_display('Processing complete.')
+        ### Unique Entries Detection ###
+        min_entries_threshold = 0.5
+        p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
+        p_uniques.start()
 
+        tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display(tkinter_messages_conn.recv())
+        identified_pii = tkinter_functions_conn.recv()
 
-
-        # ### Stemming of restricted list ###
-        # p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
-        # p_stemming_rl.start()
-
-        # tkinter_display(tkinter_messages_conn.recv())
-
-        # time.sleep(2)
-
-        # stemming_rl_results = tkinter_functions_conn.recv()
-        # restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
-
-        # ### Word Match Stemming ###
-        # p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
-        # p_wordm_stem.start()
-
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
-        # identified_pii = tkinter_functions_conn.recv()
-
-        # ### Fuzzy Partial Stem Match ###
-        # threshold = 0.75
-        # p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
-        # p_fpsm.start()
-
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
-        # identified_pii = tkinter_functions_conn.recv()
-
-        # ### Unique Entries Detection ###
-        # min_entries_threshold = 0.5
-        # p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
-        # p_uniques.start()
-
-        # tkinter_display(tkinter_messages_conn.recv())
-        # tkinter_display(tkinter_messages_conn.recv())
-        # identified_pii = tkinter_functions_conn.recv()
-
-        # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
+        root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
@@ -164,16 +133,18 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
 
-def input_listener(pipe_to_ping):
-    pass
-    #connection.wait([pipe_to_ping], timeout=None)
-    #tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
+    # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
+    # dataset, recoded_fields = recode(dataset)
+    # path, export_status = export(dataset)
+    # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
+
 
 if __name__ == '__main__':
 
     # GUI
 
     root = Tk()  # creates GUI window
+
 
     my_gui = GUI(root)  # runs code in class GUI
 
@@ -207,22 +178,20 @@ if __name__ == '__main__':
 
     # Instructions
 
-    tkinter_input_conn, datap_input_conn = Pipe()
-
-    logo = ImageTk.PhotoImage(Image.open("D:\Pictures\ipa logo.jpg").resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
-
-    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor="nw", padx=(30, 0), pady=(0, 10))
+    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-    
-
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
     # Listener
 
-    #root.after(5, input_listener(tkinter_input_conn))
     root.mainloop()  # constantly looping event listener
+
+try:
+    if len(messages_pipe) != 0:
+        ttk.Label(frame, text=messages_pipe.get(), wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+except NameError:
+    pass
 
 
 # Extra code

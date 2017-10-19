@@ -26,4 +26,4 @@ Jacobson, J. Innovations for Poverty Action: PII Detection and Removal. 2017. ht
 
 ### Licensing
 
-The PII script is _________ licensed, which __________. Enjoy.
+The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE). Enjoy.
