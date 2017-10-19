@@ -1,6 +1,7 @@
 # Imports and Set-up
 from tkinter import *
 from tkinter.filedialog import askopenfilename
+import tkinter
 from tkinter import ttk
 import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
@@ -8,6 +9,7 @@ import time
 from datetime import datetime
 from multiprocessing import Process, Pipe
 import PII_data_processor
+from PIL import ImageTk, Image
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
@@ -19,6 +21,7 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
+        master.iconbitmap("IPA-Asia-Logo-Image.ico")
         master.minsize(width=686, height=666)
 
 def input(the_message):
@@ -177,6 +180,9 @@ if __name__ == '__main__':
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
     # Instructions
+
+    logo = ImageTk.PhotoImage(Image.open("ipa logo.jpg").resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
