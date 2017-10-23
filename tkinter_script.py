@@ -157,7 +157,7 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
-
+    
 def input_listener(pipe_to_ping):
     while pipe_to_ping.poll() != True:
         time.sleep(0.1)
