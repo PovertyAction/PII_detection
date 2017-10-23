@@ -5,7 +5,7 @@ from tkinter import ttk
 import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, connection
 import PII_data_processor
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
@@ -59,25 +59,34 @@ def file_select():
         p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
         p_import.start()
 
+        tkinter_display('before success')
         tkinter_display(tkinter_messages_conn.recv())
+        tkinter_display('after success')
 
         import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
         dataset = import_results[0]
         dataset_path = import_results[1]
 
-        
+        tkinter_display('before initialization')
         ### Initialization of lists ###
         p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
         p_initialize_vars.start()
 
         initialize_results = tkinter_functions_conn.recv()
         identified_pii, restricted_vars, yes_strings = initialize_results[0], initialize_results[1], initialize_results[2]
+        tkinter_display('after initialization')
 
         ### Review Potential PII ###
         p_review_PII = Process(target=PII_data_processor.review_potential_pii, args=(identified_pii, dataset, yes_strings, datap_functions_conn, datap_messages_conn, datap_input_conn))
         p_review_PII.start()
 
-        tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
+        tkinter_display('right before asking for input')
+
+        input_listener(tkinter_input_conn, 1)
+
+        #tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
+
+        tkinter_display('after asking for input')
 
         review_results = tkinter_functions_conn.recv()
         dataset, reviewed_pii, removed_status = review_results[0], review_results[1], review_results[2]
@@ -158,9 +167,12 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
     
-def input_listener(pipe_to_ping):
-    while pipe_to_ping.poll() != True:
-        time.sleep(0.1)
+def input_listener(pipe_to_ping, immediate = 0):
+    if immediate == 0:
+        while pipe_to_ping.poll() != True:
+            time.sleep(0.1)
+
+    #connection.wait([pipe_to_ping], timeout=None)
 
     tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
 

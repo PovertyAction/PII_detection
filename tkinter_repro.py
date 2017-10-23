@@ -3,7 +3,7 @@ from tkinter.filedialog import askopenfilename
 from tkinter import ttk
 from multiprocessing import Process, Pipe, connection
 import pandas as pd
-import temp_processor
+import Processor_child
 import time
 
 class GUI:

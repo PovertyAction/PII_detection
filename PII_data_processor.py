@@ -32,9 +32,9 @@ InteractiveShell.ast_node_interactivity = "all"
 import time
 
 if __name__ != "__main__":
-    from multiprocessing import Process, Pipe
-    import tkinter_script
-    datap_input_conn, tkinter_input_conn = Pipe()
+    from multiprocessing import Process, Pipe, connection
+    #import tkinter_script
+    #datap_input_conn, tkinter_input_conn = Pipe()
 
 def smart_print(the_message, messages_pipe = None):
     if __name__ == "__main__":
@@ -376,6 +376,7 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
         smart_print(review_message, input_pipe)
         while input_pipe.poll() != True:
             time.sleep(0.1)
+        #connection.wait([input_pipe], timeout=None)
 
         review_response = input_pipe.recv()
         
@@ -391,7 +392,8 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
             else:
                 smart_print(var_review_message, input_pipe)
                 while messages_pipe.poll() != True:
-                    time.sleep(0.1)
+                   time.sleep(0.1)
+                #connection.wait([messages_pipe], timeout=None)
 
                 var_review_response = input_pipe.recv()
 
@@ -407,6 +409,7 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
             smart_print(remove_message, input_pipe)
             while input_pipe.poll() != True:
                 time.sleep(0.1)
+            #connection.wait([input_pipe], timeout=None)
 
             remove_response = input_pipe.recv()
 
@@ -432,6 +435,7 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
         while input_pipe.poll() != True:
             time.sleep(0.1)
 
+        #connection.wait([input_pipe], timeout=None)
         recode_response = input_pipe.recv()
     
     # Option to recode columns
@@ -445,6 +449,8 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
             while input_pipe.poll() != True:
                 time.sleep(0.1)
 
+            #connection.wait([input_pipe], timeout=None)
+
             vars_response = input_pipe.recv().lower()
 
         if vars_response.lower() in ['list', "'list'", '"list"']:
@@ -457,6 +463,7 @@ def recode(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
                 smart_print(vars_message_2, input_pipe)
                 while input_pipe.poll() != True:
                     time.sleep(0.1)
+                #connection.wait([input_pipe], timeout=None)
 
                 vars_response = input_pipe.recv().lower()
 
@@ -507,6 +514,7 @@ def export(dataset, yes_strings, function_pipe = None, messages_pipe = None, inp
         smart_print(export_message, input_pipe)
         while input_pipe.poll() != True:
             time.sleep(0.1)
+        #connection.wait([input_pipe], timeout=None)
 
         export_response = input_pipe.recv()
 
@@ -544,8 +552,10 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported, yes_strings, f
         log_response = input(log_message)
     else:
         smart_print(log_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
+        # while input_pipe.poll() != True:
+        #    time.sleep(0.1)
+
+        connection.wait([input_pipe], timeout=None)
 
         log_response = input_pipe.recv()
 
@@ -559,8 +569,10 @@ def log(confirmed_pii, removed, recoded_vars, csv_path, exported, yes_strings, f
         log_export_response = input(log_export_message)
     else:
         smart_print(log_export_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
+        # while input_pipe.poll() != True:
+        #    time.sleep(0.1)
+
+        connection.wait([input_pipe], timeout=None)
 
         log_export_response = input_pipe.recv()
 
