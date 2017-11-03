@@ -189,6 +189,23 @@ if __name__ == '__main__':
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
+    # Checkbox
+
+    # checkTemp = IntVar() #IntVar only necessary if I need app to change upon being checked
+    # checkTemp.set(0)
+    # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
+
+    checkTemp = 0
+
+    checkBox1 = Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Log").pack(anchor = 'nw', padx=(30, 30))
+
+    # Dropdown
+
+    sensitivity = StringVar(frame)
+    sensitivity.set("Medium (Default)") # default value
+
+    w = OptionMenu(frame, sensitivity, "Maximum", "High", "Medium (Default)", "Low", "Minimum").pack(anchor = 'nw', padx=(30,30))
+
     # Listener
 
     root.mainloop()  # constantly looping event listener
