@@ -144,6 +144,15 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     ### Exit Gracefully ###
     # Consider adding option to restart script.
     tkinter_display('Processing complete.')
+    Button(root, text="Run Again", command=restart_program).pack()
+
+
+def restart_program():
+    """Restarts the current program.
+    Note: this function does not return. Any cleanup action (like
+    saving data) must be done before calling this function."""
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 
 if __name__ == '__main__':
