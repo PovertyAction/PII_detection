@@ -30,6 +30,23 @@ from IPython.display import display, HTML
 from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 import time
+import socket
+
+def run_once(f):
+    def wrapper(*args, **kwargs):
+        if not wrapper.has_run:
+            wrapper.has_run = True
+            return f(*args, **kwargs)
+    wrapper.has_run = False
+    return serversocket
+
+@run_once
+def socket_initialization():
+    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serversocket.bind(('127.0.0.1', 8089))
+    serversocket.listen(5)
+    serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    return serversocket
 
 if __name__ != "__main__":
     from multiprocessing import Process, Pipe, connection
@@ -366,6 +383,7 @@ def date_detection(possible_pii, dataset, function_pipe = None, messages_pipe = 
 #Reviewing and confirming PII
 def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = None, messages_pipe = None, input_pipe = None):
     #first does the GUI approach, and then does the command line / notebook approach
+    ss = socket_initialization()
     confirmed_pii = []
     removed = False
     review_message = 'There are ' + str(len(set(possible_pii))) + ' variables that may contain PII. Would you like to review them and decide which to delete?'
@@ -374,11 +392,21 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
         review_response = input(review_message)
     else:
         smart_print(review_message, input_pipe)
-        while input_pipe.poll() != True:
-            time.sleep(0.1)
+
+        x = 0
+        while x==0:
+            connection, address = ss.accept()
+            buf = connection.recv(64)
+            if len(buf) > 0:
+                review_response = buf
+                x = 1
+
+        #while input_pipe.poll() != True:
+        #    time.sleep(0.1)
         #connection.wait([input_pipe], timeout=None)
 
-        review_response = input_pipe.recv()
+        #review_response = input_pipe.recv()
+        print('past the while')
         
     if review_response in yes_strings:
         count = 0
@@ -391,11 +419,11 @@ def review_potential_pii(possible_pii, dataset, yes_strings, function_pipe = Non
                 var_review_response = input(var_review_message)
             else:
                 smart_print(var_review_message, input_pipe)
-                while messages_pipe.poll() != True:
-                   time.sleep(0.1)
+                #while messages_pipe.poll() != True:
+                #   time.sleep(0.1)
                 #connection.wait([messages_pipe], timeout=None)
 
-                var_review_response = input_pipe.recv()
+                #var_review_response = input_pipe.recv()
 
             if var_review_response in yes_strings:
                 confirmed_pii.append(v)

@@ -6,6 +6,7 @@ import tkinter.scrolledtext as tkst
 from nltk.stem.porter import *
 import time
 from multiprocessing import Process, Pipe, connection
+import socket
 import PII_data_processor
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
@@ -25,15 +26,18 @@ def tkinter_display(the_message):
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
 
-def tkinter_input(the_message, input_pipe):
+def tkinter_input(the_message, input_pipe=None):
     def input_accepted(event=None):
         tkinter_display("User input: " + str(entry.get()))
         entry.pack_forget()
         input_label.pack_forget()
         submit_button.pack_forget()
-        input_pipe.send(entry.get())
-        input_listener(input_pipe)
+        output = entry.get()
+        clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientsocket.connect(('127.0.0.1', 8089))
+        clientsocket.send(output.encode('utf-8'))
 
+    tkinter_display(the_message)
     entry = Entry(frame)
     input_label = ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Bold", 11), style='my.TLabel')
     entry.bind("<Return>", input_accepted)
@@ -82,7 +86,8 @@ def file_select():
 
         tkinter_display('right before asking for input')
 
-        input_listener(tkinter_input_conn, 1)
+        #input_listener(tkinter_input_conn, 1)
+        tkinter_input(tkinter_messages_conn.recv())
 
         #tkinter_input(tkinter_input_conn.recv(), tkinter_input_conn)
 
@@ -167,14 +172,25 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
     
-def input_listener(pipe_to_ping, immediate = 0):
-    if immediate == 0:
-        while pipe_to_ping.poll() != True:
-            time.sleep(0.1)
+# def input_listener(pipe_to_ping, immediate = 0):
+    ## listening and receiving portion
 
-    #connection.wait([pipe_to_ping], timeout=None)
+    # serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # serversocket.bind(('127.0.0.1', 8089))
+    # serversocket.listen(5) # become a server socket, maximum 5 connections
 
-    tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
+    # x = 0
+    # while x==0:
+    #     connection, address = serversocket.accept()
+    #     buf = 
+    #     if len(buf) > 0:
+    #         print (buf)
+    #         x = 1
+
+
+    # #connection.wait([pipe_to_ping], timeout=None)
+
+    # tkinter_input(pipe_to_ping.recv(), pipe_to_ping)
 
 if __name__ == '__main__':
 
@@ -219,6 +235,10 @@ if __name__ == '__main__':
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+
+    # Socket initialization
+    # clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # clientsocket.connect(('127.0.0.1', 8089))
 
     # Listener
 
