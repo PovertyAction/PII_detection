@@ -170,6 +170,8 @@ if __name__ == '__main__':
     # root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
     root.style.configure('my.TButton', font=("Calibri", 11, 'bold'), background='white')
     root.style.configure('my.TLabel', background='white')
+    root.style.configure('my.TCheckbutton', background='white')
+    root.style.configure('my.TMenubutton', background='white')
 
     # Display
 
@@ -200,7 +202,19 @@ if __name__ == '__main__':
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+
+    ttk.Label(frame, text="Start Application:", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+
+    ttk.Label(frame, text="Options:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    # Dropdown
+
+    ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
+
+    sensitivity = StringVar(frame)
+    w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(side=LEFT, padx=(30,0))
+
 
     # Checkbox
 
@@ -209,15 +223,7 @@ if __name__ == '__main__':
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
     checkTemp = 0
-
-    checkBox1 = Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Log").pack(anchor = 'nw', padx=(30, 30))
-
-    # Dropdown
-
-    sensitivity = StringVar(frame)
-    sensitivity.set("Medium (Default)") # default value
-
-    w = OptionMenu(frame, sensitivity, "Maximum", "High", "Medium (Default)", "Low", "Minimum").pack(anchor = 'nw', padx=(30,30))
+    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Log", style='my.TCheckbutton').pack(side=LEFT, padx=(30, 0), fill=X)
 
     # Listener
 
