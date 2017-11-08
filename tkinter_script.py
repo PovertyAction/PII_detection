@@ -125,6 +125,14 @@ def file_select():
 
         root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
+def about():
+    import webbrowser
+    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection') 
+
+def contact():
+    import webbrowser
+    webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
+
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
     tkinter_display('in next steps')
@@ -151,6 +159,7 @@ def restart_program():
     """Restarts the current program.
     Note: this function does not return. Any cleanup action (like
     saving data) must be done before calling this function."""
+    import os
     python = sys.executable
     os.execl(python, python, * sys.argv)
 
@@ -165,7 +174,23 @@ if __name__ == '__main__':
     my_gui = GUI(root)  # runs code in class GUI
 
     # Styles
-    root.configure(background='light gray')
+    menubar = tkinter.Menu(root)#.pack()
+
+    # create a pulldown menu, and add it to the menu bar
+    filemenu = Menu(menubar, tearoff=0)
+    filemenu.add_command(label="Restart", command=restart_program)
+    #filemenu.add_command(label="Save", command=hello)
+    filemenu.add_separator()
+    filemenu.add_command(label="Exit", command=root.quit)
+    menubar.add_cascade(label="File", menu=filemenu)
+
+    # create more pulldown menus
+    helpmenu = Menu(menubar, tearoff=0)
+    helpmenu.add_command(label="About", command=about)
+    helpmenu.add_command(label="File Issue on GitHub", command=contact)
+    menubar.add_cascade(label="Help", menu=helpmenu)
+
+    root.configure(background='light gray', menu=menubar)
     root.style = ttk.Style()
     # root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
     root.style.configure('my.TButton', font=("Calibri", 11, 'bold'), background='white')
@@ -173,7 +198,6 @@ if __name__ == '__main__':
     root.style.configure('my.TCheckbutton', background='white')
     root.style.configure('my.TMenubutton', background='white')
 
-    w = tkinter.Menu(root)#.pack()
     root.resizable(False, False) # prevents window from being resized
 
     # Display
@@ -216,28 +240,26 @@ if __name__ == '__main__':
     ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
 
     sensitivity = StringVar(frame)
-    w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(side=LEFT, padx=(30,0))
-
-
+    w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
+    # A combobox may be a better choice
+    
     # Checkbox
 
-    # checkTemp = IntVar() #IntVar only necessary if I need app to change upon being checked
+    # checkTemp = IntVar() #IntVar only necessary if need app to change upon being checked
     # checkTemp.set(0)
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
     checkTemp = 0
-    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(side=LEFT, padx=(100, 0), fill=X)
+    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
+
+    ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
+    first_message = "Awaiting dataset selection."
+    first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
+    ttk.Label(frame, text=first_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
     # Listener
 
     root.mainloop()  # constantly looping event listener
-
-try:
-    if len(messages_pipe) != 0:
-        ttk.Label(frame, text=messages_pipe.get(), wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-except NameError:
-    pass
-
 
 # Extra code
 
