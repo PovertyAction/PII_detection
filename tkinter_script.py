@@ -173,6 +173,9 @@ if __name__ == '__main__':
     root.style.configure('my.TCheckbutton', background='white')
     root.style.configure('my.TMenubutton', background='white')
 
+    w = tkinter.Menu(root)#.pack()
+    root.resizable(False, False) # prevents window from being resized
+
     # Display
 
     def onFrameConfigure(canvas):
@@ -223,7 +226,7 @@ if __name__ == '__main__':
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
     checkTemp = 0
-    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Log", style='my.TCheckbutton').pack(side=LEFT, padx=(30, 0), fill=X)
+    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(side=LEFT, padx=(100, 0), fill=X)
 
     # Listener
 
