@@ -10,6 +10,7 @@ from datetime import datetime
 from multiprocessing import Process, Pipe
 import PII_data_processor
 from PIL import ImageTk, Image
+import webbrowser
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
@@ -126,12 +127,19 @@ def file_select():
         root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
 def about():
-    import webbrowser
     webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection') 
 
 def contact():
-    import webbrowser
     webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
+
+def methods():
+    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection')
+
+def comparison():
+    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection')
+
+def PII_field_names():
+    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
@@ -187,7 +195,14 @@ if __name__ == '__main__':
     # create more pulldown menus
     helpmenu = Menu(menubar, tearoff=0)
     helpmenu.add_command(label="About", command=about)
+    helpmenu.add_command(label="- Detection Methods", command=methods)
+    helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
+    helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
+    helpmenu.add_command(label="- Data Security", command=PII_field_names)
+    helpmenu.add_separator()
     helpmenu.add_command(label="File Issue on GitHub", command=contact)
+    helpmenu.add_separator()
+    helpmenu.add_command(label="Contribute", command=contact)
     menubar.add_cascade(label="Help", menu=helpmenu)
 
     root.configure(background='light gray', menu=menubar)
