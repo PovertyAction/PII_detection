@@ -61,6 +61,7 @@ def file_select():
 
     dataset_path = askopenfilename()
 
+    tkinter_display('Scroll down for status updates.')
     tkinter_display('The script is running...')
 
     if __name__ == '__main__':
@@ -159,10 +160,7 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
     ### Exit Gracefully ###
-    # Consider adding option to restart script.
-    tkinter_display('Processing complete.')
-    Button(root, text="Run Again", command=restart_program).pack()
-
+    tkinter_display('Processing complete. You can use the menu option to restart or exit.')
 
 def restart_program():
     """Restarts the current program.
@@ -247,7 +245,7 @@ if __name__ == '__main__':
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
-    ttk.Label(frame, text="Start Application:", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    ttk.Label(frame, text="Start Application: ", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
     ttk.Label(frame, text="Options:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -266,7 +264,7 @@ if __name__ == '__main__':
     # checkTemp.set(0)
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
-    checkTemp = 0
+    checkTemp = 1
     checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
 
     ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
