@@ -145,14 +145,13 @@ def PII_field_names():
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
-    tkinter_display('in next steps')
-
     p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
     p_dates.start()
 
     tkinter_display(tkinter_messages_conn.recv())
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
+    tkinter_display("The following fields appear to be PII: " + str(identified_pii)[1:-1])
 
     # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
     # dataset, recoded_fields = recode(dataset)
