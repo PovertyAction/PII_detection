@@ -109,7 +109,18 @@ def file_select():
         identified_pii = tkinter_functions_conn.recv()
 
         ### Fuzzy Partial Stem Match ###
-        threshold = 0.75
+        if sensitivity.get() == "Medium (Default)":
+            sensitivity_score = 3
+        elif sensitivity.get() == "Maximum":
+            sensitivity_score = 5
+        elif sensitivity.get() == "High":
+            sensitivity_score = 4
+        elif sensitivity.get() == "Low":
+            sensitivity_score = 2
+        elif sensitivity.get() == "Minimum":
+            sensitivity_score = 1
+
+        threshold = 0.75 #* sensitivity_score/3
         p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
         p_fpsm.start()
 
@@ -118,7 +129,8 @@ def file_select():
         identified_pii = tkinter_functions_conn.recv()
 
         ### Unique Entries Detection ###
-        min_entries_threshold = 0.5
+        min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
+
         p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
         p_uniques.start()
 
