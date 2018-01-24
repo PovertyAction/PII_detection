@@ -120,7 +120,7 @@ def file_select():
         elif sensitivity.get() == "Minimum":
             sensitivity_score = 1
 
-        threshold = 0.75 #* sensitivity_score/3
+        threshold = 0.75 * sensitivity_score/3
         p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
         p_fpsm.start()
 
