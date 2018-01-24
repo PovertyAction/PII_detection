@@ -75,7 +75,10 @@ def import_dataset(dataset_path_var, messages_pipe = None):
             except ValueError:
                 dataset = pd.read_stata(dataset_path, convert_categoricals=False)
             label_dict = pd.io.stata.StataReader(dataset_path).variable_labels()
-            value_label_dict = pd.io.stata.StataReader(dataset_path).value_labels()
+            try:
+                value_label_dict = pd.io.stata.StataReader(dataset_path).value_labels()
+            except AttributeError:
+                status_message = "No value labels detected. " # Not printed in the app, overwritten later.
         elif dataset_path_l.endswith(('xpt', '.sas7bdat')):
             dataset = pd.read_sas(dataset_path)
         elif dataset_path_l.endswith('vc'):
