@@ -263,8 +263,8 @@ if __name__ == '__main__':
     # checkTemp.set(0)
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
-    checkTemp = 1
-    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
+    #checkTemp = 1
+    #checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
 
     ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
     first_message = "Awaiting dataset selection."
