@@ -163,6 +163,7 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     tkinter_display(tkinter_messages_conn.recv())
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
+    identified_pii = set(identified_pii)
     tkinter_display("The following fields appear to be PII: " + str(identified_pii)[1:-1])
 
     # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
