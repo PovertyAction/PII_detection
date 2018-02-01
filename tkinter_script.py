@@ -8,6 +8,8 @@ from nltk.stem.porter import *
 import time
 from datetime import datetime
 from multiprocessing import Process, Pipe
+import multiprocessing
+multiprocessing.freeze_support()
 import PII_data_processor
 from PIL import ImageTk, Image
 import webbrowser
