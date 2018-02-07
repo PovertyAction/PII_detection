@@ -25,7 +25,13 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
-        master.iconbitmap("IPA-Asia-Logo-Image.ico")
+        
+        if hasattr(sys, "_MEIPASS"):
+            icon_location = os.path.join(sys._MEIPASS, 'IPA-Asia-Logo-Image.ico')
+        else:
+            icon_location = 'IPA-Asia-Logo-Image.ico'
+
+        master.iconbitmap(icon_location)
         master.minsize(width=686, height=666)
 
 def input(the_message):
@@ -251,7 +257,12 @@ if __name__ == '__main__':
 
     # Instructions
 
-    logo = ImageTk.PhotoImage(Image.open("ipa logo.jpg").resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    if hasattr(sys, "_MEIPASS"):
+        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
+    else:
+        logo_location = 'ipa logo.jpg'
+
+    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
     tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))

@@ -126,10 +126,11 @@ def initialize_lists(function_pipe = None):
     restricted_ipa = ['name', 'birth', 'phone', 'district', 'county', 'subcounty', 'parish', 'lc', 'village', 'community', 'address', 'gps', 'lat', 'lon', 'coord', 'location', 'house', 'compound', 'school', 'social', 'network', 'census', 'gender', 'sex', 'fax', 'email', 'ip', 'url', 'specify', 'comment']
 
     # Additions
-    restricted_expansions = ['name', 'insurance', 'medical', 'number', 'enumerator', 'rand', 'random', 'child_age', 'uid', 'latitude', 'longitude', 'coordinates', 'web', 'website', 'hh', 'address', 'age']
+    restricted_expansions = ['name', 'insurance', 'medical', 'number', 'enumerator', 'rand', 'random', 'child_age', 'uid', 'latitude', 'longitude', 'coordinates', 'web', 'website', 'hh', 'address', 'age', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'gps', 'resp_name', 'resp_phone', 'head_name', 'headname', 'respname', 'subvillage', 'survey_location']
     restricted_spanish = ['apellidos', 'beneficiario', 'casa', 'censo', 'ciudad', 'comentario / coment', 'comunidad', 'contacto', 'contar', 'coordenadas', 'coordenadas', 'data', 'direccion', 'direccion', 'distrito', 'distrito', 'edad', 'edad_nino', 'email', 'encuestador', 'encuestador', 'escuela', 'colegio ', 'esposa', 'esposo', 'fax', 'fecha_nacimiento', 'fecha_nacimiento', 'fecha_nacimiento', 'genero', 'gps', 'hogar', 'id', 'identificador', 'identidad', 'informacion', 'ip', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'plan', 'primer_nombre', 'random', 'red', 'salud', 'seguro', 'sexo', 'social', 'telefono', 'fono', 'tlfno', 'ubicacion', 'url', 'villa', 'web']
-    
-    restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions
+    restricted_swahili = ['jina', 'simu', 'mkoa', 'wilaya', 'kata', 'kijiji', 'kitongoji', 'vitongoji', 'nyumba', 'numba', 'namba', 'tarahe ya kuzaliwa', 'umri', 'jinsi', 'jinsia']
+
+    restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions + restricted_spanish + restricted_swahili
     restricted = list(set(restricted))
     
     smart_return([possible_pii, restricted], function_pipe)
