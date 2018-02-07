@@ -156,7 +156,7 @@ def stem_restricted(restricted, function_pipe = None, messages_pipe = None):
 
 # In[5]:
 
-def word_match_stemming(possible_pii, restricted, dataset, stemmer, function_pipe = None, messages_pipe = None):
+def word_match_stemming(possible_pii, restricted, dataset, stemmer, label_dict, sensitivity = 3, function_pipe = None, messages_pipe = None):
 # Looks for matches between variable names, variable name stems, restricted words, and restricted word stems
     smart_print('The word match with stemming algorithm is now running.', messages_pipe)
     
@@ -164,6 +164,12 @@ def word_match_stemming(possible_pii, restricted, dataset, stemmer, function_pip
         for r in restricted:
             if v.lower() in r or stemmer.stem(v).lower() in r:
                 possible_pii.append(v)
+            if type(label_dict) is not bool:
+                words = label_dict[v].split(' ')
+                for i in words:
+                    if len(i) > sensitivity:
+                        if i.lower() in r or stemmer.stem(i).lower() in r:
+                            possible_pii.append(v)
     
     smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     

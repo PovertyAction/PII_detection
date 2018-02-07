@@ -100,3 +100,7 @@ ENV/
 setup.py
 
 *.exe
+
+Untitled.ipynb
+
+t.csv

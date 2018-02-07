@@ -88,6 +88,19 @@ def file_select():
         import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
         dataset = import_results[0]
         dataset_path = import_results[1]
+        label_dict = import_results[2]
+        value_label_dict = import_results[3]
+
+        if sensitivity.get() == "Medium (Default)":
+            sensitivity_score = 3
+        elif sensitivity.get() == "Maximum":
+            sensitivity_score = 5
+        elif sensitivity.get() == "High":
+            sensitivity_score = 4
+        elif sensitivity.get() == "Low":
+            sensitivity_score = 2
+        elif sensitivity.get() == "Minimum":
+            sensitivity_score = 1
 
         
         ### Initialization of lists ###
@@ -108,8 +121,9 @@ def file_select():
         stemming_rl_results = tkinter_functions_conn.recv()
         restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
+        match_sensitivity = 6 - sensitivity_score
         ### Word Match Stemming ###
-        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
+        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
         p_wordm_stem.start()
 
         tkinter_display(tkinter_messages_conn.recv())
@@ -117,17 +131,6 @@ def file_select():
         identified_pii = tkinter_functions_conn.recv()
 
         ### Fuzzy Partial Stem Match ###
-        if sensitivity.get() == "Medium (Default)":
-            sensitivity_score = 3
-        elif sensitivity.get() == "Maximum":
-            sensitivity_score = 5
-        elif sensitivity.get() == "High":
-            sensitivity_score = 4
-        elif sensitivity.get() == "Low":
-            sensitivity_score = 2
-        elif sensitivity.get() == "Minimum":
-            sensitivity_score = 1
-
         threshold = 0.75 * sensitivity_score/3
         p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
         p_fpsm.start()
