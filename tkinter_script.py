@@ -216,7 +216,7 @@ if __name__ == '__main__':
 
     # create more pulldown menus
     helpmenu = Menu(menubar, tearoff=0)
-    helpmenu.add_command(label="About", command=about)
+    helpmenu.add_command(label="About (v0.1.1)", command=about)
     helpmenu.add_command(label="- Detection Methods", command=methods)
     helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
     helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
