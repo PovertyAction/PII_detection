@@ -121,7 +121,7 @@ def file_select():
         stemming_rl_results = tkinter_functions_conn.recv()
         restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
-        match_sensitivity = 6 - sensitivity_score
+        match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
         ### Word Match Stemming ###
         p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
         p_wordm_stem.start()
