@@ -15,9 +15,9 @@ from PIL import ImageTk, Image
 import webbrowser
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
-intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
-intro_text_p3 = "*This version is customized for Windows 7. It has limited functionality. It is recommended you use the versions for Windows 10, OSX, or Linux if possible."
-app_title = "IPA's PII Detector, Cleaner, and Recoder - Windows 7*"
+intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
+intro_text_p3 = "This is an alpha program. Please help improve it by filling out the survey on your experience using it (Help -> Provide Feedback)."
+app_title = "IPA's PII Detector - Windows"
 
 
 class GUI:
@@ -166,6 +166,9 @@ def comparison():
 def PII_field_names():
     webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
 
+def survey():
+    webbrowser.open('https://goo.gl/forms/YYOxXJSKBpp60ol32')
+
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
     p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
@@ -217,14 +220,15 @@ if __name__ == '__main__':
     # create more pulldown menus
     helpmenu = Menu(menubar, tearoff=0)
     helpmenu.add_command(label="About (v0.1.1)", command=about)
-    helpmenu.add_command(label="- Detection Methods", command=methods)
-    helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
-    helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
-    helpmenu.add_command(label="- Data Security", command=PII_field_names)
+    #helpmenu.add_command(label="- Detection Methods", command=methods)
+    #helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
+    #helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
+    #helpmenu.add_command(label="- Data Security", command=PII_field_names)
     helpmenu.add_separator()
     helpmenu.add_command(label="File Issue on GitHub", command=contact)
     helpmenu.add_separator()
-    helpmenu.add_command(label="Contribute", command=contact)
+    #helpmenu.add_command(label="Contribute", command=contact)
+    helpmenu.add_command(label="Provide Feedback", command=survey)
     menubar.add_cascade(label="Help", menu=helpmenu)
 
     root.configure(background='light gray', menu=menubar)
