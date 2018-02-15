@@ -8,13 +8,16 @@ from nltk.stem.porter import *
 import time
 from datetime import datetime
 from multiprocessing import Process, Pipe
+import multiprocessing
+multiprocessing.freeze_support()
 import PII_data_processor
 from PIL import ImageTk, Image
 import webbrowser
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility. Be careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying."
-app_title = "IPA's PII Detector, Cleaner, and Recoder"
+intro_text_p3 = "*This version is customized for Windows 7. It has limited functionality. It is recommended you use the versions for Windows 10, OSX, or Linux if possible."
+app_title = "IPA's PII Detector, Cleaner, and Recoder - Windows 7*"
 
 
 class GUI:
@@ -22,7 +25,13 @@ class GUI:
         self.master = master
         # master.frame(self, borderwidth=4)
         master.title(app_title)
-        master.iconbitmap("IPA-Asia-Logo-Image.ico")
+        
+        if hasattr(sys, "_MEIPASS"):
+            icon_location = os.path.join(sys._MEIPASS, 'IPA-Asia-Logo-Image.ico')
+        else:
+            icon_location = 'IPA-Asia-Logo-Image.ico'
+
+        master.iconbitmap(icon_location)
         master.minsize(width=686, height=666)
 
 def input(the_message):
@@ -60,6 +69,7 @@ def file_select():
 
     dataset_path = askopenfilename()
 
+    tkinter_display('Scroll down for status updates.')
     tkinter_display('The script is running...')
 
     if __name__ == '__main__':
@@ -78,6 +88,19 @@ def file_select():
         import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
         dataset = import_results[0]
         dataset_path = import_results[1]
+        label_dict = import_results[2]
+        value_label_dict = import_results[3]
+
+        if sensitivity.get() == "Medium (Default)":
+            sensitivity_score = 3
+        elif sensitivity.get() == "Maximum":
+            sensitivity_score = 5
+        elif sensitivity.get() == "High":
+            sensitivity_score = 4
+        elif sensitivity.get() == "Low":
+            sensitivity_score = 2
+        elif sensitivity.get() == "Minimum":
+            sensitivity_score = 1
 
         
         ### Initialization of lists ###
@@ -98,8 +121,9 @@ def file_select():
         stemming_rl_results = tkinter_functions_conn.recv()
         restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
+        match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
         ### Word Match Stemming ###
-        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, datap_functions_conn, datap_messages_conn))
+        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
         p_wordm_stem.start()
 
         tkinter_display(tkinter_messages_conn.recv())
@@ -107,7 +131,7 @@ def file_select():
         identified_pii = tkinter_functions_conn.recv()
 
         ### Fuzzy Partial Stem Match ###
-        threshold = 0.75
+        threshold = 0.75 * sensitivity_score/3
         p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
         p_fpsm.start()
 
@@ -116,7 +140,8 @@ def file_select():
         identified_pii = tkinter_functions_conn.recv()
 
         ### Unique Entries Detection ###
-        min_entries_threshold = 0.5
+        min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
+
         p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
         p_uniques.start()
 
@@ -143,14 +168,14 @@ def PII_field_names():
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
-    tkinter_display('in next steps')
-
     p_dates = Process(target=PII_data_processor.date_detection, args=(identified_pii, dataset, datap_functions_conn, datap_messages_conn))
     p_dates.start()
 
     tkinter_display(tkinter_messages_conn.recv())
     tkinter_display(tkinter_messages_conn.recv())
     identified_pii = tkinter_functions_conn.recv()
+    identified_pii = set(identified_pii)
+    tkinter_display("The following fields appear to be PII: " + str(identified_pii)[1:-1])
 
     # reviewed_pii, removed_status = review_potential_pii(identified_pii, dataset)
     # dataset, recoded_fields = recode(dataset)
@@ -158,10 +183,7 @@ def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_con
     # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
     ### Exit Gracefully ###
-    # Consider adding option to restart script.
-    tkinter_display('Processing complete.')
-    Button(root, text="Run Again", command=restart_program).pack()
-
+    tkinter_display('Processing complete. You can use the menu option to restart or exit.')
 
 def restart_program():
     """Restarts the current program.
@@ -194,7 +216,7 @@ if __name__ == '__main__':
 
     # create more pulldown menus
     helpmenu = Menu(menubar, tearoff=0)
-    helpmenu.add_command(label="About", command=about)
+    helpmenu.add_command(label="About (v0.1.1)", command=about)
     helpmenu.add_command(label="- Detection Methods", command=methods)
     helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
     helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
@@ -238,14 +260,20 @@ if __name__ == '__main__':
 
     # Instructions
 
-    logo = ImageTk.PhotoImage(Image.open("ipa logo.jpg").resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    if hasattr(sys, "_MEIPASS"):
+        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
+    else:
+        logo_location = 'ipa logo.jpg'
+
+    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
     tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
-    ttk.Label(frame, text="Start Application:", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    ttk.Label(frame, text="Start Application: ", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
     ttk.Label(frame, text="Options:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -264,8 +292,8 @@ if __name__ == '__main__':
     # checkTemp.set(0)
     # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
 
-    checkTemp = 0
-    checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
+    #checkTemp = 1
+    #checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
 
     ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
     first_message = "Awaiting dataset selection."

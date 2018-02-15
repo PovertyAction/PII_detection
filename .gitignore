@@ -97,3 +97,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+setup.py
+
+*.exe
+
+Untitled.ipynb
+
+t.csv
+exe packaging

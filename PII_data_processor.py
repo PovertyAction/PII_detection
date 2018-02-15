@@ -75,7 +75,10 @@ def import_dataset(dataset_path_var, messages_pipe = None):
             except ValueError:
                 dataset = pd.read_stata(dataset_path, convert_categoricals=False)
             label_dict = pd.io.stata.StataReader(dataset_path).variable_labels()
-            value_label_dict = pd.io.stata.StataReader(dataset_path).value_labels()
+            try:
+                value_label_dict = pd.io.stata.StataReader(dataset_path).value_labels()
+            except AttributeError:
+                status_message = "No value labels detected. " # Not printed in the app, overwritten later.
         elif dataset_path_l.endswith(('xpt', '.sas7bdat')):
             dataset = pd.read_sas(dataset_path)
         elif dataset_path_l.endswith('vc'):
@@ -123,10 +126,11 @@ def initialize_lists(function_pipe = None):
     restricted_ipa = ['name', 'birth', 'phone', 'district', 'county', 'subcounty', 'parish', 'lc', 'village', 'community', 'address', 'gps', 'lat', 'lon', 'coord', 'location', 'house', 'compound', 'school', 'social', 'network', 'census', 'gender', 'sex', 'fax', 'email', 'ip', 'url', 'specify', 'comment']
 
     # Additions
-    restricted_expansions = ['name', 'insurance', 'medical', 'number', 'enumerator', 'rand', 'random', 'child_age', 'uid', 'latitude', 'longitude', 'coordinates', 'web', 'website', 'hh', 'address', 'age']
+    restricted_expansions = ['name', 'insurance', 'medical', 'number', 'enumerator', 'rand', 'random', 'child_age', 'uid', 'latitude', 'longitude', 'coordinates', 'web', 'website', 'hh', 'address', 'age', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'gps', 'resp_name', 'resp_phone', 'head_name', 'headname', 'respname', 'subvillage', 'survey_location']
     restricted_spanish = ['apellidos', 'beneficiario', 'casa', 'censo', 'ciudad', 'comentario / coment', 'comunidad', 'contacto', 'contar', 'coordenadas', 'coordenadas', 'data', 'direccion', 'direccion', 'distrito', 'distrito', 'edad', 'edad_nino', 'email', 'encuestador', 'encuestador', 'escuela', 'colegio ', 'esposa', 'esposo', 'fax', 'fecha_nacimiento', 'fecha_nacimiento', 'fecha_nacimiento', 'genero', 'gps', 'hogar', 'id', 'identificador', 'identidad', 'informacion', 'ip', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'plan', 'primer_nombre', 'random', 'red', 'salud', 'seguro', 'sexo', 'social', 'telefono', 'fono', 'tlfno', 'ubicacion', 'url', 'villa', 'web']
-    
-    restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions
+    restricted_swahili = ['jina', 'simu', 'mkoa', 'wilaya', 'kata', 'kijiji', 'kitongoji', 'vitongoji', 'nyumba', 'numba', 'namba', 'tarahe ya kuzaliwa', 'umri', 'jinsi', 'jinsia']
+
+    restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions + restricted_spanish + restricted_swahili
     restricted = list(set(restricted))
     
     smart_return([possible_pii, restricted], function_pipe)
@@ -152,7 +156,7 @@ def stem_restricted(restricted, function_pipe = None, messages_pipe = None):
 
 # In[5]:
 
-def word_match_stemming(possible_pii, restricted, dataset, stemmer, function_pipe = None, messages_pipe = None):
+def word_match_stemming(possible_pii, restricted, dataset, stemmer, label_dict, sensitivity = 3, function_pipe = None, messages_pipe = None):
 # Looks for matches between variable names, variable name stems, restricted words, and restricted word stems
     smart_print('The word match with stemming algorithm is now running.', messages_pipe)
     
@@ -160,6 +164,12 @@ def word_match_stemming(possible_pii, restricted, dataset, stemmer, function_pip
         for r in restricted:
             if v.lower() in r or stemmer.stem(v).lower() in r:
                 possible_pii.append(v)
+            if type(label_dict) is not bool:
+                words = label_dict[v].split(' ')
+                for i in words:
+                    if len(i) > sensitivity:
+                        if i.lower() in r or stemmer.stem(i).lower() in r:
+                            possible_pii.append(v)
     
     smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     
