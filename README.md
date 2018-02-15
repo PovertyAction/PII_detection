@@ -2,7 +2,7 @@
 # PII Application
 
 ### About
-This application identifies likely PII (personally identifiable information) in a dataset.
+This application identifies likely PII (personally identifiable information) in a dataset. To use, download the .exe from the latest release and follow the in-app directions.
 
 Ensuring the dataset is devoid of PII is ultimately still your responsibility.
 
