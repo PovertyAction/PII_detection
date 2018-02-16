@@ -4,6 +4,8 @@
 ### About
 This application identifies likely PII (personally identifiable information) in a dataset. To use, download the .exe from the latest release and follow the in-app directions.
 
+This tool is current listed as an alpha release because it is completely untested on IPA PII-containing field datasets due to a lack of data access.
+
 Ensuring the dataset is devoid of PII is ultimately still your responsibility.
 
 ### Help and Support
