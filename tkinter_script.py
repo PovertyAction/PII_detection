@@ -16,7 +16,7 @@ import webbrowser
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
-intro_text_p3 = "This is an alpha program. Please help improve it by filling out the survey on your experience using it (Help -> Provide Feedback)."
+intro_text_p3 = "This is an alpha program, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - Windows"
 
 
@@ -157,11 +157,11 @@ def about():
 def contact():
     webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
 
-def methods():
-    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection')
+def article():
+    webbrowser.open('https://povertyaction.force.com/support/s/article/IPAs-Personally-Identifiable-Information-Application')
 
 def comparison():
-    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection')
+    webbrowser.open('https://ipastorage.box.com/s/35jbvflnt6e4ev868290c3hygubofz2r')
 
 def PII_field_names():
     webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
@@ -219,9 +219,9 @@ if __name__ == '__main__':
 
     # create more pulldown menus
     helpmenu = Menu(menubar, tearoff=0)
-    helpmenu.add_command(label="About (v0.1.1)", command=about)
-    #helpmenu.add_command(label="- Detection Methods", command=methods)
-    #helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
+    helpmenu.add_command(label="About (v0.1.2)", command=about)
+    helpmenu.add_command(label="- Knowledge Article", command=article)
+    helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
     #helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
     #helpmenu.add_command(label="- Data Security", command=PII_field_names)
     helpmenu.add_separator()
