@@ -54,109 +54,108 @@ def tkinter_display(the_message):
     ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     frame.update()
 
+def get_sensitivity_score():
+    if sensitivity.get() == "Medium (Default)":
+        sensitivity_score = 3
+    elif sensitivity.get() == "Maximum":
+        sensitivity_score = 5
+    elif sensitivity.get() == "High":
+        sensitivity_score = 4
+    elif sensitivity.get() == "Low":
+        sensitivity_score = 2
+    elif sensitivity.get() == "Minimum":
+        sensitivity_score = 1
+
+    return sensitivity_score
+
 def file_select():
 
     dataset_path = askopenfilename()
 
+    #If no file was selected, do nothing
+    if not dataset_path:
+        return
+
     tkinter_display('Scroll down for status updates.')
     tkinter_display('The script is running...')
 
-    if __name__ == '__main__':
+    #Commenting this if statement in the meantime, i dont know why it was here
+    # if __name__ == '__main__':
 
-        tkinter_functions_conn, datap_functions_conn = Pipe()
-        tkinter_messages_conn, datap_messages_conn = Pipe()
+    #Two channels of communication between backend and frontend, one for functions results, another for messages
+    tkinter_functions_conn, datap_functions_conn = Pipe()
+    tkinter_messages_conn, datap_messages_conn = Pipe()
 
-        ### Importing dataset and printing messages ###
-        tkinter_functions_conn.send(dataset_path)
+    ### Importing dataset and printing messages ###
+    
+    #Send dataset url to backend
+    tkinter_functions_conn.send(dataset_path)
 
-        p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
-        p_import.start()
+    #Start import_dataset process in backend
+    p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
+    p_import.start()
 
-        tkinter_display(tkinter_messages_conn.recv())
+    #Display messages recieved
+    tkinter_display(tkinter_messages_conn.recv())
 
-        import_results = tkinter_functions_conn.recv()  # dataset, dataset_path, label_dict, value_label_dict
-        dataset = import_results[0]
-        dataset_path = import_results[1]
-        label_dict = import_results[2]
-        value_label_dict = import_results[3]
+    #Get functions messages
+    import_results = tkinter_functions_conn.recv()
+    dataset = import_results[0]
+    dataset_path = import_results[1]
+    label_dict = import_results[2]
+    value_label_dict = import_results[3]
 
-        if sensitivity.get() == "Medium (Default)":
-            sensitivity_score = 3
-        elif sensitivity.get() == "Maximum":
-            sensitivity_score = 5
-        elif sensitivity.get() == "High":
-            sensitivity_score = 4
-        elif sensitivity.get() == "Low":
-            sensitivity_score = 2
-        elif sensitivity.get() == "Minimum":
-            sensitivity_score = 1
+    sensitivity_score = get_sensitivity_score()
+    
+    ### Initialization of lists ###
+    p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
+    p_initialize_vars.start()
 
-        
-        ### Initialization of lists ###
-        p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
-        p_initialize_vars.start()
+    initialize_results = tkinter_functions_conn.recv()
+    identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
 
-        initialize_results = tkinter_functions_conn.recv()
-        identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
+    ### Stemming of restricted list ###
+    p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
+    p_stemming_rl.start()
 
-        ### Stemming of restricted list ###
-        p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
-        p_stemming_rl.start()
+    tkinter_display(tkinter_messages_conn.recv())
 
-        tkinter_display(tkinter_messages_conn.recv())
+    time.sleep(2)
 
-        time.sleep(2)
+    stemming_rl_results = tkinter_functions_conn.recv()
+    restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
 
-        stemming_rl_results = tkinter_functions_conn.recv()
-        restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+    match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
+    ### Word Match Stemming ###
+    p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
+    p_wordm_stem.start()
 
-        match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
-        ### Word Match Stemming ###
-        p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
-        p_wordm_stem.start()
+    tkinter_display(tkinter_messages_conn.recv())
+    tkinter_display(tkinter_messages_conn.recv())
+    identified_pii = tkinter_functions_conn.recv()
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+    ### Fuzzy Partial Stem Match ###
+    threshold = 0.75 * sensitivity_score/3
+    p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
+    p_fpsm.start()
 
-        ### Fuzzy Partial Stem Match ###
-        threshold = 0.75 * sensitivity_score/3
-        p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
-        p_fpsm.start()
+    tkinter_display(tkinter_messages_conn.recv())
+    tkinter_display(tkinter_messages_conn.recv())
+    identified_pii = tkinter_functions_conn.recv()
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+    ### Unique Entries Detection ###
+    min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
 
-        ### Unique Entries Detection ###
-        min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
+    p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
+    p_uniques.start()
 
-        p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
-        p_uniques.start()
+    tkinter_display(tkinter_messages_conn.recv())
+    tkinter_display(tkinter_messages_conn.recv())
+    identified_pii = tkinter_functions_conn.recv()
 
-        tkinter_display(tkinter_messages_conn.recv())
-        tkinter_display(tkinter_messages_conn.recv())
-        identified_pii = tkinter_functions_conn.recv()
+    root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
-        root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
-def about():
-    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection') 
-
-def contact():
-    webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
-
-def article():
-    webbrowser.open('https://povertyaction.force.com/support/s/article/IPAs-Personally-Identifiable-Information-Application')
-
-def comparison():
-    webbrowser.open('https://ipastorage.box.com/s/35jbvflnt6e4ev868290c3hygubofz2r')
-
-def PII_field_names():
-    webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
-
-def survey():
-    webbrowser.open('https://goo.gl/forms/YYOxXJSKBpp60ol32')
 
 def next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn):
     ### Date Detection ###
@@ -185,7 +184,6 @@ def restart_program():
     python = sys.executable
     os.execl(python, python, * sys.argv)
 
-
 def window_setup(master):
 
     #Add window title
@@ -203,9 +201,27 @@ def window_setup(master):
     master.minsize(width=window_width, height=window_height)
 
     #Prevent window from being resized
-    master.resizable(False, False) 
+    master.resizable(False, False)
 
 def menubar_setup(root):
+
+    def about():
+        webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection') 
+
+    def contact():
+        webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
+
+    def article():
+        webbrowser.open('https://povertyaction.force.com/support/s/article/IPAs-Personally-Identifiable-Information-Application')
+
+    def comparison():
+        webbrowser.open('https://ipastorage.box.com/s/35jbvflnt6e4ev868290c3hygubofz2r')
+
+    def PII_field_names():
+        webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
+
+    def survey():
+        webbrowser.open('https://goo.gl/forms/YYOxXJSKBpp60ol32')
 
     menubar = tkinter.Menu(root)
 
@@ -258,7 +274,38 @@ def add_scrollbar(root, canvas, frame):
     canvas.configure(yscrollcommand=vsb.set)
     vsb.pack(side="right", fill="y")
 
-def add_content_to_frame(frame):
+
+if __name__ == '__main__':
+
+    # Create GUI window
+    root = Tk()  
+
+    window_setup(root)  
+
+    menubar_setup(root)
+    
+    window_style_setup(root)
+
+    # Create canvas where app will displayed
+    canvas = Canvas(root)
+    canvas.pack(side="left", fill="both", expand=True)
+
+    # Create frame inside canvas
+    frame = Frame(canvas, width=window_width, height=window_height, bg="white")
+    frame.pack(side="left", fill="both", expand=True)
+    # frame.place(x=0, y=0)
+    canvas.create_window(0,0, window=frame, anchor="nw")
+
+    add_scrollbar(root, canvas, frame)
+
+    #Add logo
+    if hasattr(sys, "_MEIPASS"):    
+        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
+    else:
+        logo_location = 'ipa logo.jpg'
+    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+
     #Add intro text
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
@@ -281,37 +328,6 @@ def add_content_to_frame(frame):
     first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
     ttk.Label(frame, text=first_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
-if __name__ == '__main__':
-
-    # Create GUI window
-    root = Tk()  
-
-    window_setup(root)  
-
-    menubar_setup(root)
-    
-    window_style_setup(root)
-
-    # Create canvas where app will displayed
-    canvas = Canvas(root)
-    canvas.pack(side="left", fill="both", expand=True)
-
-    # Create frame inside canvas
-    frame = Frame(canvas, width=window_width, height=window_height, bg="white")
-    frame.place(x=0, y=0)
-    canvas.create_window((0,0), window=frame, anchor="nw")
-
-    add_scrollbar(root, canvas, frame)
-
-    #Add logo
-    if hasattr(sys, "_MEIPASS"):    
-        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
-    else:
-        logo_location = 'ipa logo.jpg'
-    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
-
-    add_content_to_frame(frame)
 
     # Constantly looping event listener
     root.mainloop()  
