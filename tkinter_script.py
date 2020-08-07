@@ -20,22 +20,8 @@ intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your 
 intro_text_p3 = "This is an alpha program, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - Windows"
 
-
-class GUI:
-    def __init__(self, master):
-        self.master = master
-        # master.frame(self, borderwidth=4)
-        master.title(app_title)
-        
-        if hasattr(sys, "_MEIPASS"):
-            icon_location = os.path.join(sys._MEIPASS, 'IPA-Asia-Logo-Image.ico')
-        else:
-            icon_location = 'app.ico'
-
-        imgicon = ImageTk.PhotoImage(Image.open(icon_location))
-        master.tk.call('wm', 'iconphoto', master._w, imgicon) 
-
-        master.minsize(width=686, height=666)
+window_width = 686
+window_height = 666
 
 def input(the_message):
     try:
@@ -200,28 +186,43 @@ def restart_program():
     os.execl(python, python, * sys.argv)
 
 
-if __name__ == '__main__':
+def window_setup(master):
 
-    # GUI
+    #Add window title
+    master.title(app_title)
+    
+    #Add window icon
+    if hasattr(sys, "_MEIPASS"):
+        icon_location = os.path.join(sys._MEIPASS, 'app.ico')
+    else:
+        icon_location = 'app.ico'
+    imgicon = ImageTk.PhotoImage(Image.open(icon_location))
+    master.tk.call('wm', 'iconphoto', master._w, imgicon) 
 
-    root = Tk()  # creates GUI window
+    #Define window size
+    master.minsize(width=window_width, height=window_height)
 
+    #Prevent window from being resized
+    master.resizable(False, False) 
 
-    my_gui = GUI(root)  # runs code in class GUI
+def menubar_setup(root):
 
-    # Styles
-    menubar = tkinter.Menu(root)#.pack()
+    menubar = tkinter.Menu(root)
 
-    # create a pulldown menu, and add it to the menu bar
+    # Create file menu pulldown
     filemenu = Menu(menubar, tearoff=0)
-    filemenu.add_command(label="Restart", command=restart_program)
-    #filemenu.add_command(label="Save", command=hello)
-    filemenu.add_separator()
-    filemenu.add_command(label="Exit", command=root.quit)
     menubar.add_cascade(label="File", menu=filemenu)
 
-    # create more pulldown menus
+    # Add commands to filemenu menu
+    filemenu.add_command(label="Restart", command=restart_program)
+    filemenu.add_separator()
+    filemenu.add_command(label="Exit", command=root.quit)
+    
+    # Create help menu pulldown 
     helpmenu = Menu(menubar, tearoff=0)
+    menubar.add_cascade(label="Help", menu=helpmenu)
+    
+    # Add commands to help menu
     helpmenu.add_command(label="About (v0.1.2)", command=about)
     helpmenu.add_command(label="- Knowledge Article", command=article)
     helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
@@ -232,92 +233,85 @@ if __name__ == '__main__':
     helpmenu.add_separator()
     #helpmenu.add_command(label="Contribute", command=contact)
     helpmenu.add_command(label="Provide Feedback", command=survey)
-    menubar.add_cascade(label="Help", menu=helpmenu)
 
-    root.configure(background='light gray', menu=menubar)
+    # Add menu bar to window
+    root.configure(menu=menubar)
+
+def window_style_setup(root):
     root.style = ttk.Style()
-    # root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+    # # root.style.theme_use("clam")  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
     root.style.configure('my.TButton', font=("Calibri", 11, 'bold'), background='white')
     root.style.configure('my.TLabel', background='white')
     root.style.configure('my.TCheckbutton', background='white')
     root.style.configure('my.TMenubutton', background='white')
 
-    root.resizable(False, False) # prevents window from being resized
-
-    # Display
-
+def add_scrollbar(root, canvas, frame):
+    
+    #Configure frame to recognize scrollregion
     def onFrameConfigure(canvas):
         '''Reset the scroll region to encompass the inner frame'''
         canvas.configure(scrollregion=canvas.bbox("all"))
-
-    canvas = Canvas(root)
-    frame = Frame(canvas, width=606, height=636, bg="white")
-    frame.place(x=30, y=30)
-    #frame.pack_propagate(False)
-    #frame.pack()
-
-    vsb = Scrollbar(root, orient="vertical", command=canvas.yview)
-    canvas.configure(yscrollcommand=vsb.set)
-
-    vsb.pack(side="right", fill="y")
-    canvas.pack(side="left", fill="both", expand=True)
-    canvas.create_window((35,30), window=frame, anchor="nw")
-
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
-    # Instructions
+    #Create scrollbar
+    vsb = Scrollbar(root, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=vsb.set)
+    vsb.pack(side="right", fill="y")
 
-    if hasattr(sys, "_MEIPASS"):
-        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
-    else:
-        logo_location = 'ipa logo.jpg'
-
-    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
-
+def add_content_to_frame(frame):
+    #Add intro text
     ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
+    #Labels and buttoms to run app
     ttk.Label(frame, text="Start Application: ", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-
     ttk.Label(frame, text="Options:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    # Dropdown
-
+    # Sensitivity dropdown
     ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
-
     sensitivity = StringVar(frame)
     w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
-    # A combobox may be a better choice
-    
-    # Checkbox
 
-    # checkTemp = IntVar() #IntVar only necessary if need app to change upon being checked
-    # checkTemp.set(0)
-    # checkCmd.get() == 0 # tests if unchecked, = 1 if checked
-
-    #checkTemp = 1
-    #checkBox1 = ttk.Checkbutton(frame, variable=checkTemp, onvalue=1, offvalue=0, text="Output Session Log", style='my.TCheckbutton').pack(anchor='nw', padx=(30, 0), pady=(10,0), fill=X)
-
+    # Status
     ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
     first_message = "Awaiting dataset selection."
     first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
     ttk.Label(frame, text=first_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
-    # Listener
+if __name__ == '__main__':
 
-    root.mainloop()  # constantly looping event listener
+    # Create GUI window
+    root = Tk()  
 
-# Extra code
+    window_setup(root)  
 
-#     ### Implement this for improvements to formatting
-#     # text = tk.Text(frame, height=1, font="Helvetica 12")
-#     # text.tag_configure("bold", font="Helvetica 12 bold")
+    menubar_setup(root)
+    
+    window_style_setup(root)
 
-#     # text.insert("end", the_message)
-#     # text.insert("end", "world", "bold")
-#     # text.configure(state="disabled")
-#     # text.pack()
+    # Create canvas where app will displayed
+    canvas = Canvas(root)
+    canvas.pack(side="left", fill="both", expand=True)
+
+    # Create frame inside canvas
+    frame = Frame(canvas, width=window_width, height=window_height, bg="white")
+    frame.place(x=0, y=0)
+    canvas.create_window((0,0), window=frame, anchor="nw")
+
+    add_scrollbar(root, canvas, frame)
+
+    #Add logo
+    if hasattr(sys, "_MEIPASS"):    
+        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
+    else:
+        logo_location = 'ipa logo.jpg'
+    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+
+    add_content_to_frame(frame)
+
+    # Constantly looping event listener
+    root.mainloop()  
