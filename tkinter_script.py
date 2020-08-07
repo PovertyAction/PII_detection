@@ -13,6 +13,7 @@ multiprocessing.freeze_support()
 import PII_data_processor
 from PIL import ImageTk, Image
 import webbrowser
+import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
@@ -29,9 +30,11 @@ class GUI:
         if hasattr(sys, "_MEIPASS"):
             icon_location = os.path.join(sys._MEIPASS, 'IPA-Asia-Logo-Image.ico')
         else:
-            icon_location = 'IPA-Asia-Logo-Image.ico'
+            icon_location = 'app.ico'
 
-        master.iconbitmap(icon_location)
+        imgicon = ImageTk.PhotoImage(Image.open(icon_location))
+        master.tk.call('wm', 'iconphoto', master._w, imgicon) 
+
         master.minsize(width=686, height=666)
 
 def input(the_message):
