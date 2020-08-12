@@ -1,36 +1,15 @@
-
-# coding: utf-8
-
-# # Instructions
-# 
-# 1. This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset.
-# 
-# 2. If running it in Jupyter Notebook, press 'shift + return' or 'shift + enter' to navigate through the script and fill in the prompts when asked.
-# 
-# 3. If you have any errors or feedback, contact jjacobson@poverty-action.org or researchsupport@poverty-action.org
-# 
-# <b>This is a tool to help you identify PII, but ensuring the dataset is devoid of PII is ultimately still your responsibility.</b> Be extremely careful with potential identifiers, especially geographic, because they can sometimes be combined with other variables to become identifying.
-# 
-# (If this script is loaded via Jupyter Notebook, despite loading in the browser, it is running locally on your machine and will continue to run fine regardless of internet access.)
-
-# # Import and Set-up
-
-# In[1]:
-
-#from __main__ import *
-#from tkinter_script import tkinter_display
-
-import nltk
-import pandas as pd
-import numpy as np
-import os
-from nltk.stem.porter import *
-from tqdm import tqdm
-from IPython.display import display, HTML
-from IPython.core.interactiveshell import InteractiveShell
-InteractiveShell.ast_node_interactivity = "all"
-import time
 import restricted_words
+import pandas as pd
+
+# import nltk
+# import numpy as np
+# import os
+# from nltk.stem.porter import *
+# from tqdm import tqdm
+# from IPython.display import display, HTML
+# from IPython.core.interactiveshell import InteractiveShell
+# InteractiveShell.ast_node_interactivity = "all"
+# import time
 
 def smart_print(the_message, messages_pipe = None):
     if __name__ == "__main__":
@@ -47,15 +26,8 @@ def smart_return(to_return, function_pipe = None):
         else:
             return to_return
 
-# This should be able to use variables specified in my original file
-def import_dataset(dataset_path_var, messages_pipe = None):
-    # returns dataset
+def import_dataset(dataset_path):
     
-    if __name__ != "__main__":
-        dataset_path = dataset_path_var.recv()
-    else:
-        dataset_path = dataset_path_var
-
     dataset, label_dict, value_label_dict = False, False, False
     raise_error = False
     status_message = False
@@ -94,18 +66,17 @@ def import_dataset(dataset_path_var, messages_pipe = None):
     except (FileNotFoundError, Exception):
         if status_message is False:
             status_message = '**ERROR**: This path appears to be invalid. If your folders or filename contain colons or commas, try renaming them or moving the file to a different location.'
-        smart_print(status_message, messages_pipe)
         raise
 
-    status_message = '**SUCCESS**: The dataset has been read successfully.'
-    smart_print(status_message, messages_pipe)
+    if (status_message):
+        print("There was an error")
+        print(status_message)
+        return (False, status_message)
 
-    # ADJUST FOR THIS ON THE JUPYTER SIDE
+    print('The dataset has been read successfully.')
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
+    return (True, dataset_read_return)
 
-    smart_return(dataset_read_return, dataset_path_var)
-
-# In[3]:
 
 def initialize_lists(function_pipe = None):
 
@@ -368,6 +339,35 @@ def review_potential_pii(possible_pii, dataset):
     
     return confirmed_pii, removed
 
+def create_anonymized_dataset(pii_candidate_to_action):
+    print(pii_candidate_to_action)
+    return True
+
+def read_file_and_find_piis(dataset_path):
+    #Read file
+    import_status, import_result = import_dataset(dataset_path)    
+    if import_status is False:
+        return import_status, import_result
+    dataset, dataset_path, label_dict, value_label_dict = import_result
+
+    #Find piis
+
+    # identified_pii, restricted_vars = initialize_lists() 
+    # restricted_vars, stemmer = stem_restricted(restricted_vars)
+
+    # identified_pii = word_match_stemming(identified_pii, restricted_vars) 
+    # identified_pii = fuzzy_partial_stem_match(identified_pii, restricted_vars, threshold = 0.75) 
+    # identified_pii = unique_entries(identified_pii, min_entries_threshold = 0.5) 
+    # identified_pii = date_detection(identified_pii) 
+
+    # reviewed_pii, removed_status = review_potential_pii(identified_pii)
+    # dataset, recoded_fields = recode(dataset)
+    # path, export_status = export(dataset)
+    # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
+
+
+
+    return True, ['firt_pii', 'second_pii', 'third_pii']
 
 # In[12]:
 

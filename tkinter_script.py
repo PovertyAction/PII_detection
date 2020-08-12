@@ -1,19 +1,26 @@
 # Imports and Set-up
-from tkinter import *
-from tkinter.filedialog import askopenfilename
-import tkinter
+
+import tkinter as tk
 from tkinter import ttk
-import tkinter.scrolledtext as tkst
-from nltk.stem.porter import *
-import time
-from datetime import datetime
-from multiprocessing import Process, Pipe
-import multiprocessing
-multiprocessing.freeze_support()
-import PII_data_processor
+from tkinter.filedialog import askopenfilename
+
 from PIL import ImageTk, Image
-import webbrowser
-import os
+
+import PII_data_processor
+
+# from tkinter import *
+
+# from tkinter import ttk
+# import tkinter.scrolledtext as tkst
+# from nltk.stem.porter import *
+# import time
+# from datetime import datetime
+# from multiprocessing import Process, Pipe
+# import multiprocessing
+# multiprocessing.freeze_support()
+
+# import webbrowser
+# import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
@@ -21,11 +28,14 @@ intro_text_p3 = "This is an alpha program, built without access to datasets cont
 app_title = "IPA's PII Detector - Windows"
 
 window_width = 686
-window_height = 666
+window_height = 1066
+
+#Maps pii to action to do with them
+pii_candidates_to_dropdown_element = {}
 
 def input(the_message):
     try:
-        ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+        ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
         def evaluate(event=None):
             pass
@@ -49,10 +59,28 @@ def input(the_message):
     return ('No')
 
 
-def tkinter_display(the_message):
-    the_message = datetime.now().strftime("%H:%M:%S") + '     ' + the_message
-    ttk.Label(frame, text=the_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+def tkinter_display_title(title):
+    ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     frame.update()
+
+def tkinter_display(the_message):
+    # the_message = datetime.now().strftime("%H:%M:%S") + '     ' + the_message
+    ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    frame.update()
+
+def tkinter_display_pii_candidate(pii_candidate):
+    #Create a frame for the pii label and action dropdown
+    pii_frame = tk.Frame(master=frame, bg="white")
+    pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+
+    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)#pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    
+    dropdown = tk.StringVar(pii_frame)
+    w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=0, column = 1)#.pack(anchor='nw', padx=(30,0))
+
+    frame.update()
+
+    return dropdown
 
 def get_sensitivity_score():
     if sensitivity.get() == "Medium (Default)":
@@ -68,7 +96,16 @@ def get_sensitivity_score():
 
     return sensitivity_score
 
-def file_select():
+def create_anonymized_dataset():
+    # we create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
+    pii_candidates_to_action = {}
+    for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
+        pii_candidates_to_action[pii] = dropdown_elem.get()
+    tkinter_display("Createing new dataset...")
+    success = PII_data_processor.create_anonymized_dataset(pii_candidates_to_action)
+    tkinter_display("The new dataset has been created and saved")
+
+def read_file_and_find_piis():
 
     dataset_path = askopenfilename()
 
@@ -76,84 +113,100 @@ def file_select():
     if not dataset_path:
         return
 
-    tkinter_display('Scroll down for status updates.')
-    tkinter_display('The script is running...')
-
-    #Commenting this if statement in the meantime, i dont know why it was here
-    # if __name__ == '__main__':
-
-    #Two channels of communication between backend and frontend, one for functions results, another for messages
-    tkinter_functions_conn, datap_functions_conn = Pipe()
-    tkinter_messages_conn, datap_messages_conn = Pipe()
-
-    ### Importing dataset and printing messages ###
+    tkinter_display('Reding dataset and looking for PII candidates...')
+    reading_status, pii_candidates_or_message = PII_data_processor.read_file_and_find_piis(dataset_path)
     
-    #Send dataset url to backend
-    tkinter_functions_conn.send(dataset_path)
+    if(reading_status is False):
+        error_message = pii_candidates_or_message
+        tkinter_display(error_message)
+        return
+    else:
+        pii_candidates = pii_candidates_or_message
 
-    #Start import_dataset process in backend
-    p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
-    p_import.start()
-
-    #Display messages recieved
-    tkinter_display(tkinter_messages_conn.recv())
-
-    #Get functions messages
-    import_results = tkinter_functions_conn.recv()
-    dataset = import_results[0]
-    dataset_path = import_results[1]
-    label_dict = import_results[2]
-    value_label_dict = import_results[3]
-
-    sensitivity_score = get_sensitivity_score()
+    tkinter_display_title('PII candidates:')
+    tkinter_display('For each select an action and then press "Create anonymized dataset" butoom')
     
-    ### Initialization of lists ###
-    p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
-    p_initialize_vars.start()
+    #Display a label for each pii candidate and save their action dropdown element in dictionary for future reference
+    for pii_candidate in pii_candidates:    
+        pii_dropdown_element = tkinter_display_pii_candidate(pii_candidate)
+        pii_candidates_to_dropdown_element[pii_candidate] = pii_dropdown_element
 
-    initialize_results = tkinter_functions_conn.recv()
-    identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
+    #Show a create anonymized dataframe buttom
+    ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
-    ### Stemming of restricted list ###
-    p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
-    p_stemming_rl.start()
 
-    tkinter_display(tkinter_messages_conn.recv())
+    # #Two channels of communication between backend and frontend, one for functions results, another for messages
+    # tkinter_functions_conn, datap_functions_conn = Pipe()
+    # tkinter_messages_conn, datap_messages_conn = Pipe()
 
-    time.sleep(2)
+    # ### Importing dataset and printing messages ###
+    
+    # #Send dataset url to backend
+    # tkinter_functions_conn.send(dataset_path)
 
-    stemming_rl_results = tkinter_functions_conn.recv()
-    restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+    # #Start import_dataset process in backend
+    # p_import = Process(target=PII_data_processor.import_dataset, args=(datap_functions_conn, datap_messages_conn))
+    # p_import.start()
 
-    match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
-    ### Word Match Stemming ###
-    p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
-    p_wordm_stem.start()
+    # #Display messages recieved
+    # tkinter_display(tkinter_messages_conn.recv())
 
-    tkinter_display(tkinter_messages_conn.recv())
-    tkinter_display(tkinter_messages_conn.recv())
-    identified_pii = tkinter_functions_conn.recv()
+    # #Get functions messages
+    # import_results = tkinter_functions_conn.recv()
+    # dataset = import_results[0]
+    # dataset_path = import_results[1]
+    # label_dict = import_results[2]
+    # value_label_dict = import_results[3]
 
-    ### Fuzzy Partial Stem Match ###
-    threshold = 0.75 * sensitivity_score/3
-    p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
-    p_fpsm.start()
+    # sensitivity_score = get_sensitivity_score()
+    
+    # ### Initialization of lists ###
+    # p_initialize_vars = Process(target=PII_data_processor.initialize_lists, args=(datap_functions_conn, ))
+    # p_initialize_vars.start()
 
-    tkinter_display(tkinter_messages_conn.recv())
-    tkinter_display(tkinter_messages_conn.recv())
-    identified_pii = tkinter_functions_conn.recv()
+    # initialize_results = tkinter_functions_conn.recv()
+    # identified_pii, restricted_vars = initialize_results[0], initialize_results[1]
 
-    ### Unique Entries Detection ###
-    min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
+    # ### Stemming of restricted list ###
+    # p_stemming_rl = Process(target=PII_data_processor.stem_restricted, args=(restricted_vars, datap_functions_conn, datap_messages_conn))
+    # p_stemming_rl.start()
 
-    p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
-    p_uniques.start()
+    # tkinter_display(tkinter_messages_conn.recv())
 
-    tkinter_display(tkinter_messages_conn.recv())
-    tkinter_display(tkinter_messages_conn.recv())
-    identified_pii = tkinter_functions_conn.recv()
+    # time.sleep(2)
 
-    root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
+    # stemming_rl_results = tkinter_functions_conn.recv()
+    # restricted_vars, stemmer = stemming_rl_results[0], stemming_rl_results[1]
+
+    # match_sensitivity = 6 - sensitivity_score # Consider making 'minimum' result in no Stata variable label search
+    # ### Word Match Stemming ###
+    # p_wordm_stem = Process(target=PII_data_processor.word_match_stemming, args=(identified_pii, restricted_vars, dataset, stemmer, label_dict, match_sensitivity, datap_functions_conn, datap_messages_conn))
+    # p_wordm_stem.start()
+
+    # tkinter_display(tkinter_messages_conn.recv())
+    # tkinter_display(tkinter_messages_conn.recv())
+    # identified_pii = tkinter_functions_conn.recv()
+
+    # ### Fuzzy Partial Stem Match ###
+    # threshold = 0.75 * sensitivity_score/3
+    # p_fpsm = Process(target=PII_data_processor.fuzzy_partial_stem_match, args=(identified_pii, restricted_vars, dataset, stemmer, threshold, datap_functions_conn, datap_messages_conn))
+    # p_fpsm.start()
+
+    # tkinter_display(tkinter_messages_conn.recv())
+    # tkinter_display(tkinter_messages_conn.recv())
+    # identified_pii = tkinter_functions_conn.recv()
+
+    # ### Unique Entries Detection ###
+    # min_entries_threshold = -1*sensitivity_score/5 + 1.15 #(1: 0.95, 2: 0.75, 3: 0.55, 4: 0.35, 5: 0.15)
+
+    # p_uniques = Process(target=PII_data_processor.unique_entries, args=(identified_pii, dataset, min_entries_threshold, datap_functions_conn, datap_messages_conn))
+    # p_uniques.start()
+
+    # tkinter_display(tkinter_messages_conn.recv())
+    # tkinter_display(tkinter_messages_conn.recv())
+    # identified_pii = tkinter_functions_conn.recv()
+
+    # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
 
 
@@ -181,8 +234,8 @@ def restart_program():
     Note: this function does not return. Any cleanup action (like
     saving data) must be done before calling this function."""
     import os
-    python = sys.executable
-    os.execl(python, python, * sys.argv)
+    python = tk.sys.executable
+    os.execl(python, python, * tk.sys.argv)
 
 def window_setup(master):
 
@@ -190,7 +243,7 @@ def window_setup(master):
     master.title(app_title)
     
     #Add window icon
-    if hasattr(sys, "_MEIPASS"):
+    if hasattr(tk.sys, "_MEIPASS"):
         icon_location = os.path.join(sys._MEIPASS, 'app.ico')
     else:
         icon_location = 'app.ico'
@@ -223,10 +276,10 @@ def menubar_setup(root):
     def survey():
         webbrowser.open('https://goo.gl/forms/YYOxXJSKBpp60ol32')
 
-    menubar = tkinter.Menu(root)
+    menubar = tk.Menu(root)
 
     # Create file menu pulldown
-    filemenu = Menu(menubar, tearoff=0)
+    filemenu = tk.Menu(menubar, tearoff=0)
     menubar.add_cascade(label="File", menu=filemenu)
 
     # Add commands to filemenu menu
@@ -235,7 +288,7 @@ def menubar_setup(root):
     filemenu.add_command(label="Exit", command=root.quit)
     
     # Create help menu pulldown 
-    helpmenu = Menu(menubar, tearoff=0)
+    helpmenu = tk.Menu(menubar, tearoff=0)
     menubar.add_cascade(label="Help", menu=helpmenu)
     
     # Add commands to help menu
@@ -270,7 +323,7 @@ def add_scrollbar(root, canvas, frame):
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
     #Create scrollbar
-    vsb = Scrollbar(root, orient="vertical", command=canvas.yview)
+    vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
     canvas.configure(yscrollcommand=vsb.set)
     vsb.pack(side="right", fill="y")
 
@@ -278,7 +331,7 @@ def add_scrollbar(root, canvas, frame):
 if __name__ == '__main__':
 
     # Create GUI window
-    root = Tk()  
+    root = tk.Tk()  
 
     window_setup(root)  
 
@@ -287,11 +340,12 @@ if __name__ == '__main__':
     window_style_setup(root)
 
     # Create canvas where app will displayed
-    canvas = Canvas(root)
+
+    canvas = tk.Canvas(root)
     canvas.pack(side="left", fill="both", expand=True)
 
     # Create frame inside canvas
-    frame = Frame(canvas, width=window_width, height=window_height, bg="white")
+    frame = tk.Frame(canvas, width=window_width, height=window_height, bg="white")
     frame.pack(side="left", fill="both", expand=True)
     # frame.place(x=0, y=0)
     canvas.create_window(0,0, window=frame, anchor="nw")
@@ -299,34 +353,38 @@ if __name__ == '__main__':
     add_scrollbar(root, canvas, frame)
 
     #Add logo
-    if hasattr(sys, "_MEIPASS"):    
+    if hasattr(tk.sys, "_MEIPASS"):    
         logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
     else:
         logo_location = 'ipa logo.jpg'
     logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tkinter.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+    ttk.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 
     #Add intro text
-    ttk.Label(frame, text=app_title, wraplength=536, justify=LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
-    ttk.Label(frame, text=intro_text, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
+    ttk.Label(frame, text=intro_text, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
     #Labels and buttoms to run app
-    ttk.Label(frame, text="Start Application: ", wraplength=546, justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-    ttk.Button(frame, text="Select Dataset", command=file_select, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
-    ttk.Label(frame, text="Options:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
 
-    # Sensitivity dropdown
-    ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
-    sensitivity = StringVar(frame)
-    w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
 
-    # Status
-    ttk.Label(frame, text="Status:", justify=LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
-    first_message = "Awaiting dataset selection."
-    first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
-    ttk.Label(frame, text=first_message, wraplength=546, justify=LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+
+
+    # ttk.Label(frame, text="Options:", justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    # # Sensitivity dropdown
+    # ttk.Label(frame, text="Select Detection Sensitivity:", justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
+    # sensitivity = StringVar(frame)
+    # w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
+
+    # # Status
+    # ttk.Label(frame, text="Status:", justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
+    # first_message = "Awaiting dataset selection."
+    # first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
+    # ttk.Label(frame, text=first_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
 
     # Constantly looping event listener
