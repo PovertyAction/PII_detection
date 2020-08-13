@@ -315,49 +315,29 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
 
 # In[10]:
 
-def date_detection(possible_pii, dataset, function_pipe = None, messages_pipe = None):
+def date_detection(dataset):
     
-    smart_print('The date detection algorithm is now running.', messages_pipe)
+    #Check dates format    
+    possible_pii = list(dataset.select_dtypes(include=['datetime']).columns)
     
-    possible_pii = possible_pii + list(dataset.select_dtypes(include=['datetime']).columns)
-    
-    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
-    
-    smart_return(possible_pii, function_pipe)
+    #Check other formats
+
+    return possible_pii
 
 
-# # Review PII, Confirm & Clean, Recode, and Export
 
-# In[11]:
-
-#Reviewing and confirming PII
-def review_potential_pii(possible_pii, dataset):
-    #first does the GUI approach, and then does the command line / notebook approach
-    confirmed_pii = []
-    removed = False
-    
-    try:
-        Label(frame, text="Your Expression:").pack()
-    
-    except NameError:
-        if input('There are ' + str(len(set(possible_pii))) + ' variables that may contain PII. Would you like to review them and decide which to delete?') in yes_strings:
-            count = 0
-            for v in set(possible_pii):
-                count += 1
-                display(dataset[v].dropna()[:8])
-                if input('Does this look like PII? (' + str(len(set(possible_pii))-count) + ' variables left to review.)  ') in yes_strings:
-                    confirmed_pii.append(v)
-
-        # Option to remove PII
-        if input('Would you like to remove the columns identified as PII?   ') in yes_strings:
-            for pii in confirmed_pii:
-                del dataset[pii]
-            removed = True
-    
-    return confirmed_pii, removed
 
 def create_anonymized_dataset(pii_candidate_to_action):
     print(pii_candidate_to_action)
+
+
+
+
+    # # dataset, recoded_fields = recode(dataset)
+    # # path, export_status = export(dataset)
+    # # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
+
+    
     return True
 
 def find_piis(dataset, label_dict):
@@ -365,23 +345,22 @@ def find_piis(dataset, label_dict):
     #Get words that are usually piis
     pii_restricted_words = restricted_words.get_restricted_words()
 
-    #Get stem of those words
+    #Get stem of the restricted words
     #pii_restricted_words = add_stem_of_words(pii_restricted_words)
 
     #Find piis based on word matching
     piis_word_match = find_piis_word_match(dataset, pii_restricted_words, label_dict)
 
-
     #Another thing that might be tried
     #fuzzy_partial_stem_match()    
 
-    #Fin piis based on unique_entries detections
+    #Find piis based on unique_entries detections
     piis_unique_entries = unique_entries(dataset)
 
+    #Find piis based on entries format
+    piis_suspicious_format = format_detection(dataset) 
 
-
-
-    return set(piis_word_match + piis_unique_entries)
+    return set(piis_word_match + piis_unique_entries + piis_suspicious_format)
 
 def read_file_and_find_piis(dataset_path):
     #Read file
