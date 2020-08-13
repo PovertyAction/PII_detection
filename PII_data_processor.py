@@ -137,6 +137,7 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
                             print("Adding "+v+ " to possible piis given column label.")
                             possible_pii.append(v)
                             break
+    print("")
     return possible_pii
 
     
@@ -276,19 +277,16 @@ def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, thresho
 
 # In[8]:
 
-def unique_entries(possible_pii, dataset, min_entries_threshold = 0.5, function_pipe = None, messages_pipe = None):
-    # .5 (50%) is the minimum percent of values that must exist for a field to be considered as potential PII 
-    # based on having unique values for each entry, you may customize this as desired (0.0-1.0)
-    
-    smart_print('The unique entries algorithm is now running.', messages_pipe)
-    
-    for v in tqdm(dataset.columns):
+def unique_entries(dataset, min_entries_threshold = 0.5):
+    #Identifies pii based on columns having only unique values
+    #Requires that at least 50% of entries in given column are not NA 
+    possible_pii=[]
+    for v in dataset.columns:
         if len(dataset[v]) == len(set(dataset[v])) and len(dataset[v].dropna())/len(dataset) > min_entries_threshold:
             possible_pii.append(v)
+            print("Column "+v+" considered possible pii given all entries are unique")
     
-    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
-    
-    smart_return(possible_pii, function_pipe)
+    return possible_pii
 
 
 # # Corpus Search & Categorization
@@ -374,15 +372,16 @@ def find_piis(dataset, label_dict):
     piis_word_match = find_piis_word_match(dataset, pii_restricted_words, label_dict)
 
 
-    #Another thing that might be tryed
-    # fuzzy_partial_stem_match()    
+    #Another thing that might be tried
+    #fuzzy_partial_stem_match()    
 
     #Fin piis based on unique_entries detections
-    # piss_unique_entries = unique_entries(dataset, min_entries_threshold)
+    piis_unique_entries = unique_entries(dataset)
 
-    # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
 
-    return piis_word_match# + piis_unique_entries
+
+
+    return set(piis_word_match + piis_unique_entries)
 
 def read_file_and_find_piis(dataset_path):
     #Read file
