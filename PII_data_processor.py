@@ -289,33 +289,7 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
     return possible_pii
 
 
-# # Corpus Search & Categorization
-
-# In[9]:
-
-#names = pd.read_csv("Corpus & Categorizations/combined.csv", header=None, encoding='utf-8')
-
-#p1 = pd.read_csv(r"D:\Dropbox\Work-Personal Sync\PII Detection\Corpus & Categorizations\0717182\nam_dict.txt", encoding='latin-1')
-
-# pd.read_csv("D:\Dropbox\Work-Personal Sync\PII Detection\Corpus & Categorizations\allCountries.txt")
-
-# path = 'D:\\Dropbox\\Work-Personal Sync\\PII Detection\\Corpus & Categorizations\\IPA Countries\\'
-# filenames = os.listdir(path)
-# #filenames# = filenames[2:4]
-
-# for f in tqdm(filenames):
-#      print(f)
-#      temp = pd.read_table(path+f, header=None, encoding='latin-1', low_memory=False, delim_whitespace=True)#, usecols=[1])
-#      #temp.to_csv(path+'narrow'+f, header=None, index=None, encoding='latin-1')
-
-#pd.read_csv("D:\Dropbox\Work-Personal Sync\PII Detection\Corpus & Categorizations\IPA Countries\AF.csv", header=None)
-
-
-# # Date Detection
-
-# In[10]:
-
-def date_detection(dataset):
+def format_detection(dataset):
     
     #Check dates format    
     possible_pii = list(dataset.select_dtypes(include=['datetime']).columns)
@@ -327,18 +301,27 @@ def date_detection(dataset):
 
 
 
-def create_anonymized_dataset(pii_candidate_to_action):
-    print(pii_candidate_to_action)
+def create_anonymized_dataset(dataset, dataset_path, pii_candidate_to_action):
+
+    #Drop columns
+    columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
+
+    print("Will drop following columns:")
+    print(columns_to_drop)
+
+    dataset.drop(columns=columns_to_drop, inplace=True)
+
+    #Encode columns
+    # columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
+
+    # dataset, encoding_used = recode(dataset, columns_to_encode)
 
 
-
-
-    # # dataset, recoded_fields = recode(dataset)
-    # # path, export_status = export(dataset)
+    exported_file_path = export(dataset, dataset_path)
     # # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
-    
-    return True
+
+    return exported_file_path
 
 def find_piis(dataset, label_dict):
     
@@ -366,89 +349,67 @@ def read_file_and_find_piis(dataset_path):
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
     if import_status is False:
-        return import_status, import_result
+        return import_status, import_result, _
     
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
     #Find piis
     piis = find_piis(dataset, label_dict)
 
-    return True, piis
+    return True, piis, dataset
 
-# In[12]:
 
-def recode(dataset):
-    recoded_vars = []
-    
-    try:
-        Label(frame, text='Recoding').pack()
-    
-    except NameError:
-        # Option to recode columns
-        if input('Would you like any variables to have their values recoded / anonymized?   ') in yes_strings:
-            var_names = input('Which variable names? Enter each now, separated by a comma, or respond with "list" to see all variable names.  ').lower()
-            if var_names.lower() in ['list', "'list'", '"list"']:
-                smart_print(list(dataset.columns))
-                time.sleep(5) #puts the next prompt in proper order
-                var_names = input('Which variables would you like to recode? Enter them now, or write "none" to cancel.  ').lower()
 
-            var_names = var_names.split(',')
-            for var in var_names:
-                var = var.replace("'","")
-                var = var.strip()
-                if var in dataset.columns:
-                    dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
-                    dataset.rename(columns={'index':var + '_index'}, inplace=True)
+def recode(dataset, columns_to_encode):
 
-                    # The method currently employed is used in order to more easily export the original/recoded value pairs. 
-                    # It is likely slower than the other recoding option, commented out below.
-                    # If speed is important and the user is ok not exporting value pairs, feel free to disable this approach,
-                    # and enable the alternative below.
+    #Keep record of encoding
+    econding_used = {}
 
-                    # Make dictionary of old and new values
-                    value_replacer = 1
-                    values_dict = {}   
-                    for unique_val in dataset[var].unique():
-                        values_dict[unique_val] = value_replacer
-                        value_replacer += 1
+    for var in columns_to_encode:
 
-                    # Replace old values with new
-                    for k, v in values_dict.items():
-                        dataset[var].replace(to_replace=k, value=v, inplace=True)
+        # dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
+        # dataset.rename(columns={'index':var + '_index'}, inplace=True)
 
-                    # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
-                    #dataset[var] = pd.factorize(dataset[var])[0] + 1
+        # Make dictionary of old and new values
+        new_value = 1
+        old_to_new_dict = {}   
+        for unique_val in dataset[var].unique():
+            old_to_new_dict[unique_val] = new_value
+            new_value += 1
 
-                    smart_print(var + ' has been successfully recoded.')
-                    recoded_vars.append(var)
+        # Replace old values with new in dataframe
+        for k, v in old_to_new_dict.items():
+            dataset[var].replace(to_replace=k, value=v, inplace=True)
 
-                else:
-                    smart_print(var + ' is not a valid variable. It will not be recoded.')
-    return dataset, recoded_vars
+        # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
+        #dataset[var] = pd.factorize(dataset[var])[0] + 1
+
+        print(var + ' has been successfully recoded.')
+        econding_used[var] = old_to_new_dict
+
+    return dataset, econding_used
 
 
 # In[13]:
 
-def export(dataset):
-    csv_path = None
-    exported = False
-    
-    try:
-        Label(frame, text='Recoding').pack()
-    
-    except NameError:# Option for exporting deidentified dataset
-        exported = False
-        if input('Would you like to export the deidentified dataset to csv? (Your original dataset will be preserved.)  ') in yes_strings:
-            csv_path = dataset_path.split('.')[0] + '_deidentified.csv'
-            #stata_path = dataset_path.split('.')[0] + '_deidentified.dta'
-            dataset.to_csv(csv_path)
-            #dataset.to_stata(stata_path)
-            exported = True
+def export(dataset, dataset_path):
+
+    dataset_type = dataset_path.split('.')[1]
+
+    if(dataset_type == 'csv'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'
+        dataset.to_csv(new_file_path, index=False)
+
+    elif(dataset_type == 'dta'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
+        dataset.to_stata(new_file_path)
+    else:
+        print("Data type not supported")
+        new_file_path = None
             
-    return csv_path, exported
+    return new_file_path
 
 
-# In[14]:
 
 def log(confirmed_pii, removed, recoded_vars, csv_path, exported):
     # log creation
