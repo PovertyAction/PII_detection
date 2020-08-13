@@ -4,7 +4,7 @@ restricted_location = ['district', 'country', 'subcountry', 'parish', 'lc', 'vil
 restricted_other = ['school','social','network','census','gender','sex','fax','email','url','child','beneficiary','mother','wife','father','husband']
 
 # Flagged strings from Stata script
-restricted_stata = ['nam','add','vill','dist','phone','parish','loc','acc','plan','email','medic','health','insur','num','resid','contact','home','comment','spec','id','fo','enum', 'city', 'info', 'data', 'comm', 'count']
+restricted_stata = ['nam','add','vill','dist','phone','parish','loc','acc','plan','email','medic','health','insur','num','resid','contact','home','comment','spec','id','enum', 'city', 'info', 'data', 'comm', 'count'] #'fo'
 
 # Flagged strings from IPA guideline document
 restricted_ipa = ['name', 'birth', 'phone', 'district', 'county', 'subcounty', 'parish', 'lc', 'village', 'community', 'address', 'gps', 'lat', 'lon', 'coord', 'location', 'house', 'compound', 'school', 'social', 'network', 'census', 'gender', 'sex', 'fax', 'email', 'ip', 'url', 'specify', 'comment']

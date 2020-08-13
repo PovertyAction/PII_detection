@@ -1,11 +1,12 @@
 import restricted_words
 import pandas as pd
+from nltk.stem.porter import PorterStemmer
 
 # import nltk
 # import numpy as np
 # import os
-# from nltk.stem.porter import *
-# from tqdm import tqdm
+
+
 # from IPython.display import display, HTML
 # from IPython.core.interactiveshell import InteractiveShell
 # InteractiveShell.ast_node_interactivity = "all"
@@ -89,37 +90,55 @@ def initialize_lists(function_pipe = None):
     smart_return([possible_pii, list_restricted_words], function_pipe)
 
 
-def stem_restricted(restricted, function_pipe = None, messages_pipe = None):
+def add_stem_of_words(restricted):
 # Identifies stems of restricted words and adds the stems to restricted list
-
-    smart_print('Creating stems of restricted variable names.', messages_pipe)
 
     initialized_stemmer = PorterStemmer()
     restricted_stems = []
-    for r in tqdm(restricted):
+    for r in restricted:
         restricted_stems.append(initialized_stemmer.stem(r).lower())
 
     restricted = restricted + restricted_stems
     restricted = list(set(restricted))
     
-    smart_return([restricted, initialized_stemmer], function_pipe)
+    return restricted
 
-# In[5]:
 
-def word_match_stemming(possible_pii, restricted, dataset, stemmer, label_dict, sensitivity = 3, function_pipe = None, messages_pipe = None):
-# Looks for matches between variable names, variable name stems, restricted words, and restricted word stems
-    smart_print('The word match with stemming algorithm is now running.', messages_pipe)
+
+def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3, stemmer = None):
+    # Looks for matches between column names (and labels) to restricted words
+    # In the future, we could study looking for matched betwen column names stems and restricted words
+    print('The word match with stemming algorithm is now running.')
     
-    for v in tqdm(dataset.columns):
-        for r in restricted:
-            if v.lower() in r or stemmer.stem(v).lower() in r:
+    possible_pii = []
+
+    #For every column name in our dataset
+    for v in dataset.columns:
+        #For every restricted word
+        for r in restricted_words:
+            #Check if restricted word is in the column name
+            if r in v.lower():
+                print("Adding "+v+ " to possible piis given column name matched with restricted word "+r)
                 possible_pii.append(v)
+
+                #If found, I dont need to keep checking this column with other restricted words
+                break
+
+#---> TO BE CHECKED THIS WORKS FINE
+            #If dictionary of labels is not of booleans, check labels
             if type(label_dict) is not bool:
+                #Check words of label of given column
                 words = label_dict[v].split(' ')
                 for i in words:
+                    #Check that label bigger than senstitivity
                     if len(i) > sensitivity:
-                        if i.lower() in r or stemmer.stem(i).lower() in r:
+                        #Check if restricted word is in label
+                        if r in i.lower():
+                            print("Adding "+v+ " to possible piis given column label.")
                             possible_pii.append(v)
+                            break
+    return possible_pii
+
     
     smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
     
@@ -343,31 +362,40 @@ def create_anonymized_dataset(pii_candidate_to_action):
     print(pii_candidate_to_action)
     return True
 
+def find_piis(dataset, label_dict):
+    
+    #Get words that are usually piis
+    pii_restricted_words = restricted_words.get_restricted_words()
+
+    #Get stem of those words
+    #pii_restricted_words = add_stem_of_words(pii_restricted_words)
+
+    #Find piis based on word matching
+    piis_word_match = find_piis_word_match(dataset, pii_restricted_words, label_dict)
+
+
+    #Another thing that might be tryed
+    # fuzzy_partial_stem_match()    
+
+    #Fin piis based on unique_entries detections
+    # piss_unique_entries = unique_entries(dataset, min_entries_threshold)
+
+    # root.after(2000, next_steps(identified_pii, dataset, datap_functions_conn, datap_messages_conn, tkinter_functions_conn, tkinter_messages_conn))
+
+    return piis_word_match# + piis_unique_entries
+
 def read_file_and_find_piis(dataset_path):
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
     if import_status is False:
         return import_status, import_result
+    
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
     #Find piis
+    piis = find_piis(dataset, label_dict)
 
-    # identified_pii, restricted_vars = initialize_lists() 
-    # restricted_vars, stemmer = stem_restricted(restricted_vars)
-
-    # identified_pii = word_match_stemming(identified_pii, restricted_vars) 
-    # identified_pii = fuzzy_partial_stem_match(identified_pii, restricted_vars, threshold = 0.75) 
-    # identified_pii = unique_entries(identified_pii, min_entries_threshold = 0.5) 
-    # identified_pii = date_detection(identified_pii) 
-
-    # reviewed_pii, removed_status = review_potential_pii(identified_pii)
-    # dataset, recoded_fields = recode(dataset)
-    # path, export_status = export(dataset)
-    # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
-
-
-
-    return True, ['firt_pii', 'second_pii', 'third_pii']
+    return True, piis
 
 # In[12]:
 
