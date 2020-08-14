@@ -28,7 +28,7 @@ intro_text_p2 = "This is an alpha program, not fully tested yet."#, built withou
 app_title = "IPA's PII Detector - Windows"
 
 window_width = 686
-window_height = 1066
+window_height = 866
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -347,13 +347,15 @@ if __name__ == '__main__':
 
     # Create canvas where app will displayed
 
-    canvas = tk.Canvas(root)
+    canvas = tk.Canvas(root, width=window_width, height=window_height, bg="white")
     canvas.pack(side="left", fill="both", expand=True)
 
     # Create frame inside canvas
     frame = tk.Frame(canvas, width=window_width, height=window_height, bg="white")
     frame.pack(side="left", fill="both", expand=True)
     # frame.place(x=0, y=0)
+
+    #This create_window is related to the scrollbar. Im going to delete it atm
     canvas.create_window(0,0, window=frame, anchor="nw")
 
     add_scrollbar(root, canvas, frame)
@@ -364,7 +366,7 @@ if __name__ == '__main__':
     else:
         logo_location = 'ipa logo.jpg'
     logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    ttk.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+    tk.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 
     #Add intro text
     ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))

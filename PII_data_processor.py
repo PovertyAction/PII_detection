@@ -12,20 +12,20 @@ from nltk.stem.porter import PorterStemmer
 # InteractiveShell.ast_node_interactivity = "all"
 # import time
 
-def smart_print(the_message, messages_pipe = None):
-    if __name__ == "__main__":
-        print(the_message)
-    else:
-        messages_pipe.send(the_message)
+# def smart_print(the_message, messages_pipe = None):
+#     if __name__ == "__main__":
+#         print(the_message)
+#     else:
+#         messages_pipe.send(the_message)
 
-def smart_return(to_return, function_pipe = None):
-    if __name__ != "__main__":
-        function_pipe.send(to_return)
-    else:
-        if len(to_return) == 2:
-            return to_return[0], to_return[1]
-        else:
-            return to_return
+# def smart_return(to_return, function_pipe = None):
+#     if __name__ != "__main__":
+#         function_pipe.send(to_return)
+#     else:
+#         if len(to_return) == 2:
+#             return to_return[0], to_return[1]
+#         else:
+#             return to_return
 
 def import_dataset(dataset_path):
     
@@ -79,15 +79,15 @@ def import_dataset(dataset_path):
     return (True, dataset_read_return)
 
 
-def initialize_lists(function_pipe = None):
+# def initialize_lists(function_pipe = None):
 
-    possible_pii = []
-    global yes_strings
-    yes_strings = ['y', 'yes', 'Y', 'Yes']
+#     possible_pii = []
+#     global yes_strings
+#     yes_strings = ['y', 'yes', 'Y', 'Yes']
 
-    list_restricted_words = restricted_words.get_restricted_words()
+#     list_restricted_words = restricted_words.get_restricted_words()
     
-    smart_return([possible_pii, list_restricted_words], function_pipe)
+#     smart_return([possible_pii, list_restricted_words], function_pipe)
 
 
 def add_stem_of_words(restricted):
@@ -343,7 +343,7 @@ def find_piis(dataset, label_dict):
     #Find piis based on entries format
     piis_suspicious_format = format_detection(dataset) 
 
-    return set(piis_word_match + piis_unique_entries + piis_suspicious_format)
+    return ['pii'] * 30#set(piis_word_match + piis_unique_entries + piis_suspicious_format)
 
 def read_file_and_find_piis(dataset_path):
     #Read file
