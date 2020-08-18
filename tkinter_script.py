@@ -325,7 +325,15 @@ def add_scrollbar(root, canvas, frame):
     def onFrameConfigure(canvas):
         '''Reset the scroll region to encompass the inner frame'''
         canvas.configure(scrollregion=canvas.bbox("all"))
+    
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+
+    def onMouseWheel(canvas, event):
+        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    #Bind mousewheel to scrollbar
+    frame.bind_all("<MouseWheel>", lambda event, canvas=canvas: onMouseWheel(canvas, event))
+
 
     #Create scrollbar
     vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
