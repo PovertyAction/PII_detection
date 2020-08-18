@@ -1,5 +1,5 @@
 # Imports and Set-up
-
+import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
@@ -28,7 +28,7 @@ intro_text_p2 = "This is an alpha program, not fully tested yet."#, built withou
 app_title = "IPA's PII Detector - Windows"
 
 window_width = 686
-window_height = 866
+window_height = 466
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -249,12 +249,11 @@ def window_setup(master):
     master.title(app_title)
     
     #Add window icon
-    if hasattr(tk.sys, "_MEIPASS"):
+    if hasattr(sys, "_MEIPASS"):
         icon_location = os.path.join(sys._MEIPASS, 'app.ico')
     else:
         icon_location = 'app.ico'
-    imgicon = ImageTk.PhotoImage(Image.open(icon_location))
-    master.tk.call('wm', 'iconphoto', master._w, imgicon) 
+    master.iconbitmap(icon_location)
 
     #Define window size
     master.minsize(width=window_width, height=window_height)
@@ -362,9 +361,9 @@ if __name__ == '__main__':
 
     #Add logo
     if hasattr(tk.sys, "_MEIPASS"):    
-        logo_location = os.path.join(sys._MEIPASS, 'ipa logo.jpg')
+        logo_location = os.path.join(sys._MEIPASS, 'ipa_logo.jpg')
     else:
-        logo_location = 'ipa logo.jpg'
+        logo_location = 'ipa_logo.jpg'
     logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
     tk.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
 

@@ -343,7 +343,7 @@ def find_piis(dataset, label_dict):
     #Find piis based on entries format
     piis_suspicious_format = format_detection(dataset) 
 
-    return ['pii'] * 30#set(piis_word_match + piis_unique_entries + piis_suspicious_format)
+    return set(piis_word_match + piis_unique_entries + piis_suspicious_format)
 
 def read_file_and_find_piis(dataset_path):
     #Read file
