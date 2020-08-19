@@ -19,7 +19,7 @@ import PII_data_processor
 # import multiprocessing
 # multiprocessing.freeze_support()
 
-# import webbrowser
+import webbrowser
 # import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
@@ -37,6 +37,8 @@ pii_candidates_to_dropdown_element = {}
 dataset = None
 dataset_path = None
 label_dict = None
+
+finished = False
 
 def input(the_message):
     try:
@@ -102,15 +104,28 @@ def get_sensitivity_score():
     return sensitivity_score
 
 def create_anonymized_dataset():
+    global finished
+
+    if(finished):
+        return
+
     # we create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
     pii_candidates_to_action = {}
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
-    tkinter_display("Createing new dataset...")
+    tkinter_display("Creating new dataset...")
 
     success = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
-    tkinter_display("The new dataset has been created and saved")
+    
+    if(success):
+        tkinter_display("The new dataset has been created and saved in the file directory. You will also find a log file on piis found and work done.")
 
+        tkinter_display("Do you want to work on a new file? Click Restart buttom.")
+
+        ttk.Button(frame, text="Restart", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        frame.update()
+
+        finished = True
     #Automatic scroll down
     canvas.yview_moveto( 1 )
 
@@ -118,6 +133,9 @@ def read_file_and_find_piis():
     global dataset
     global dataset_path
     global label_dict
+
+    if(finished):
+        return
 
     dataset_path = askopenfilename()
 
@@ -135,6 +153,9 @@ def read_file_and_find_piis():
     else:
         pii_candidates = pii_candidates_or_message
 
+    if(len(pii_candidates)==0):
+        tkinter_display_title('No PII candidates found.')
+        return
 
     tkinter_display_title('PII candidates found:')
     tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
@@ -214,15 +235,15 @@ def menubar_setup(root):
     
     # Add commands to help menu
     helpmenu.add_command(label="About (v0.1.2)", command=about)
-    helpmenu.add_command(label="- Knowledge Article", command=article)
-    helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
+    # helpmenu.add_command(label="- Knowledge Article", command=article)
+    # helpmenu.add_command(label="- Comparison with Other Scripts", command=comparison)
     #helpmenu.add_command(label="- PII Field Names", command=PII_field_names)
     #helpmenu.add_command(label="- Data Security", command=PII_field_names)
     helpmenu.add_separator()
     helpmenu.add_command(label="File Issue on GitHub", command=contact)
-    helpmenu.add_separator()
+    # helpmenu.add_separator()
     #helpmenu.add_command(label="Contribute", command=contact)
-    helpmenu.add_command(label="Provide Feedback", command=survey)
+    # helpmenu.add_command(label="Provide Feedback", command=survey)
 
     # Add menu bar to window
     root.configure(menu=menubar)
