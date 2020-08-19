@@ -78,12 +78,18 @@ def tkinter_display_pii_candidate(pii_candidate):
     pii_frame = tk.Frame(master=frame, bg="white")
     pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
-    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)#pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
     
     dropdown = tk.StringVar(pii_frame)
-    w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=0, column = 1)#.pack(anchor='nw', padx=(30,0))
+    w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=0, column = 1)
 
     frame.update()
+
+
+    # ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
+    # sensitivity = StringVar(frame)
+    # w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
+
 
     return dropdown
 
