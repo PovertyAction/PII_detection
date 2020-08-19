@@ -20,7 +20,7 @@ import PII_data_processor
 # multiprocessing.freeze_support()
 
 import webbrowser
-# import os
+import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 # intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
@@ -36,6 +36,7 @@ pii_candidates_to_dropdown_element = {}
 #Dataset we are working with
 dataset = None
 dataset_path = None
+new_file_path = None
 label_dict = None
 
 finished = False
@@ -103,8 +104,12 @@ def get_sensitivity_score():
 
     return sensitivity_score
 
+def open_deidentified_file():
+    os.system("start " + new_file_path)
+
 def create_anonymized_dataset():
     global finished
+    global new_file_path
 
     if(finished):
         return
@@ -115,14 +120,14 @@ def create_anonymized_dataset():
         pii_candidates_to_action[pii] = dropdown_elem.get()
     tkinter_display("Creating new dataset...")
 
-    success = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
+    new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     
-    if(success):
+    if(new_file_path):
         tkinter_display("The new dataset has been created and saved in the file directory. You will also find a log file on piis found and work done.")
-
+        ttk.Button(frame, text="Open de-identified dataset", command=open_deidentified_file, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))        
+        
         tkinter_display("Do you want to work on a new file? Click Restart buttom.")
-
-        ttk.Button(frame, text="Restart", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
         frame.update()
 
         finished = True
@@ -176,7 +181,6 @@ def restart_program():
     """Restarts the current program.
     Note: this function does not return. Any cleanup action (like
     saving data) must be done before calling this function."""
-    import os
     python = tk.sys.executable
     os.execl(python, python, * tk.sys.argv)
 

@@ -338,6 +338,7 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
 
     if(len(columns_to_encode)>0):
         dataset, encoding_used = recode(dataset, columns_to_encode)
+        log_and_print("Map for encoded values created.")
         export_encoding(dataset_path, encoding_used)
 
     exported_file_path = export(dataset, dataset_path, label_dict)
