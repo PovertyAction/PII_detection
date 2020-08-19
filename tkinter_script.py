@@ -85,12 +85,6 @@ def tkinter_display_pii_candidate(pii_candidate):
 
     frame.update()
 
-
-    # ttk.Label(frame, text="Select Detection Sensitivity:", justify=LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
-    # sensitivity = StringVar(frame)
-    # w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
-
-
     return dropdown
 
 def get_sensitivity_score():
