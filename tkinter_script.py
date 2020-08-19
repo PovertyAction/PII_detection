@@ -27,7 +27,7 @@ intro_text = "This script is meant to assist in the detection of PII (personally
 intro_text_p2 = "This is an alpha program, not fully tested yet."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - Windows"
 
-window_width = 686
+window_width = 586
 window_height = 466
 
 #Maps pii to action to do with them
@@ -65,20 +65,20 @@ def input(the_message):
 
 
 def tkinter_display_title(title):
-    ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
 def tkinter_display(the_message):
     # the_message = datetime.now().strftime("%H:%M:%S") + '     ' + the_message
-    ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
 def tkinter_display_pii_candidate(pii_candidate):
     #Create a frame for the pii label and action dropdown
     pii_frame = tk.Frame(master=frame, bg="white")
-    pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
+    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=0, column = 0)
     
     dropdown = tk.StringVar(pii_frame)
     w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=0, column = 1)
@@ -111,6 +111,9 @@ def create_anonymized_dataset():
     success = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     tkinter_display("The new dataset has been created and saved")
 
+    #Automatic scroll down
+    canvas.yview_moveto( 1 )
+
 def read_file_and_find_piis():
     global dataset
     global dataset_path
@@ -132,8 +135,9 @@ def read_file_and_find_piis():
     else:
         pii_candidates = pii_candidates_or_message
 
-    tkinter_display_title('PII candidates:')
-    tkinter_display('For each select an action and then press "Create anonymized dataset" butoom')
+
+    tkinter_display_title('PII candidates found:')
+    tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
     
     #Display a label for each pii candidate and save their action dropdown element in dictionary for future reference
     for pii_candidate in pii_candidates:    
@@ -141,7 +145,11 @@ def read_file_and_find_piis():
         pii_candidates_to_dropdown_element[pii_candidate] = pii_dropdown_element
 
     #Show a create anonymized dataframe buttom
-    ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+
+    # #Automatic scroll down
+    # canvas.yview_moveto( 1 )
 
 def restart_program():
     """Restarts the current program.
@@ -291,7 +299,7 @@ if __name__ == '__main__':
 
     #Labels and buttoms to run app
     ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-    ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
 
 
