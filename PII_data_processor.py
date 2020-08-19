@@ -413,7 +413,13 @@ def export(dataset, dataset_path, variable_labels = None):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
         dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
 
+    elif(dataset_type == 'xlsx'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
+        dataset.to_excel(new_file_path, index=False)
 
+    elif(dataset_type == 'xls'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.xls'
+        dataset.to_excel(new_file_path, index=False)
 
     else:
         print("Data type not supported")
@@ -482,7 +488,7 @@ def driver(queue=None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/almond_etal_2008.dta'
+    dataset_path = 'test_files/cases_1.xls'
 
     reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
 
