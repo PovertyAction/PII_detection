@@ -36,6 +36,7 @@ pii_candidates_to_dropdown_element = {}
 #Dataset we are working with
 dataset = None
 dataset_path = None
+label_dict = None
 
 def input(the_message):
     try:
@@ -106,12 +107,14 @@ def create_anonymized_dataset():
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
     tkinter_display("Createing new dataset...")
-    success = PII_data_processor.create_anonymized_dataset(dataset, dataset_path, pii_candidates_to_action)
+
+    success = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     tkinter_display("The new dataset has been created and saved")
 
 def read_file_and_find_piis():
     global dataset
     global dataset_path
+    global label_dict
 
     dataset_path = askopenfilename()
 
@@ -120,7 +123,7 @@ def read_file_and_find_piis():
         return
 
     tkinter_display('Reding dataset and looking for PII candidates...')
-    reading_status, pii_candidates_or_message, dataset = PII_data_processor.read_file_and_find_piis(dataset_path)
+    reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path)
     
     if(reading_status is False):
         error_message = pii_candidates_or_message

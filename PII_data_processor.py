@@ -27,6 +27,9 @@ from nltk.stem.porter import PorterStemmer
 #         else:
 #             return to_return
 
+#Match between column names and restricted words
+STRICT_MATCH = True
+
 def import_dataset(dataset_path):
     
     dataset, label_dict, value_label_dict = False, False, False
@@ -74,7 +77,7 @@ def import_dataset(dataset_path):
         print(status_message)
         return (False, status_message)
 
-    print('The dataset has been read successfully.')
+    print('The dataset has been read successfully.\n')
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
     return (True, dataset_read_return)
 
@@ -104,22 +107,29 @@ def add_stem_of_words(restricted):
     return restricted
 
 
+def word_match(column_name, restricted_word):
+    #Still pending to define if the best idea is to use a strict match, or if maybe we can consider a match when restricted_word is in column_name
+    if(STRICT_MATCH):
+        return column_name.lower() == restricted_word.lower()
+    else:
+        #Check if restricted word is inside column_name
+        return restricted_word.lower() in column_name.lower()
 
 def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3, stemmer = None):
     # Looks for matches between column names (and labels) to restricted words
     # In the future, we could study looking for matched betwen column names stems and restricted words
-    print('The word match with stemming algorithm is now running.')
+    print('The word match with stemming algorithm is now running:\n')
     
     possible_pii = []
 
     #For every column name in our dataset
-    for v in dataset.columns:
+    for column_name in dataset.columns:
         #For every restricted word
-        for r in restricted_words:
+        for restricted_word in restricted_words:
             #Check if restricted word is in the column name
-            if r in v.lower():
-                print("Adding "+v+ " to possible piis given column name matched with restricted word "+r)
-                possible_pii.append(v)
+            if word_match(column_name, restricted_word):
+                print("Adding "+column_name+ " to possible piis given column name matched with restricted word "+ restricted_word)
+                possible_pii.append(column_name)
 
                 #If found, I dont need to keep checking this column with other restricted words
                 break
@@ -128,29 +138,20 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
             #If dictionary of labels is not of booleans, check labels
             if type(label_dict) is not bool:
                 #Check words of label of given column
-                words = label_dict[v].split(' ')
-                for i in words:
+                column_label = label_dict[column_name]
+                for label_word in column_label.split(' '):
                     #Check that label bigger than senstitivity
-                    if len(i) > sensitivity:
+                    if len(label_word) > sensitivity:
                         #Check if restricted word is in label
-                        if r in i.lower():
-                            print("Adding "+v+ " to possible piis given column label.")
-                            possible_pii.append(v)
+                        if word_match(label_word, restricted_word):
+                            print("Adding "+column_name+ " to possible piis given column label.")
+                            print("Label is "+column_label+". "+label_word+" matched with "+restricted_word+'\n')
+                            possible_pii.append(column_name)
                             break
     print("")
     return possible_pii
 
     
-    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
-    
-    smart_return(possible_pii, function_pipe)
-
-
-# # Fuzzy and Intelligent Partial Match
-
-# In[6]:
-
-# Function definitions
 
 def split_by_word(search_term):
     return search_term.replace('-', ' ').replace('_', ' ').replace('  ', ' ').replace('  ', ' ').split(' ')
@@ -279,10 +280,19 @@ def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, thresho
 
 def unique_entries(dataset, min_entries_threshold = 0.5):
     #Identifies pii based on columns having only unique values
-    #Requires that at least 50% of entries in given column are not NA 
+    #Requires that at least 50% of entries in given column are not NA
+
+    print("Working on unique_entries")
+
     possible_pii=[]
     for v in dataset.columns:
-        if len(dataset[v]) == len(set(dataset[v])) and len(dataset[v].dropna())/len(dataset) > min_entries_threshold:
+
+        n_not_na_rows = len(dataset[v].dropna())
+        n_unique_entries = dataset[v].nunique()
+
+        at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_threshold
+
+        if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
             possible_pii.append(v)
             print("Column "+v+" considered possible pii given all entries are unique")
     
@@ -301,7 +311,7 @@ def format_detection(dataset):
 
 
 
-def create_anonymized_dataset(dataset, dataset_path, pii_candidate_to_action):
+def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action):
 
     #Drop columns
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
@@ -316,8 +326,7 @@ def create_anonymized_dataset(dataset, dataset_path, pii_candidate_to_action):
 
     # dataset, encoding_used = recode(dataset, columns_to_encode)
 
-
-    exported_file_path = export(dataset, dataset_path)
+    exported_file_path = export(dataset, dataset_path, label_dict)
     # # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
 
@@ -349,14 +358,14 @@ def read_file_and_find_piis(dataset_path):
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
     if import_status is False:
-        return import_status, import_result, _
+        return import_status, import_result, _, _
     
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
     #Find piis
     piis = find_piis(dataset, label_dict)
 
-    return True, piis, dataset
+    return True, piis, dataset, label_dict
 
 
 
@@ -392,7 +401,7 @@ def recode(dataset, columns_to_encode):
 
 # In[13]:
 
-def export(dataset, dataset_path):
+def export(dataset, dataset_path, variable_labels = None):
 
     dataset_type = dataset_path.split('.')[1]
 
@@ -402,7 +411,10 @@ def export(dataset, dataset_path):
 
     elif(dataset_type == 'dta'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
-        dataset.to_stata(new_file_path)
+        dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
+
+
+
     else:
         print("Data type not supported")
         new_file_path = None
@@ -466,9 +478,32 @@ def driver(queue=None):
     path, export_status = export(dataset)
     log(reviewed_pii, removed_status, recoded_fields, path, export_status)
 
-if __name__ == "__main__":
-    dataset_path = input('What is the path to your dataset? (example: C:\Datasets\\file.xlsx)   ')
-    driver(dataset_path)
 
-# clean this up with consistent variable naming, better commenting, better documentation
+
+
+def main_when_script_run_from_console():
+    dataset_path = 'test_files/almond_etal_2008.dta'
+
+    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
+
+    #Check if reading was succesful
+    if(reading_status is False):    
+        error_message = pii_candidates_or_message
+        print(error_message)
+        return
+    else:
+        pii_candidates = pii_candidates_or_message
+
+    #Set drop for all piis
+    pii_candidates_to_action ={}
+    for pii in pii_candidates:
+        pii_candidates_to_action[pii] = 'Drop'
+
+    
+    create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
+
+
+if __name__ == "__main__":
+    main_when_script_run_from_console()
+
 
