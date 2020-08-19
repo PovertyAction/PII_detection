@@ -312,7 +312,16 @@ def format_detection(dataset):
     return possible_pii
 
 
+def export_encoding(dataset_path, encoding_dict):
+    encoding_file_path = dataset_path.split('.')[0] + '_encodingmap.csv'
 
+    encoding_df = pd.DataFrame(columns=['variable','orginial value', 'encoded value'])
+
+    for variable, values_dict in encoding_dict.items():
+        for original_value, encoded_value in values_dict.items():
+            encoding_df.loc[-1] = [variable, original_value, encoded_value]
+            encoding_df.index = encoding_df.index + 1
+    encoding_df.to_csv(encoding_file_path, index=False)
 
 def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action):
 
@@ -325,14 +334,14 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     dataset.drop(columns=columns_to_drop, inplace=True)
 
     #Encode columns
-    # columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
+    columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
 
-    # dataset, encoding_used = recode(dataset, columns_to_encode)
+    if(len(columns_to_encode)>0):
+        dataset, encoding_used = recode(dataset, columns_to_encode)
+        export_encoding(dataset_path, encoding_used)
 
     exported_file_path = export(dataset, dataset_path, label_dict)
-    # # log(reviewed_pii, removed_status, recoded_fields, path, export_status)
-
-
+    
     return exported_file_path
 
 def find_piis(dataset, label_dict):
@@ -413,7 +422,7 @@ def recode(dataset, columns_to_encode):
         # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
         #dataset[var] = pd.factorize(dataset[var])[0] + 1
 
-        log_and_print(var + ' has been successfully recoded.')
+        log_and_print(var + ' has been successfully encoded.')
         econding_used[var] = old_to_new_dict
 
     return dataset, econding_used
@@ -461,10 +470,10 @@ def main_when_script_run_from_console():
     else:
         pii_candidates = pii_candidates_or_message
 
-    #Set drop for all piis
+    #Manually set action for piis
     pii_candidates_to_action ={}
     for pii in pii_candidates:
-        pii_candidates_to_action[pii] = 'Drop'
+        pii_candidates_to_action[pii] = 'Encode'
 
     
     create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
