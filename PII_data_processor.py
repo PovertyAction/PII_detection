@@ -135,19 +135,28 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
                 #If found, I dont need to keep checking this column with other restricted words
                 break
 
-#---> TO BE CHECKED THIS WORKS FINE
             #If dictionary of labels is not of booleans, check labels
             if type(label_dict) is not bool:
                 #Check words of label of given column
                 column_label = label_dict[column_name]
-                for label_word in column_label.split(' '):
-                    #Check that label bigger than senstitivity
-                    if len(label_word) > sensitivity:
-                        #Check if restricted word is in label
-                        if word_match(label_word, restricted_word):
-                            log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
-                            possible_pii.append(column_name)
-                            break
+
+                #One alternative is to check whole column_label to restricted word, other is checking each word in label
+
+                #Alt 1
+                if word_match(column_label, restricted_word):
+                    log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
+                    possible_pii.append(column_name)
+                    break
+                    
+                # #Alt 2
+                # for label_word in column_label.split(' '):
+                #     #Check that label bigger than senstitivity
+                #     if len(label_word) > sensitivity:
+                #         #Check if restricted word is in label
+                #         if word_match(label_word, restricted_word):
+                #             log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
+                #             possible_pii.append(column_name)
+                #             break
     return possible_pii
 
 
