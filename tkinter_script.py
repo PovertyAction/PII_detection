@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
-
+ 
 from PIL import ImageTk, Image
 
 import PII_data_processor
@@ -25,7 +25,7 @@ import os
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
 # intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
 intro_text_p2 = "This is an alpha program, not fully tested yet."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - Windows"
+app_title = "IPA's PII Detector - v2.0"
 
 window_width = 586
 window_height = 466
@@ -128,6 +128,17 @@ def create_anonymized_dataset():
         
         tkinter_display("Do you want to work on a new file? Click Restart buttom.")
         ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        
+        #Create a frame for the survey link
+        survey_frame = tk.Frame(master=frame, bg="white")
+        survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        survey_text = "Can you provide feedback to improve the app? Please click "
+        ttk.Label(survey_frame, text=survey_text, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
+        link = tk.Label(survey_frame, text="here", fg="blue", font=("Calibri Italic", 11), cursor="hand2", background='white')
+        link.grid(row = 0, column=1)
+        link.bind("<Button-1>", lambda e: open_survey())
+
+
         frame.update()
 
         finished = True
@@ -202,6 +213,9 @@ def window_setup(master):
     #Prevent window from being resized
     master.resizable(False, False)
 
+def open_survey():
+        webbrowser.open('https://docs.google.com/forms/d/e/1FAIpQLSfxB_pnReUd0EvFfQxPu5JI9oRGCpDgULWkTeDHYoqx8x7q-Q/viewform')
+
 def menubar_setup(root):
 
     def about():
@@ -219,8 +233,7 @@ def menubar_setup(root):
     def PII_field_names():
         webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
 
-    def survey():
-        webbrowser.open('https://goo.gl/forms/YYOxXJSKBpp60ol32')
+    
 
     menubar = tk.Menu(root)
 
@@ -247,7 +260,7 @@ def menubar_setup(root):
     helpmenu.add_command(label="File Issue on GitHub", command=contact)
     # helpmenu.add_separator()
     #helpmenu.add_command(label="Contribute", command=contact)
-    # helpmenu.add_command(label="Provide Feedback", command=survey)
+    helpmenu.add_command(label="Provide Feedback", command=open_survey)
 
     # Add menu bar to window
     root.configure(menu=menubar)
