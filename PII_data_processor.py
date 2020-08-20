@@ -121,14 +121,15 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
     # Looks for matches between column names (and labels) to restricted words
     # In the future, we could study looking for matched betwen column names stems and restricted words  
     possible_pii = []
-
+    log_and_print("List of identified PIIs: ")
     #For every column name in our dataset
     for column_name in dataset.columns:
         #For every restricted word
         for restricted_word in restricted_words:
             #Check if restricted word is in the column name
             if word_match(column_name, restricted_word):
-                log_and_print("Adding "+column_name+ " to possible piis given column name matched with restricted word "+ restricted_word)
+
+                log_and_print("Column '"+column_name+ "' considered possible pii given column name matched with restricted word '"+ restricted_word+"'")
                 possible_pii.append(column_name)
 
                 #If found, I dont need to keep checking this column with other restricted words
@@ -144,11 +145,9 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
                     if len(label_word) > sensitivity:
                         #Check if restricted word is in label
                         if word_match(label_word, restricted_word):
-                            log_and_print("Adding "+column_name+ " to possible piis given column label.")
-                            log_and_print("Label is "+column_label+". "+label_word+" matched with "+restricted_word+'\n')
+                            log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
                             possible_pii.append(column_name)
                             break
-    log_and_print("")
     return possible_pii
 
 
@@ -328,17 +327,17 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     #Drop columns
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
 
-    log_and_print("Will drop following columns:")
-    log_and_print(" ".join(columns_to_drop))
-
     dataset.drop(columns=columns_to_drop, inplace=True)
+    log_and_print("Dropped columns: "+ " ".join(columns_to_drop))
+
 
     #Encode columns
     columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
 
     if(len(columns_to_encode)>0):
+        log_and_print("Will encode following columns: "+ " ".join(columns_to_encode))
         dataset, encoding_used = recode(dataset, columns_to_encode)
-        log_and_print("Map for encoded values created.")
+        log_and_print("Map file for encoded values created.")
         export_encoding(dataset_path, encoding_used)
 
     exported_file_path = export(dataset, dataset_path, label_dict)
@@ -393,7 +392,7 @@ def read_file_and_find_piis(dataset_path):
     #Find piis
     piis = find_piis(dataset, label_dict)
 
-    log_and_print("Identified ppis are: "+" ".join(piis))
+    log_and_print("Identified PIIs: "+" ".join(piis))
 
     return True, piis, dataset, label_dict
 

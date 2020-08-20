@@ -22,10 +22,9 @@ import PII_data_processor
 import webbrowser
 import os
 
-intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset."
-# intro_text_p2 = "Ensuring the dataset is devoid of PII is ultimately still your responsibility."
-intro_text_p2 = "This is an alpha program, not fully tested yet."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v2.0"
+intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
+intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
+app_title = "IPA's PII Detector - v2.1"
 
 window_width = 586
 window_height = 466
@@ -123,7 +122,7 @@ def create_anonymized_dataset():
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     
     if(new_file_path):
-        tkinter_display("The new dataset has been created and saved in the file directory. You will also find a log file on piis found and work done.")
+        tkinter_display("The new dataset has been created and saved in the original file directory. You will also find a log file describing the detection process. If you encoded variables, you will find a .csv file that maps original to encoded values.")
         ttk.Button(frame, text="Open de-identified dataset", command=open_deidentified_file, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))        
         
         tkinter_display("Do you want to work on a new file? Click Restart buttom.")
