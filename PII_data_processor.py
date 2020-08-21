@@ -319,9 +319,8 @@ def find_columns_with_phone_numbers(dataset):
     for column in dataset.columns:
         #Check that all values in column are not NaN
         if(pd.isnull(dataset[column]).all() == False):
-
-            #Match column values with regex
-            match_result = dataset[column].dropna().astype(str).str.match(pat = phone_n_regex_expression)
+            #Match first 5 rows of column values with regex
+            match_result = dataset[column].dropna().iloc[0:5].astype(str).str.match(pat = phone_n_regex_expression)
 
             #If all not NaN values matched with regex, save column as PII candidate
             if(all(match_result)):
@@ -488,7 +487,7 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/cases_1.csv'
+    dataset_path = 'test_files/almond_etal_2008.dta'
 
     reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
 
