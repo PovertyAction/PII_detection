@@ -305,16 +305,37 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
 
         if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
             possible_pii.append(v)
-            log_and_print("Column "+v+" considered possible pii given all entries are unique")
+            log_and_print("Column '"+v+"' considered possible pii given all entries are unique")
     
     return possible_pii
 
 
+def find_columns_with_phone_numbers(dataset):
+
+    columns_with_phone_numbers = []
+
+    phone_n_regex_expression = "(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})"
+
+    for column in dataset.columns:
+        #Check that all values in column are not NaN
+        if(pd.isnull(dataset[column]).all() == False):
+
+            #Match column values with regex
+            match_result = dataset[column].dropna().astype(str).str.match(pat = phone_n_regex_expression)
+
+            #If all not NaN values matched with regex, save column as PII candidate
+            if(all(match_result)):
+                columns_with_phone_numbers.append(column)
+                log_and_print("Column '"+column+"' considered possible pii given column entries have phone number format")
+
+    return columns_with_phone_numbers
+
+
 def format_detection(dataset):
     
-    #Check dates format    
-    possible_pii = list(dataset.select_dtypes(include=['datetime']).columns)
-    
+    #Find columns with phone numbers formats
+    possible_pii = find_columns_with_phone_numbers(dataset)
+
     #Check other formats
 
     return possible_pii
@@ -467,7 +488,7 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/almond_etal_2008.dta'
+    dataset_path = 'test_files/cases_1.csv'
 
     reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
 
