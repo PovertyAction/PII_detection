@@ -1,21 +1,40 @@
-# Flagged strings from R script
-restricted_location = ['district', 'country', 'subcountry', 'parish', 'lc', 'village', 'community', 'address', 'gps', 'lat', 'log', 'coord', 'location', 'house','compound', 'panchayat', 'name', 'fname', 'lname', 'first_name', 'last_name', 'birth', 'birthday', 'bday', ]
+#Fuzzy = variables that if contained inside a column name/label, there will be a match
+#Strict = variables that if are strictly equal to column name/label, there will be a match
 
-restricted_other = ['school','social','network','census','gender','sex','fax','email','url','child','beneficiary','mother','wife','father','husband']
+#For location matching
+locations_fuzzy = ['district', 'country', 'subcountry', 'parish', 'village', 'community', 'location', 'panchayat', 'compound', 'survey_location', 'county', 'subcounty', 'ciudad','distrito','villa','city', 'town', 'neighbourhood']
+
+locations_strict = ['vill', 'lc']
 
 # Flagged strings from Stata script
-restricted_stata = ['nam','add','vill','dist','phone','parish','loc','acc','plan','email','medic','health','insur','num','resid','contact','home','comment','spec','id','enum', 'city', 'info', 'data', 'comm', 'count'] #'fo'
+stata_strict = ['nam','add','dist','parish','loc','acc','plan','medic','health','insur','num','resid','home','spec','id','enum', 'info', 'data', 'comm', 'count', 'fo']
 
 # Flagged strings from IPA guideline document
-restricted_ipa = ['name', 'birth', 'phone', 'district', 'county', 'subcounty', 'parish', 'lc', 'village', 'community', 'address', 'gps', 'lat', 'lon', 'coord', 'location', 'house', 'compound', 'school', 'social', 'network', 'census', 'gender', 'sex', 'fax', 'email', 'ip', 'url', 'specify', 'comment']
+ipa_strict = ['gps', 'lat', 'lon', 'coord', 'house', 'social', 'census', 'fax', 'ip', 'url', 'specify']
 
-# Additions
-restricted_expansions = ['name', 'insurance', 'medical', 'number', 'enumerator', 'rand', 'random', 'child_age', 'uid', 'latitude', 'longitude', 'coordinates', 'web', 'website', 'hh', 'address', 'age', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'gps', 'resp_name', 'resp_phone', 'head_name', 'headname', 'respname', 'subvillage', 'survey_location']
-restricted_spanish = ['apellidos', 'beneficiario', 'casa', 'censo', 'ciudad', 'comentario / coment', 'comunidad', 'contacto', 'contar', 'coordenadas', 'coordenadas', 'data', 'direccion', 'direccion', 'distrito', 'distrito', 'edad', 'edad_nino', 'email', 'encuestador', 'encuestador', 'escuela', 'colegio ', 'esposa', 'esposo', 'fax', 'fecha_nacimiento', 'fecha_nacimiento', 'fecha_nacimiento', 'genero', 'gps', 'hogar', 'id', 'identificador', 'identidad', 'informacion', 'ip', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'plan', 'primer_nombre', 'random', 'red', 'salud', 'seguro', 'sexo', 'social', 'telefono', 'fono', 'tlfno', 'ubicacion', 'url', 'villa', 'web']
-restricted_swahili = ['jina', 'simu', 'mkoa', 'wilaya', 'kata', 'kijiji', 'kitongoji', 'vitongoji', 'nyumba', 'numba', 'namba', 'tarahe ya kuzaliwa', 'umri', 'jinsi', 'jinsia']
+other_strict = ['rand','uid','hh', 'age', 'gps','id', 'ip','red','fono','url', 'web', 'number', 'encuestador', 'escuela', 'colegio','edad']
 
+fuzzy = ['name', 'fname', 'lname', 'first_name', 'last_name', 'birth', 'birthday', 'bday','address', 'school','network','gender','sex','email','child','beneficiary','mother','wife','father','husband', 'insurance', 'medical', 'enumerator', 'random', 'child_age', 'latitude', 'longitude', 'coordinates', 'website', 'address', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'resp_name', 'resp_phone', 'head_name', 'headname', 'respname', 'subvillage', 'comment', 'contact', 'phone']
 
-def get_restricted_words():
-    all_restricted = restricted_location + restricted_other + restricted_stata + restricted_ipa + restricted_expansions + restricted_spanish + restricted_swahili
-    all_restricted = list(set(all_restricted))
-    return all_restricted
+spanish_fuzzy = ['apellido', 'apellidos', 'beneficiario', 'censo',  'comentario', 'comunidad', 'contacto', 'contar', 'coordenadas', 'direccion', 'edad_nino', 'email', 'esposa', 'esposo', 'fecha_nacimiento', 'genero', 'identificador', 'identidad', 'informacion', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'primer_nombre', 'random', 'salud', 'seguro', 'sexo', 'telefono', 'tlfno', 'ubicacion', 'telefono', 'telefonico', 'teléfono', 'telefónico']
+
+swahili_strict = ['jina', 'simu', 'mkoa', 'wilaya', 'kata', 'kijiji', 'kitongoji', 'vitongoji', 'nyumba', 'numba', 'namba', 'tarahe ya kuzaliwa', 'umri', 'jinsi', 'jinsia']
+
+def get_locations_strict_restricted_words():
+	return locations_strict
+
+def get_locations_fuzzy_restricted_words():
+	return locations_fuzzy
+
+def get_strict_restricted_words():
+    strict_restricted = stata_strict + ipa_strict + other_strict  + swahili_strict + locations_strict
+    return list(set(strict_restricted))
+
+def get_fuzzy_restricted_words():
+    fuzzy_restricted = fuzzy + spanish_fuzzy + locations_fuzzy
+    return list(set(fuzzy_restricted))
+
+#Check for repeated words in lists of strict and fuzzy
+#strict = get_strict_restricted_words()
+#fuzzy = get_fuzzy_restricted_words()
+#print([word for word in strict if word in fuzzy])

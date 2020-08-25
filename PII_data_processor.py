@@ -1,36 +1,12 @@
-import restricted_words
+import restricted_words as restricted_words_list
 import pandas as pd
 from nltk.stem.porter import PorterStemmer
 import time 
 
-# import nltk
-# import numpy as np
-# import os
-
-
-# from IPython.display import display, HTML
-# from IPython.core.interactiveshell import InteractiveShell
-# InteractiveShell.ast_node_interactivity = "all"
-# import time
-
-# def smart_print(the_message, messages_pipe = None):
-#     if __name__ == "__main__":
-#         print(the_message)
-#     else:
-#         messages_pipe.send(the_message)
-
-# def smart_return(to_return, function_pipe = None):
-#     if __name__ != "__main__":
-#         function_pipe.send(to_return)
-#     else:
-#         if len(to_return) == 2:
-#             return to_return[0], to_return[1]
-#         else:
-#             return to_return
-
-#Match between column names and restricted words
-STRICT_MATCH = True
 LOG_FILE = None
+
+STRICT = 'strict'
+FUZZY = 'fuzzy'
 
 def import_dataset(dataset_path):
     
@@ -109,27 +85,44 @@ def add_stem_of_words(restricted):
     return restricted
 
 
-def word_match(column_name, restricted_word):
-    #Still pending to define if the best idea is to use a strict match, or if maybe we can consider a match when restricted_word is in column_name
-    if(STRICT_MATCH):
+def word_match(column_name, restricted_word, type_of_matching):
+    if(type_of_matching == STRICT):
         return column_name.lower() == restricted_word.lower()
-    else:
+    else: # type_of_matching == FUZZY
         #Check if restricted word is inside column_name
         return restricted_word.lower() in column_name.lower()
 
-def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3, stemmer = None):
+def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
+    #Piis will be identifiy both by strict or fuzzy matching with predefined list of words
+
+    pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
+    pii_fuzzy_restricted_words = restricted_words_list.get_fuzzy_restricted_words()
+
+    #We will save all restricted words in a dictionary, where the keys are the words and their values is if we are looking for a strict or fuzzy matching with that word
+    restricted_words = {}
+    for word in pii_strict_restricted_words:
+        restricted_words[word] = STRICT
+    for word in pii_fuzzy_restricted_words:
+        restricted_words[word] = FUZZY
+
+
+    #Currently not doing any stem matching
+    #Get stem of the restricted words
+    #pii_restricted_words = add_stem_of_words(pii_restricted_words)
+
     # Looks for matches between column names (and labels) to restricted words
-    # In the future, we could study looking for matched betwen column names stems and restricted words  
+ 
     possible_pii = []
     log_and_print("List of identified PIIs: ")
+
     #For every column name in our dataset
     for column_name in dataset.columns:
         #For every restricted word
-        for restricted_word in restricted_words:
+        for restricted_word, type_of_matching in restricted_words.items():
             #Check if restricted word is in the column name
-            if word_match(column_name, restricted_word):
+            if word_match(column_name, restricted_word, type_of_matching):
 
-                log_and_print("Column '"+column_name+ "' considered possible pii given column name matched with restricted word '"+ restricted_word+"'")
+                log_and_print("Column '"+column_name+ "' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
                 possible_pii.append(column_name)
 
                 #If found, I dont need to keep checking this column with other restricted words
@@ -137,26 +130,14 @@ def find_piis_word_match(dataset, restricted_words, label_dict, sensitivity = 3,
 
             #If dictionary of labels is not of booleans, check labels
             if type(label_dict) is not bool:
+                
                 #Check words of label of given column
                 column_label = label_dict[column_name]
-
-                #One alternative is to check whole column_label to restricted word, other is checking each word in label
-
-                #Alt 1
-                if word_match(column_label, restricted_word):
-                    log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
+               
+                if word_match(column_label, restricted_word, type_of_matching):
+                    log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
                     possible_pii.append(column_name)
                     break
-                    
-                # #Alt 2
-                # for label_word in column_label.split(' '):
-                #     #Check that label bigger than senstitivity
-                #     if len(label_word) > sensitivity:
-                #         #Check if restricted word is in label
-                #         if word_match(label_word, restricted_word):
-                #             log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' matched with restricted word '"+ restricted_word+"'")
-                #             possible_pii.append(column_name)
-                #             break
     return possible_pii
 
 
@@ -323,7 +304,7 @@ def find_columns_with_phone_numbers(dataset):
             match_result = dataset[column].dropna().iloc[0:5].astype(str).str.match(pat = phone_n_regex_expression)
 
             #If all not NaN values matched with regex, save column as PII candidate
-            if(all(match_result)):
+            if(any(match_result)):
                 columns_with_phone_numbers.append(column)
                 log_and_print("Column '"+column+"' considered possible pii given column entries have phone number format")
 
@@ -369,20 +350,17 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
         log_and_print("Map file for encoded values created.")
         export_encoding(dataset_path, encoding_used)
 
+
+    print("A")
     exported_file_path = export(dataset, dataset_path, label_dict)
-    
+    print("B")
+
     return exported_file_path
 
 def find_piis(dataset, label_dict):
     
-    #Get words that are usually piis
-    pii_restricted_words = restricted_words.get_restricted_words()
-
-    #Get stem of the restricted words
-    #pii_restricted_words = add_stem_of_words(pii_restricted_words)
-
     #Find piis based on word matching
-    piis_word_match = find_piis_word_match(dataset, pii_restricted_words, label_dict)
+    piis_word_match = find_piis_word_match(dataset, label_dict)
 
     #Another thing that might be tried
     #fuzzy_partial_stem_match()    
@@ -487,7 +465,7 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/almond_etal_2008.dta'
+    dataset_path = 'test_files/piicheck_test_RECOVR_Mexico_NoPII.dta'
 
     reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
 
@@ -502,7 +480,7 @@ def main_when_script_run_from_console():
     #Manually set action for piis
     pii_candidates_to_action ={}
     for pii in pii_candidates:
-        pii_candidates_to_action[pii] = 'Encode'
+        pii_candidates_to_action[pii] = 'Drop'
 
     
     create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
