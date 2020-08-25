@@ -112,7 +112,7 @@ def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
 
     # Looks for matches between column names (and labels) to restricted words
  
-    possible_pii = []
+    possible_pii = {}
     log_and_print("List of identified PIIs: ")
 
     #For every column name in our dataset
@@ -123,7 +123,8 @@ def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
             if word_match(column_name, restricted_word, type_of_matching):
 
                 log_and_print("Column '"+column_name+ "' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
-                possible_pii.append(column_name)
+                
+                possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
 
                 #If found, I dont need to keep checking this column with other restricted words
                 break
@@ -136,7 +137,8 @@ def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
                
                 if word_match(column_label, restricted_word, type_of_matching):
                     log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
-                    possible_pii.append(column_name)
+                    
+                    possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
                     break
     return possible_pii
 
@@ -276,7 +278,7 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
     #Identifies pii based on columns having only unique values
     #Requires that at least 50% of entries in given column are not NA   
 
-    possible_pii=[]
+    possible_pii={}
     for v in dataset.columns:
 
         n_not_na_rows = len(dataset[v].dropna())
@@ -285,11 +287,13 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
         at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_threshold
 
         if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
-            possible_pii.append(v)
+            
             log_and_print("Column '"+v+"' considered possible pii given all entries are unique")
+            possible_pii[v] = "Column entries are unique"
 
         #We will not ask absolute unique values, but rather than the amount of unique values is very high
         elif n_unique_entries/n_not_na_rows>0.9:
+            possible_pii[v] = "Column entries are almost all unique (>90%)"
             log_and_print("Column '"+v+"' considered possible pii given 90% of entries are unique")
     
     return possible_pii
@@ -297,7 +301,7 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
 
 def find_columns_with_phone_numbers(dataset):
 
-    columns_with_phone_numbers = []
+    columns_with_phone_numbers = {}
 
     phone_n_regex_expression = "(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})"
 
@@ -309,8 +313,8 @@ def find_columns_with_phone_numbers(dataset):
 
             #If all not NaN values matched with regex, save column as PII candidate
             if(any(match_result)):
-                columns_with_phone_numbers.append(column)
                 log_and_print("Column '"+column+"' considered possible pii given column entries have phone number format")
+                columns_with_phone_numbers[column]= "Column entries have phone number format"
 
     return columns_with_phone_numbers
 
@@ -359,8 +363,7 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
 
 def find_piis(dataset, label_dict):
     
-    #Find piis based on word matching
-    piis_word_match = find_piis_word_match(dataset, label_dict)
+    all_piis_detected = {}
 
     #Another thing that might be tried
     #fuzzy_partial_stem_match()    
@@ -369,9 +372,16 @@ def find_piis(dataset, label_dict):
     piis_unique_entries = unique_entries(dataset)
 
     #Find piis based on entries format
-    piis_suspicious_format = format_detection(dataset) 
+    piis_suspicious_format = format_detection(dataset)
 
-    return set(piis_word_match + piis_unique_entries + piis_suspicious_format)
+    #Find piis based on word matching
+    piis_word_match = find_piis_word_match(dataset, label_dict)
+
+    all_piis_detected.update(piis_suspicious_format)
+    all_piis_detected.update(piis_unique_entries)
+    all_piis_detected.update(piis_word_match)
+
+    return all_piis_detected
 
 def create_log_file_path(dataset_path):
 
@@ -399,7 +409,7 @@ def read_file_and_find_piis(dataset_path):
     #Find piis
     piis = find_piis(dataset, label_dict)
 
-    log_and_print("Identified PIIs: "+" ".join(piis))
+    log_and_print("Identified PIIs: "+" ".join(list(piis.keys())))
 
     return True, piis, dataset, label_dict
 

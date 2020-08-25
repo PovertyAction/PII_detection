@@ -12,6 +12,8 @@ ipa_strict = ['gps', 'lat', 'lon', 'coord', 'house', 'social', 'census', 'fax', 
 
 other_strict = ['rand','uid','hh', 'age', 'gps','id', 'ip','red','fono','url', 'web', 'number', 'encuestador', 'escuela', 'colegio','edad', 'insurance', 'school']
 
+survey_cto_strict = ['deviceid', 'subscriberid', 'simid', 'formdef_version']
+
 fuzzy = ['name', 'fname', 'lname', 'first_name', 'last_name', 'birth', 'birthday', 'bday','address', 'network','gender','sex','email','child','beneficiary','mother','wife','father','husband', 'medical', 'enumerator', 'random', 'child_age', 'latitude', 'longitude', 'coordinates', 'website', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'resp_name', 'head_name', 'headname', 'respname', 'subvillage', 'comment', 'notes', 'contact']
 
 #'phone' removing phone given that we already have the phone format detector
@@ -29,7 +31,7 @@ def get_locations_fuzzy_restricted_words():
 	return locations_fuzzy
 
 def get_strict_restricted_words():
-    strict_restricted = stata_strict + ipa_strict + other_strict  + swahili_strict + locations_strict
+    strict_restricted = stata_strict + ipa_strict + other_strict  + swahili_strict + survey_cto_strict + locations_strict
     return list(set(strict_restricted))
 
 def get_fuzzy_restricted_words():
