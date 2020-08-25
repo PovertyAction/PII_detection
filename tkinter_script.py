@@ -24,7 +24,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v2.4"
+app_title = "IPA's PII Detector - v2.5"
 
 window_width = 1086
 window_height = 766
@@ -38,8 +38,8 @@ dataset_path = None
 new_file_path = None
 label_dict = None
 
-finding_piis_finished = False
-creating_dataset_finished = False
+
+widgets_visible_ready_to_remove = []
 
 def input(the_message):
     try:
@@ -115,6 +115,8 @@ def tkinter_display_pii_candidates(pii_candidates, label_dict):
 
     frame.update()
 
+    return pii_frame
+
 def get_sensitivity_score():
     if sensitivity.get() == "Medium (Default)":
         sensitivity_score = 3
@@ -133,21 +135,25 @@ def open_deidentified_file():
     os.system("start " + new_file_path)
 
 def create_anonymized_dataset():
-    global creating_dataset_finished
+
+    creating_new_dataset_message = tkinter_display("Creating new dataset...")
+    widgets_visible_ready_to_remove.append(creating_new_dataset_message)
+    #Automatic scroll down
+    canvas.yview_moveto( 1 )
+
     global new_file_path
 
-    if(creating_dataset_finished):
-        return
-
-    # we create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
+    #We create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
     pii_candidates_to_action = {}
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
-    tkinter_display("Creating new dataset...")
-
+    
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     
+    clear_window_removing_all_widgets()
+
     if(new_file_path):
+        tkinter_display_title("Congratulations! Task ready!")
         tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.")
         ttk.Button(frame, text="Open de-identified dataset", command=open_deidentified_file, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))        
         
@@ -163,21 +169,18 @@ def create_anonymized_dataset():
         link.grid(row = 0, column=1)
         link.bind("<Button-1>", lambda e: open_survey())
 
-
         frame.update()
 
-        creating_dataset_finished = True
-    #Automatic scroll down
-    canvas.yview_moveto( 1 )
+def clear_window_removing_all_widgets():
+    #Remove widgets currently visible
+    for widget in widgets_visible_ready_to_remove:
+        widget.pack_forget()
+    widgets_visible_ready_to_remove.clear()
 
 def read_file_and_find_piis():
     global dataset
     global dataset_path
     global label_dict
-    global finding_piis_finished
-
-    if(finding_piis_finished):
-        return
 
     dataset_path = askopenfilename()
 
@@ -186,8 +189,11 @@ def read_file_and_find_piis():
         return
 
     reading_file_label = tkinter_display("Reading file and looking for piis...")
+    widgets_visible_ready_to_remove.append(reading_file_label)
 
     reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path)
+
+    clear_window_removing_all_widgets()
     
     if(reading_status is False):
         error_message = pii_candidates_or_message
@@ -196,28 +202,23 @@ def read_file_and_find_piis():
     
     pii_candidates = pii_candidates_or_message
 
-
-    #Remove 'Select Dataset' buttom and reading_file_label
-    reading_file_label.pack_forget()
-
     if(len(pii_candidates)==0):
         tkinter_display_title('No PII candidates found.')
         return
 
-    
-    tkinter_display_title('PII candidates found:')
-    tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
+    #Create title, instructions, and display piis
+    pii_candidates_title_label = tkinter_display_title('PII candidates found:')
+    pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
 
-    tkinter_display_pii_candidates(pii_candidates, label_dict)
+    piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
 
     #Show a create anonymized dataframe buttom
-    ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    create_anonymized_df_button = ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton')
+    create_anonymized_df_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
-    finding_piis_finished = True
-
-    # #Automatic scroll down
-    # canvas.yview_moveto( 1 )
+    #Add all new widgets to list for future removal of canvas
+    widgets_visible_ready_to_remove.extend([pii_candidates_title_label, pii_candidates_instruction_label, piis_frame, create_anonymized_df_button])
 
 def restart_program():
     """Restarts the current program.
@@ -358,34 +359,28 @@ if __name__ == '__main__':
     else:
         logo_location = 'ipa_logo.jpg'
     logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tk.Label(frame, image=logo, borderwidth=0).pack(anchor="ne", padx=(0, 30), pady=(30, 0))
+    tk.Label(frame, image=logo, borderwidth=0).pack(anchor="nw", padx=(30, 30), pady=(30, 0))
 
     #Add intro text
-    ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(30, 10))
-    ttk.Label(frame, text=intro_text, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    # ttk.Label(frame, text=intro_text_p3, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 30))
+    app_title_label = ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel')
+    app_title_label.pack(anchor='nw', padx=(30, 30), pady=(30, 10))
+    
+    intro_text_1_label = ttk.Label(frame, text=intro_text, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    intro_text_1_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    
 
+    intro_text_2_label = ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    intro_text_2_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
+    
     #Labels and buttoms to run app
-    ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-    ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    start_application_label = ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    
+    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton')
+    select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-
-
-
-    # ttk.Label(frame, text="Options:", justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-
-    # # Sensitivity dropdown
-    # ttk.Label(frame, text="Select Detection Sensitivity:", justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30,0))
-    # sensitivity = StringVar(frame)
-    # w = ttk.OptionMenu(frame, sensitivity, "Medium (Default)", "Maximum", "High", "Medium (Default)", "Low", "Minimum", style='my.TMenubutton').pack(anchor='nw', padx=(30,0))
-
-    # # Status
-    # ttk.Label(frame, text="Status:", justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel').pack(anchor='nw', padx=(30,0), pady=(30, 0))
-    # first_message = "Awaiting dataset selection."
-    # first_message = datetime.now().strftime("%H:%M:%S") + '     ' + first_message
-    # ttk.Label(frame, text=first_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-
+    #Add widgets to list of widgets to remove later on
+    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button])
 
     # Constantly looping event listener
     root.mainloop()  
