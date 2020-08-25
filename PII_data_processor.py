@@ -340,7 +340,6 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     dataset.drop(columns=columns_to_drop, inplace=True)
     log_and_print("Dropped columns: "+ " ".join(columns_to_drop))
 
-
     #Encode columns
     columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
 
@@ -350,10 +349,7 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
         log_and_print("Map file for encoded values created.")
         export_encoding(dataset_path, encoding_used)
 
-
-    print("A")
     exported_file_path = export(dataset, dataset_path, label_dict)
-    print("B")
 
     return exported_file_path
 
@@ -447,7 +443,12 @@ def export(dataset, dataset_path, variable_labels = None):
 
     elif(dataset_type == 'dta'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
-        dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
+
+        try:
+            dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
+        except:
+            dataset.to_stata(new_file_path, version = 117, variable_labels = variable_labels, write_index=False)
+            
 
     elif(dataset_type == 'xlsx'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
@@ -482,7 +483,6 @@ def main_when_script_run_from_console():
     for pii in pii_candidates:
         pii_candidates_to_action[pii] = 'Drop'
 
-    
     create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
 
 
