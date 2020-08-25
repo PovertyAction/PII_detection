@@ -274,7 +274,7 @@ def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, thresho
 
 def unique_entries(dataset, min_entries_threshold = 0.5):
     #Identifies pii based on columns having only unique values
-    #Requires that at least 50% of entries in given column are not NA
+    #Requires that at least 50% of entries in given column are not NA   
 
     possible_pii=[]
     for v in dataset.columns:
@@ -287,6 +287,10 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
         if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
             possible_pii.append(v)
             log_and_print("Column '"+v+"' considered possible pii given all entries are unique")
+
+        #We will not ask absolute unique values, but rather than the amount of unique values is very high
+        elif n_unique_entries/n_not_na_rows>0.9:
+            log_and_print("Column '"+v+"' considered possible pii given 90% of entries are unique")
     
     return possible_pii
 
