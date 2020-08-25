@@ -24,7 +24,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v2.1"
+app_title = "IPA's PII Detector - v2.4"
 
 window_width = 586
 window_height = 466
@@ -38,7 +38,8 @@ dataset_path = None
 new_file_path = None
 label_dict = None
 
-finished = False
+finding_piis_finished = False
+creating_dataset_finished = False
 
 def input(the_message):
     try:
@@ -107,10 +108,10 @@ def open_deidentified_file():
     os.system("start " + new_file_path)
 
 def create_anonymized_dataset():
-    global finished
+    global creating_dataset_finished
     global new_file_path
 
-    if(finished):
+    if(creating_dataset_finished):
         return
 
     # we create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
@@ -122,7 +123,7 @@ def create_anonymized_dataset():
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     
     if(new_file_path):
-        tkinter_display("The new dataset has been created and saved in the original file directory. You will also find a log file describing the detection process. If you encoded variables, you will find a .csv file that maps original to encoded values.")
+        tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.")
         ttk.Button(frame, text="Open de-identified dataset", command=open_deidentified_file, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))        
         
         tkinter_display("Do you want to work on a new file? Click Restart buttom.")
@@ -140,7 +141,7 @@ def create_anonymized_dataset():
 
         frame.update()
 
-        finished = True
+        creating_dataset_finished = True
     #Automatic scroll down
     canvas.yview_moveto( 1 )
 
@@ -148,8 +149,9 @@ def read_file_and_find_piis():
     global dataset
     global dataset_path
     global label_dict
+    global finding_piis_finished
 
-    if(finished):
+    if(finding_piis_finished):
         return
 
     dataset_path = askopenfilename()
@@ -158,7 +160,6 @@ def read_file_and_find_piis():
     if not dataset_path:
         return
 
-    tkinter_display('Reding dataset and looking for PII candidates...')
     reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path)
     
     if(reading_status is False):
@@ -183,6 +184,8 @@ def read_file_and_find_piis():
     #Show a create anonymized dataframe buttom
     ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
+
+    finding_piis_finished = True
 
     # #Automatic scroll down
     # canvas.yview_moveto( 1 )
@@ -210,7 +213,7 @@ def window_setup(master):
     master.minsize(width=window_width, height=window_height)
 
     #Prevent window from being resized
-    master.resizable(False, False)
+    # master.resizable(False, False)
 
 def open_survey():
         webbrowser.open('https://docs.google.com/forms/d/e/1FAIpQLSfxB_pnReUd0EvFfQxPu5JI9oRGCpDgULWkTeDHYoqx8x7q-Q/viewform')
