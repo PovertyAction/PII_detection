@@ -26,8 +26,8 @@ intro_text = "This script is meant to assist in the detection of PII (personally
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - v2.4"
 
-window_width = 586
-window_height = 466
+window_width = 686
+window_height = 766
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -76,19 +76,30 @@ def tkinter_display(the_message):
     ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
-def tkinter_display_pii_candidate(pii_candidate):
-    #Create a frame for the pii label and action dropdown
+def tkinter_display_pii_candidates(pii_candidates, label_dict):
+
+    #Create a frame for the pii labels and actions dropdown
+    #padx determines space between label and dropdown
     pii_frame = tk.Frame(master=frame, bg="white")
     pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-    ttk.Label(pii_frame, text=pii_candidate, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=0, column = 0)
-    
-    dropdown = tk.StringVar(pii_frame)
-    w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=0, column = 1)
+    #Display a label for each pii candidate and save their action dropdown element in dictionary for future reference
+    for idx, pii_candidate in enumerate(pii_candidates):
+
+        #Add labels to pii candidates for better user understanding of column names
+        if label_dict and pii_candidate in label_dict and label_dict[pii_candidate]!="":
+            pii_candidate_label = pii_candidate + ": "+label_dict[pii_candidate]+"\t"
+        else:
+            pii_candidate_label = pii_candidate+"\t"
+
+        ttk.Label(pii_frame, text=pii_candidate_label, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 0, sticky = 'w', pady=(0,2))
+        
+        dropdown = tk.StringVar(pii_frame)
+        w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=idx, column = 1, sticky = 'w', pady=(0,2))
+
+        pii_candidates_to_dropdown_element[pii_candidate] = dropdown
 
     frame.update()
-
-    return dropdown
 
 def get_sensitivity_score():
     if sensitivity.get() == "Medium (Default)":
@@ -166,8 +177,8 @@ def read_file_and_find_piis():
         error_message = pii_candidates_or_message
         tkinter_display(error_message)
         return
-    else:
-        pii_candidates = pii_candidates_or_message
+    
+    pii_candidates = list(pii_candidates_or_message)
 
     if(len(pii_candidates)==0):
         tkinter_display_title('No PII candidates found.')
@@ -175,11 +186,8 @@ def read_file_and_find_piis():
 
     tkinter_display_title('PII candidates found:')
     tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
-    
-    #Display a label for each pii candidate and save their action dropdown element in dictionary for future reference
-    for pii_candidate in pii_candidates:    
-        pii_dropdown_element = tkinter_display_pii_candidate(pii_candidate)
-        pii_candidates_to_dropdown_element[pii_candidate] = pii_dropdown_element
+
+    tkinter_display_pii_candidates(pii_candidates, label_dict)
 
     #Show a create anonymized dataframe buttom
     ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
