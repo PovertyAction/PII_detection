@@ -24,7 +24,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v2.5"
+app_title = "IPA's PII Detector - v2.6"
 
 window_width = 1086
 window_height = 766
@@ -106,7 +106,7 @@ def tkinter_display_pii_candidates(pii_candidates, label_dict):
 
         ttk.Label(pii_frame, text=pii_candidate_label, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 0, sticky = 'w', pady=(0,2))
         
-        ttk.Label(pii_frame, text=reason_detected, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 1, sticky = 'w', pady=(0,2))
+        ttk.Label(pii_frame, text=reason_detected+"\t", wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 1, sticky = 'w', pady=(0,2))
 
         dropdown = tk.StringVar(pii_frame)
         w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=idx, column = 2, sticky = 'w', pady=(0,2))

@@ -284,6 +284,10 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
         n_not_na_rows = len(dataset[v].dropna())
         n_unique_entries = dataset[v].nunique()
 
+        #If all rows are empty, dont check column
+        if(n_not_na_rows==0):
+            continue
+
         at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_threshold
 
         if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
@@ -292,10 +296,10 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
             possible_pii[v] = "Column entries are unique"
 
         #We will not ask absolute unique values, but rather than the amount of unique values is very high
-        elif n_unique_entries/n_not_na_rows>0.9:
-            possible_pii[v] = "Column entries are almost all unique (>90%)"
-            log_and_print("Column '"+v+"' considered possible pii given 90% of entries are unique")
-    
+        elif n_unique_entries/n_not_na_rows>0.7:
+            possible_pii[v] = "Column entries are sparse strings (>70%)"
+            log_and_print("Column '"+v+"' considered possible pii given 70% of entries are unique")
+
     return possible_pii
 
 
@@ -306,11 +310,16 @@ def find_columns_with_phone_numbers(dataset):
     phone_n_regex_expression = "(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})"
 
     for column in dataset.columns:
+
         #Check that all values in column are not NaN
         if(pd.isnull(dataset[column]).all() == False):
-            #Match first 5 rows of column values with regex
-            match_result = dataset[column].dropna().iloc[0:5].astype(str).str.match(pat = phone_n_regex_expression)
 
+            #Find first 10 values that are not NaN nor empty space ''
+            column_with_no_nan = dataset[column].dropna()
+            column_with_no_empty_valyes = column_with_no_nan[column_with_no_nan != '']
+            first_10_values = column_with_no_empty_valyes.iloc[0:10]
+
+            match_result = first_10_values.astype(str).str.match(pat = phone_n_regex_expression)
             #If all not NaN values matched with regex, save column as PII candidate
             if(any(match_result)):
                 log_and_print("Column '"+column+"' considered possible pii given column entries have phone number format")
@@ -480,7 +489,7 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/piicheck_test_RECOVR_Mexico_NoPII.dta'
+    dataset_path = 'test_files/cases_1.csv'
 
     reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
 
