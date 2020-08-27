@@ -3,21 +3,8 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
- 
 from PIL import ImageTk, Image
-
 import PII_data_processor
-
-# from tkinter import *
-
-# from tkinter import ttk
-# import tkinter.scrolledtext as tkst
-# from nltk.stem.porter import *
-# import time
-# from datetime import datetime
-# from multiprocessing import Process, Pipe
-# import multiprocessing
-# multiprocessing.freeze_support()
 
 import webbrowser
 import os
@@ -40,32 +27,6 @@ label_dict = None
 
 
 widgets_visible_ready_to_remove = []
-
-def input(the_message):
-    try:
-        ttk.Label(frame, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-
-        def evaluate(event=None):
-            pass
-
-            #if entry.get() in ['y', 'yes']:
-            #    return True
-            #res.configure(text="Ergebnis: " + )
-
-    except:  # ## add specific Jupyter error here
-        pass
-
-    Label(frame, text="Your Expression:").pack()
-    entry = Entry(frame)
-    entry.bind("<Return>", evaluate)
-    if ttk.Button(frame, text="Submit", command=evaluate, style='my.TButton').pack() is True:
-        return True
-    entry.pack()
-    time.sleep(8)
-    res = Label(frame)
-    res.pack()
-    return ('No')
-
 
 def tkinter_display_title(title):
     label = ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -117,19 +78,6 @@ def tkinter_display_pii_candidates(pii_candidates, label_dict):
 
     return pii_frame
 
-def get_sensitivity_score():
-    if sensitivity.get() == "Medium (Default)":
-        sensitivity_score = 3
-    elif sensitivity.get() == "Maximum":
-        sensitivity_score = 5
-    elif sensitivity.get() == "High":
-        sensitivity_score = 4
-    elif sensitivity.get() == "Low":
-        sensitivity_score = 2
-    elif sensitivity.get() == "Minimum":
-        sensitivity_score = 1
-
-    return sensitivity_score
 
 def open_deidentified_file():
     os.system("start " + new_file_path)

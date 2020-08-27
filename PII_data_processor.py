@@ -1,6 +1,6 @@
 import restricted_words as restricted_words_list
 import pandas as pd
-from nltk.stem.porter import PorterStemmer
+# from nltk.stem.porter import PorterStemmer
 import time 
 
 LOG_FILE = None
@@ -60,29 +60,18 @@ def import_dataset(dataset_path):
     return (True, dataset_read_return)
 
 
-# def initialize_lists(function_pipe = None):
+# def add_stem_of_words(restricted):
+# # Identifies stems of restricted words and adds the stems to restricted list
 
-#     possible_pii = []
-#     global yes_strings
-#     yes_strings = ['y', 'yes', 'Y', 'Yes']
+#     initialized_stemmer = PorterStemmer()
+#     restricted_stems = []
+#     for r in restricted:
+#         restricted_stems.append(initialized_stemmer.stem(r).lower())
 
-#     list_restricted_words = restricted_words.get_restricted_words()
+#     restricted = restricted + restricted_stems
+#     restricted = list(set(restricted))
     
-#     smart_return([possible_pii, list_restricted_words], function_pipe)
-
-
-def add_stem_of_words(restricted):
-# Identifies stems of restricted words and adds the stems to restricted list
-
-    initialized_stemmer = PorterStemmer()
-    restricted_stems = []
-    for r in restricted:
-        restricted_stems.append(initialized_stemmer.stem(r).lower())
-
-    restricted = restricted + restricted_stems
-    restricted = list(set(restricted))
-    
-    return restricted
+#     return restricted
 
 
 def word_match(column_name, restricted_word, type_of_matching):
@@ -148,131 +137,6 @@ def log_and_print(message)    :
     file.write(message+'\n') 
     file.close() 
     print(message)
-
-def split_by_word(search_term):
-    return search_term.replace('-', ' ').replace('_', ' ').replace('  ', ' ').replace('  ', ' ').split(' ')
-
-# def is_acronym(acronym, text):
-#     text = text.lower()
-#     acronym = acronym.lower()
-#     text = split_by_word(text)
-#     count = 0
-    
-#     for c in range(len(acronym)):
-#         try:
-#             if acronym[c] == text[c][0]:
-#                 count += 1
-#         except IndexError:
-#             return False
-#     if count == len(acronym):
-#         return True
-#     else:
-#         return False
-    
-def levenshtein_distance(first, second):
-    # Find the Levenshtein distance between two strings.
-    insertion_cost = .5
-#     if not is_acronym(first, second):
-#         insertion_cost = .2
-#         first = first.lower()
-#         if first[-1] == 's':
-#             if is_acronym(first.rstrip('s'), second):
-#                 insertion_cost = 0
-    
-    first = first.lower()
-    second = second.lower()
-    if len(first) > len(second):
-        first, second = second, first
-    if len(second) == 0:
-        return len(first)
-    first_length = len(first) + 1
-    second_length = len(second) + 1
-    distance_matrix = [[0] * second_length for x in range(first_length)]
-    for i in range(first_length):
-        distance_matrix[i][0] = i
-        for j in range(second_length):
-            distance_matrix[0][j]=j
-    for i in range(1, first_length):
-        for j in range(1, second_length):
-            deletion = distance_matrix[i-1][j] + 1
-            insertion = distance_matrix[i][j-1] + insertion_cost
-            substitution = distance_matrix[i-1][j-1]
-            if first[i-1] != second[j-1]:
-                substitution += 1
-            distance_matrix[i][j] = min(insertion, deletion, substitution)
-    return distance_matrix[first_length-1][second_length-1]
-
-def compute_fuzzy_scores(search_term, restricted):
-    match_list = []
-    match_score_list = []
-    for r in restricted:
-        match_list.append(r)
-        match_score_list.append(levenshtein_distance(search_term,r))   
-    #print(match_list, match_score_list)
-    return [match_list, match_score_list]
-
-def best_fuzzy_match(word_list, score_list): #would eliminate this by implementing a priority queue
-    lowest_score_index = score_list.index(min(score_list)) #index of lowest (best) score
-    best_word_match = word_list[lowest_score_index] #use index to locate the best word
-    del score_list[lowest_score_index] #remove the score from the list
-    word_list.remove(best_word_match) #remove the word from the list
-    return [best_word_match, word_list, score_list] #return the best word
-
-def ordered_fuzzy_results(word_list, score_list):
-    ordered_fuzzy_list = []
-    ordered_score_list = []
-    best_fuzzy_results = ['', word_list, score_list] #initial set_up for while loop call        
-    while len(word_list) > 0:
-        best_fuzzy_results = best_fuzzy_match(best_fuzzy_results[1], best_fuzzy_results[2])
-        ordered_fuzzy_list.append(best_fuzzy_results[0])
-        #ordered_score_list.append(best_fuzzy_results[2][word_list.index(best_fuzzy_results[0])])
-    return ordered_fuzzy_list[:5]
-
-def run_fuzzy_query(term, fuzzy_threshold, restricted):
-    fuzzy_result = []
-    words = split_by_word(term)
-    for w in words:
-        if len(w) <= 2:
-            continue
-        scored_list = compute_fuzzy_scores(w, restricted)
-        if min(scored_list[1]) < fuzzy_threshold:
-            final_result = ordered_fuzzy_results(scored_list[0], scored_list[1])
-            fuzzy_result.append(final_result[0])
-            
-#     scored_list = compute_fuzzy_scores(term)
-#     if min(scored_list[1]) < fuzzy_threshold:
-#         final_result = ordered_fuzzy_results(scored_list[0], scored_list[1])
-#         fuzzy_result.append(final_result[0])
-        
-    if len(fuzzy_result) == 0:
-        return False
-    else:
-        return fuzzy_result
-    #return final_result
-
-
-# In[7]:
-
-def fuzzy_partial_stem_match(possible_pii, restricted, dataset, stemmer, threshold = 0.75, function_pipe = None, messages_pipe = None):
-# Looks for fuzzy and intelligent partial matches
-# Recommended value is 0.75. Higher numbers (i.e. 4) will identify more possible PII, while lower numbers (i.e. 0.5) will identify less potential PII.
-
-    smart_print('The fuzzy and intelligent partial matches with stemming algorithm is now running.', messages_pipe)
-
-    for v in tqdm(dataset.columns):
-        if run_fuzzy_query(v.lower(), threshold, restricted) != False:
-            possible_pii.append(v)
-        if run_fuzzy_query(stemmer.stem(v).lower(), threshold, restricted) != False:
-            possible_pii.append(v)
-            
-    smart_print('**' + str(len(set(possible_pii))) + '**' + " total fields that may contain PII have now been identified.", messages_pipe)
-
-    smart_return(possible_pii, function_pipe)
-
-
-# # All Uniques
-
-# In[8]:
 
 def unique_entries(dataset, min_entries_threshold = 0.5):
     #Identifies pii based on columns having only unique values

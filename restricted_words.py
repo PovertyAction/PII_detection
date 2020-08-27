@@ -24,7 +24,7 @@ fuzzy = [' name', '_name','fname', 'lname', 'first_name', 'last_name', 'birthday
 #telefono', 'telefonico', 'teléfono', 'telefónico'
 #'telefono', 'tlfno'
 
-spanish_fuzzy = ['apellido', 'apellidos', 'beneficiario', 'censo',  'comentario', 'comunidad', 'contar', 'coordenadas', 'direccion', 'edad_nino', 'email', 'esposa', 'esposo', 'fecha_nacimiento', 'genero', 'identificador', 'identidad', 'informacion', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'primer_nombre', 'random', 'salud', 'seguro', 'ubicacion']
+spanish_fuzzy = ['apellido', 'apellidos', 'beneficiario', 'censo',  'comentario', 'comunidad', 'contar', 'coordenadas', 'direccion', 'edad_nino', 'email', 'esposa', 'esposo', 'fecha_nacimiento', 'identificador', 'identidad', 'informacion', 'latitud', 'latitude', 'locacion', 'longitud', 'madre', 'medical', 'medico', 'nino', 'nombre', 'numero', 'padre', 'pag_web', 'pais', 'parroquia', 'primer_nombre', 'random', 'salud', 'seguro', 'ubicacion']
 
 swahili_strict = ['jina', 'simu', 'mkoa', 'wilaya', 'kata', 'kijiji', 'kitongoji', 'vitongoji', 'nyumba', 'numba', 'namba', 'tarahe ya kuzaliwa', 'umri', 'jinsi', 'jinsia']
 
