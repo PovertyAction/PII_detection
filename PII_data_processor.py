@@ -5,10 +5,8 @@ import time
 
 LOG_FILE = None
 
-STRICT = 'strict'
-FUZZY = 'fuzzy'
+from constant_strings import *
 
-CONSIDER_SURVEY_CTO_VARS = 'consider_surveyCTO_vars'
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -19,17 +17,22 @@ def import_dataset(dataset_path):
     raise_error = False
     status_message = False
 
-    if dataset_path.endswith(('"', "'")):
-        dataset_path = dataset_path[1:-1] 
+    # if dataset_path.endswith(('"', "'")):
+    #     dataset_path = dataset_path[1:-1] 
 
-    dataset_path_l = dataset_path.lower()
+    # dataset_path_l = dataset_path.lower()
+
+
+    #Check format
+    if(dataset_path.endswith(('xlsx', 'xls','csv','dta')) is False):
+        return (False, 'Supported files are .csv, .dta, .xlsx, .xls')
 
     try:
-        if dataset_path_l.endswith(('xlsx', 'xls')):
+        if dataset_path.endswith(('xlsx', 'xls')):
             dataset = pd.read_excel(dataset_path)
-        elif dataset_path_l.endswith('csv'):
+        elif dataset_path.endswith('csv'):
             dataset = pd.read_csv(dataset_path)
-        elif dataset_path_l.endswith('dta'):
+        elif dataset_path.endswith('dta'):
             try:
                 dataset = pd.read_stata(dataset_path)
             except ValueError:
@@ -39,12 +42,12 @@ def import_dataset(dataset_path):
                 value_label_dict = pd.io.stata.StataReader(dataset_path).value_labels()
             except AttributeError:
                 status_message = "No value labels detected. " # Not printed in the app, overwritten later.
-        elif dataset_path_l.endswith(('xpt', '.sas7bdat')):
+        elif dataset_path.endswith(('xpt', '.sas7bdat')):
             dataset = pd.read_sas(dataset_path)
-        elif dataset_path_l.endswith('vc'):
+        elif dataset_path.endswith('vc'):
             status_message = "**ERROR**: This folder appears to be encrypted using VeraCrypt."
             raise Exception
-        elif dataset_path_l.endswith('bc'):
+        elif dataset_path.endswith('bc'):
             status_message = "**ERROR**: This file appears to be encrypted using Boxcryptor. Sign in to Boxcryptor and then select the file in your X: drive."
             raise Exception
         else:
@@ -88,6 +91,10 @@ def word_match(column_name, restricted_word, type_of_matching=STRICT):
 
 
 def column_has_sparse_strings(dataset, column, min_entries_threshold=0.7):
+
+    if(column =='end5'):
+        print("Aca estamosssssssss")
+        print(dataset[column].dtypes)
 
     #Check if column ty
     if dataset[column].dtypes == 'object':
@@ -169,7 +176,7 @@ def log_and_print(message)    :
     file.close() 
     print(message)
 
-def unique_entries(dataset, columns_to_check, min_entries_threshold = 0.5):
+def unique_entries(dataset, columns_to_check, min_entries_not_NA = 0.5, sparse_threshold=0.85):
     #Identifies pii based on columns having only unique values
     #Requires that at least 50% of entries in given column are not NA   
 
@@ -183,7 +190,7 @@ def unique_entries(dataset, columns_to_check, min_entries_threshold = 0.5):
         if(n_not_na_rows==0):
             continue
 
-        at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_threshold
+        at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_not_NA
 
         if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
             
@@ -191,9 +198,9 @@ def unique_entries(dataset, columns_to_check, min_entries_threshold = 0.5):
             possible_pii[v] = "Column entries are unique"
 
         #We will not ask absolute unique values, but rather than the amount of unique values is very high
-        elif n_unique_entries/n_not_na_rows>0.7:
-            possible_pii[v] = "Column entries are sparse strings (>70%)"
-            log_and_print("Column '"+v+"' considered possible pii given 70% of entries are unique")
+        elif n_unique_entries/n_not_na_rows>sparse_threshold:
+            possible_pii[v] = "Column entries are sparse strings (>"+str(sparse_threshold*100)+"%)"
+            log_and_print("Column '"+v+"' considered possible pii given "+str(sparse_threshold*100)+"% of entries are unique")
 
     return possible_pii
 
@@ -282,23 +289,37 @@ def find_survey_cto_vars(dataset):
     return possible_pii
 
 
+def find_piis_based_on_column_name_or_label(dataset, label_dict, columns_to_check):
+
+    all_piis_detected = {}
+
+    #Find piis based on word matching
+    piis_word_match = column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check)
+    all_piis_detected.update(piis_word_match)
+
+    return all_piis_detected
+
+def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
+
+    all_piis_detected = {}
+
+    #Find piis based on entries format
+    piis_suspicious_format = format_detection(dataset, columns_to_check)
+    all_piis_detected.update(piis_suspicious_format)
+
+    return all_piis_detected
+
 def find_piis(dataset, label_dict, options):
     
     all_piis_detected = {}
 
-    #If survey cto vars are to excluded, remove them from columns to check
-    if(options[CONSIDER_SURVEY_CTO_VARS]==0):
-        columns_to_check = [column for column in dataset.columns if column not in restricted_words_list.get_surveycto_vars()]
-    else:
-        columns_to_check = dataset.columns
+
 
     #Find piis based on unique_entries detections
     piis_unique_entries = unique_entries(dataset, columns_to_check)
     all_piis_detected.update(piis_unique_entries)
 
-    #Find piis based on entries format
-    piis_suspicious_format = format_detection(dataset, columns_to_check)
-    all_piis_detected.update(piis_suspicious_format)
+
 
     #Find piis based on word matching
     piis_word_match = column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check)
@@ -319,23 +340,42 @@ def create_log_file_path(dataset_path):
     print(LOG_FILE)
 
 
-def read_file_and_find_piis(dataset_path, options):
+def read_file_and_find_piis_based_on_column_name(dataset_path, options):
     
     create_log_file_path(dataset_path)
 
+    response_content = {}
+
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
-    if import_status is False:
-        return import_status, import_result, _, _
     
+    #Check if error ocurr
+    if import_status is False:
+        response_content[ERROR_MESSAGE] = import_result
+        return import_status, response_content
+    
+    #Else, decouple import result
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
+
+    #If survey cto vars are to excluded, remove them from columns to check
+    if(options[CONSIDER_SURVEY_CTO_VARS]==0):
+        columns_to_check = [column for column in dataset.columns if column not in restricted_words_list.get_surveycto_vars()]
+    else:
+        columns_to_check = dataset.columns
+
     #Find piis
-    piis = find_piis(dataset, label_dict, options)
+    piis = find_piis_based_on_column_name_or_label(dataset, label_dict, columns_to_check)
 
     log_and_print("Identified PIIs: "+" ".join(list(piis.keys())))
 
-    return True, piis, dataset, label_dict
+    #Save results in dictionary for return
+    response_content[PII_CANDIDATES] = piis
+    response_content[DATASET] = dataset
+    response_content[LABEL_DICT] = label_dict
+    response_content[COLUMNS_STILL_TO_CHECK] = [c for c in columns_to_check if c not in list(piis.keys())]
+
+    return True, response_content
 
 
 
@@ -408,7 +448,7 @@ def main_when_script_run_from_console():
 
     find_piis_options={}
     find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
-    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path, find_piis_options)
+    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis_based_on_column_name(dataset_path, find_piis_options)
 
     #Check if reading was succesful
     if(reading_status is False):    

@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk, Image
 import PII_data_processor
+from constant_strings import *
 
 import webbrowser
 import os
@@ -25,8 +26,6 @@ dataset_path = None
 new_file_path = None
 label_dict = None
 
-CONSIDER_SURVEY_CTO_VARS = 'consider_surveyCTO_vars'
-
 widgets_visible_ready_to_remove = []
 
 def tkinter_display_title(title):
@@ -42,7 +41,7 @@ def tkinter_display(the_message):
     frame.update()
     return label
 
-def tkinter_display_pii_candidates(pii_candidates, label_dict):
+def tkinter_display_pii_candidates(pii_candidates, label_dict, default_dropdown_option="Drop"):
 
     #Create a frame for the pii labels and actions dropdown
     #padx determines space between label and dropdown
@@ -71,7 +70,7 @@ def tkinter_display_pii_candidates(pii_candidates, label_dict):
         ttk.Label(pii_frame, text=reason_detected+"\t", wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 1, sticky = 'w', pady=(0,2))
 
         dropdown = tk.StringVar(pii_frame)
-        w = ttk.OptionMenu(pii_frame, dropdown, "Drop", "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=idx, column = 2, sticky = 'w', pady=(0,2))
+        w = ttk.OptionMenu(pii_frame, dropdown, default_dropdown_option, "Drop", "Encode", "Keep", style='my.TMenubutton').grid(row=idx, column = 2, sticky = 'w', pady=(0,2))
 
         pii_candidates_to_dropdown_element[pii_candidate] = dropdown
 
@@ -97,6 +96,7 @@ def create_anonymized_dataset():
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
     
+
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
     
     clear_window_removing_all_widgets()
@@ -126,7 +126,75 @@ def clear_window_removing_all_widgets():
         widget.pack_forget()
     widgets_visible_ready_to_remove.clear()
 
-def read_file_and_find_piis():
+
+
+def find_piis_based_on_unique_entries():
+
+    global dataset
+    global dataset_path
+    global label_dict
+    global columns_still_to_check
+
+    pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+
+    clear_window_removing_all_widgets()
+
+    #Update global columns_still_to_check
+    columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+
+    pii_candidates_title_label = tkinter_display_title('PII candidates found based on unique entries:')
+    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
+    
+    if(len(pii_candidates)==0):
+        no_pii_label = tkinter_display('No PII candidates found.')
+        widgets_visible_ready_to_remove.extend([no_pii_label])
+    else:
+        #Create title, instructions, and display piis
+        pii_candidates_title_label = tkinter_display_title('PII candidates found based on unique entries:')
+        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
+        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
+
+    #Show a create anonymized dataframe buttom
+    create_anonymized_df_button = ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton')
+    create_anonymized_df_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    #Add widgets to list for future removal of canvas
+    widgets_visible_ready_to_remove.extend([create_anonymized_df_button])
+
+def find_piis_based_on_column_format():
+    global dataset
+    global dataset_path
+    global label_dict
+    global columns_still_to_check
+
+    pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+
+    clear_window_removing_all_widgets()
+
+    #Update global columns_still_to_check
+    columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+
+    pii_candidates_title_label = tkinter_display_title('PII candidates found based on column format:')
+    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
+    
+    if(len(pii_candidates)==0):
+        no_pii_label = tkinter_display('No PII candidates found.')
+        widgets_visible_ready_to_remove.extend([no_pii_label])
+    else:
+        #Create title, instructions, and display piis
+        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
+        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
+        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
+
+    #Show a create anonymized dataframe buttom
+    find_piis_based_unique_entries_button = ttk.Button(frame, text="Continue: Find PIIs based on unique entries", command=find_piis_based_on_unique_entries, style='my.TButton')
+    find_piis_based_unique_entries_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+
+    widgets_visible_ready_to_remove.extend([find_piis_based_unique_entries_button])
+
+
+def read_file_and_find_piis_based_on_column_name():
 
     #Create options dictionary
     find_piis_options={}
@@ -135,6 +203,7 @@ def read_file_and_find_piis():
     global dataset
     global dataset_path
     global label_dict
+    global columns_still_to_check
 
     dataset_path = askopenfilename()
 
@@ -145,34 +214,42 @@ def read_file_and_find_piis():
     reading_file_label = tkinter_display("Reading file and looking for piis...")
     widgets_visible_ready_to_remove.append(reading_file_label)
 
-    reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path, find_piis_options)
+    #The first step of the search will be to find piis based on column names
+    reading_status, reading_content = PII_data_processor.read_file_and_find_piis_based_on_column_name(dataset_path, find_piis_options)
 
     clear_window_removing_all_widgets()
     
     if(reading_status is False):
-        error_message = pii_candidates_or_message
-        tkinter_display(error_message)
+        tkinter_display(reading_content[ERROR_MESSAGE])
         return
-    
-    pii_candidates = pii_candidates_or_message
+    else:
+        pii_candidates = reading_content[PII_CANDIDATES]
+        dataset = reading_content[DATASET]
+        label_dict = reading_content[LABEL_DICT]
+        columns_still_to_check = reading_content[COLUMNS_STILL_TO_CHECK]
 
+    pii_candidates_title_label = tkinter_display_title('PII candidates found based on column names:')
+    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
     if(len(pii_candidates)==0):
-        tkinter_display_title('No PII candidates found.')
-        return
+        no_pii_label = tkinter_display('No PII candidates found.')
+        widgets_visible_ready_to_remove.extend([no_pii_label])
+    else:
+        #Create title, instructions, and display piis
+        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
+        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
 
-    #Create title, instructions, and display piis
-    pii_candidates_title_label = tkinter_display_title('PII candidates found:')
-    pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action and then press the "Create anonymized dataset" button')
-
-    piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
+        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
 
     #Show a create anonymized dataframe buttom
-    create_anonymized_df_button = ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton')
-    create_anonymized_df_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    find_piis_based_column_format_button = ttk.Button(frame, text="Continue: Find PIIs based on column format", command=find_piis_based_on_column_format, style='my.TButton')
+    find_piis_based_column_format_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
-    #Add all new widgets to list for future removal of canvas
-    widgets_visible_ready_to_remove.extend([pii_candidates_title_label, pii_candidates_instruction_label, piis_frame, create_anonymized_df_button])
+    #Add widgets to list for future removal of canvas
+    widgets_visible_ready_to_remove.extend([find_piis_based_column_format_button])
+
+
+
 
 def restart_program():
     """Restarts the current program.
@@ -194,7 +271,7 @@ def window_setup(master):
     master.iconbitmap(icon_location)
 
     #Define window size
-    master.minsize(width=10, height=10)
+    master.minsize(width=1, height=1)
 
     #Make window reziable
     master.resizable(True, True)
@@ -342,7 +419,7 @@ if __name__ == '__main__':
     start_application_label = ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
-    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis, style='my.TButton')
+    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis_based_on_column_name, style='my.TButton')
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     #Add widgets to list of widgets to remove later on
