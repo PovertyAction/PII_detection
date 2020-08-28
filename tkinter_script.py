@@ -14,7 +14,7 @@ intro_text_p2 = "You will first load a dataset that might contain PII variables.
 app_title = "IPA's PII Detector - v2.6"
 
 window_width = 1086
-window_height = 766
+window_height = 466
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -25,6 +25,7 @@ dataset_path = None
 new_file_path = None
 label_dict = None
 
+CONSIDER_SURVEY_CTO_VARS = 'consider_surveyCTO_vars'
 
 widgets_visible_ready_to_remove = []
 
@@ -126,6 +127,11 @@ def clear_window_removing_all_widgets():
     widgets_visible_ready_to_remove.clear()
 
 def read_file_and_find_piis():
+
+    #Create options dictionary
+    find_piis_options={}
+    find_piis_options[CONSIDER_SURVEY_CTO_VARS] = check_survey_cto_var.get()
+
     global dataset
     global dataset_path
     global label_dict
@@ -139,7 +145,7 @@ def read_file_and_find_piis():
     reading_file_label = tkinter_display("Reading file and looking for piis...")
     widgets_visible_ready_to_remove.append(reading_file_label)
 
-    reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path)
+    reading_status, pii_candidates_or_message, dataset, label_dict = PII_data_processor.read_file_and_find_piis(dataset_path, find_piis_options)
 
     clear_window_removing_all_widgets()
     
@@ -188,10 +194,10 @@ def window_setup(master):
     master.iconbitmap(icon_location)
 
     #Define window size
-    master.minsize(width=window_width, height=window_height)
+    master.minsize(width=10, height=10)
 
-    #Prevent window from being resized
-    # master.resizable(False, False)
+    #Make window reziable
+    master.resizable(True, True)
 
 def open_survey():
         webbrowser.open('https://docs.google.com/forms/d/e/1FAIpQLSfxB_pnReUd0EvFfQxPu5JI9oRGCpDgULWkTeDHYoqx8x7q-Q/viewform')
@@ -320,6 +326,18 @@ if __name__ == '__main__':
     intro_text_2_label = ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_2_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     
+    #Labels and checkbox for options
+    options_label = ttk.Label(frame, text="Options: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    
+    check_survey_cto_var = tk.IntVar()
+    check_survey_cto_button = tk.Checkbutton(frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime')",
+            bg="white",
+            activebackground="white",
+            variable=check_survey_cto_var,
+            onvalue=1, offvalue=0)
+    check_survey_cto_button.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
     #Labels and buttoms to run app
     start_application_label = ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -328,7 +346,7 @@ if __name__ == '__main__':
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     #Add widgets to list of widgets to remove later on
-    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button])
+    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button, options_label, check_survey_cto_button])
 
     # Constantly looping event listener
     root.mainloop()  

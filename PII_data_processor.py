@@ -8,6 +8,8 @@ LOG_FILE = None
 STRICT = 'strict'
 FUZZY = 'fuzzy'
 
+CONSIDER_SURVEY_CTO_VARS = 'consider_surveyCTO_vars'
+
 def import_dataset(dataset_path):
     
     dataset, label_dict, value_label_dict = False, False, False
@@ -74,14 +76,14 @@ def import_dataset(dataset_path):
 #     return restricted
 
 
-def word_match(column_name, restricted_word, type_of_matching):
+def word_match(column_name, restricted_word, type_of_matching=STRICT):
     if(type_of_matching == STRICT):
         return column_name.lower() == restricted_word.lower()
     else: # type_of_matching == FUZZY
         #Check if restricted word is inside column_name
         return restricted_word.lower() in column_name.lower()
 
-def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
+def find_piis_word_match(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
     #Piis will be identifiy both by strict or fuzzy matching with predefined list of words
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
@@ -105,7 +107,7 @@ def find_piis_word_match(dataset, label_dict, sensitivity = 3, stemmer = None):
     log_and_print("List of identified PIIs: ")
 
     #For every column name in our dataset
-    for column_name in dataset.columns:
+    for column_name in columns_to_check:
         #For every restricted word
         for restricted_word, type_of_matching in restricted_words.items():
             #Check if restricted word is in the column name
@@ -138,12 +140,12 @@ def log_and_print(message)    :
     file.close() 
     print(message)
 
-def unique_entries(dataset, min_entries_threshold = 0.5):
+def unique_entries(dataset, columns_to_check, min_entries_threshold = 0.5):
     #Identifies pii based on columns having only unique values
     #Requires that at least 50% of entries in given column are not NA   
 
     possible_pii={}
-    for v in dataset.columns:
+    for v in columns_to_check:
 
         n_not_na_rows = len(dataset[v].dropna())
         n_unique_entries = dataset[v].nunique()
@@ -167,13 +169,13 @@ def unique_entries(dataset, min_entries_threshold = 0.5):
     return possible_pii
 
 
-def find_columns_with_phone_numbers(dataset):
+def find_columns_with_phone_numbers(dataset, columns_to_check):
 
     columns_with_phone_numbers = {}
 
     phone_n_regex_expression = "(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})"
 
-    for column in dataset.columns:
+    for column in columns_to_check:
 
         #Check that all values in column are not NaN
         if(pd.isnull(dataset[column]).all() == False):
@@ -192,10 +194,10 @@ def find_columns_with_phone_numbers(dataset):
     return columns_with_phone_numbers
 
 
-def format_detection(dataset):
+def format_detection(dataset, columns_to_check):
     
     #Find columns with phone numbers formats
-    possible_pii = find_columns_with_phone_numbers(dataset)
+    possible_pii = find_columns_with_phone_numbers(dataset, columns_to_check)
 
     #Check other formats
 
@@ -234,25 +236,45 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
 
     return exported_file_path
 
-def find_piis(dataset, label_dict):
+def find_survey_cto_vars(dataset):
+    surveycto_vars = restricted_words_list.get_surveycto_vars()
+
+    possible_pii = {}
+    log_and_print("List of identified PIIs: ")
+
+    #For every column name in our dataset
+    for column_name in dataset.columns:
+        #For every restricted word
+        for restricted_word in surveycto_vars:
+            #Check if restricted word is in the column name
+            if word_match(column_name, restricted_word):
+                possible_pii[column_name] = 'SurveyCTO variable'
+
+    return possible_pii
+
+
+def find_piis(dataset, label_dict, options):
     
     all_piis_detected = {}
 
-    #Another thing that might be tried
-    #fuzzy_partial_stem_match()    
+    #If survey cto vars are to excluded, remove them from columns to check
+    if(options[CONSIDER_SURVEY_CTO_VARS]==0):
+        columns_to_check = [column for column in dataset.columns if column not in restricted_words_list.get_surveycto_vars()]
+    else:
+        columns_to_check = dataset.columns
 
     #Find piis based on unique_entries detections
-    piis_unique_entries = unique_entries(dataset)
+    piis_unique_entries = unique_entries(dataset, columns_to_check)
+    all_piis_detected.update(piis_unique_entries)
 
     #Find piis based on entries format
-    piis_suspicious_format = format_detection(dataset)
+    piis_suspicious_format = format_detection(dataset, columns_to_check)
+    all_piis_detected.update(piis_suspicious_format)
 
     #Find piis based on word matching
-    piis_word_match = find_piis_word_match(dataset, label_dict)
-
-    all_piis_detected.update(piis_suspicious_format)
-    all_piis_detected.update(piis_unique_entries)
+    piis_word_match = find_piis_word_match(dataset, label_dict, columns_to_check)
     all_piis_detected.update(piis_word_match)
+    
 
     return all_piis_detected
 
@@ -268,7 +290,7 @@ def create_log_file_path(dataset_path):
     print(LOG_FILE)
 
 
-def read_file_and_find_piis(dataset_path):
+def read_file_and_find_piis(dataset_path, options):
     
     create_log_file_path(dataset_path)
 
@@ -280,7 +302,7 @@ def read_file_and_find_piis(dataset_path):
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
     #Find piis
-    piis = find_piis(dataset, label_dict)
+    piis = find_piis(dataset, label_dict, options)
 
     log_and_print("Identified PIIs: "+" ".join(list(piis.keys())))
 
@@ -355,7 +377,9 @@ def export(dataset, dataset_path, variable_labels = None):
 def main_when_script_run_from_console():
     dataset_path = 'test_files/cases_1.csv'
 
-    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path)
+    find_piis_options={}
+    find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
+    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path,find_piis_options)
 
     #Check if reading was succesful
     if(reading_status is False):    
