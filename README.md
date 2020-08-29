@@ -9,7 +9,7 @@ This tool is current listed as an alpha release because it is still being tested
 
 There are a series of rules that are applied to a dataset's column to identify if a given column is a PII. Such rules are:
 
-* If column name or label match with any of the restricted words (check restricted_words.py to read the list)
+* If column name or label match with any of the restricted words (check restricted_words.py to read the list) and has sparse string entries.
 * If all entries in a given column are unique
 * If entries in a given column have a date format (in future version gps, phone numbers and national identifiers will be included)
 

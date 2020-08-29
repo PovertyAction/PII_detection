@@ -16,7 +16,7 @@ other_strict = ['rand','uid','hh', 'age', 'gps','id', 'ip','red','fono','url', '
 
 survey_cto_strict = ['deviceid', 'subscriberid', 'simid', 'formdef_version', 'devicephonenum', 'duration', 'bc_rand','key','starttime','endtime']
 
-fuzzy = [' name', '_name','fname', 'lname', 'first_name', 'last_name', 'birthday', 'bday','address', 'network','email','beneficiary','mother','wife','father','husband', 'enumerator ','enumerator_', 'child_age', 'latitude', 'longitude', 'coordinates', 'website', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'resp_name', 'head_name', 'headname', 'respname', 'subvillage', 'comment', 'notes']
+fuzzy = ['name', '_name','fname', 'lname', 'first_name', 'last_name', 'birthday', 'bday','address', 'network','email','beneficiary','mother','wife','father','husband', 'enumerator ','enumerator_', 'child_age', 'latitude', 'longitude', 'coordinates', 'website', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'resp_name', 'head_name', 'headname', 'respname', 'subvillage', 'comment', 'notes']
 #adding an empty space in front of name to avoid match with ${name}
 
 

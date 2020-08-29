@@ -10,6 +10,9 @@ FUZZY = 'fuzzy'
 
 CONSIDER_SURVEY_CTO_VARS = 'consider_surveyCTO_vars'
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 def import_dataset(dataset_path):
     
     dataset, label_dict, value_label_dict = False, False, False
@@ -83,8 +86,26 @@ def word_match(column_name, restricted_word, type_of_matching=STRICT):
         #Check if restricted word is inside column_name
         return restricted_word.lower() in column_name.lower()
 
-def find_piis_word_match(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
-    #Piis will be identifiy both by strict or fuzzy matching with predefined list of words
+
+def column_has_sparse_strings(dataset, column, min_entries_threshold=0.7):
+
+    #Check if column ty
+    if dataset[column].dtypes == 'object':
+        #Check column has sparse entries
+        n_not_na_rows = len(dataset[column].dropna())
+        n_unique_entries = dataset[column].nunique()
+
+        if n_not_na_rows != 0 and n_unique_entries/n_not_na_rows > min_entries_threshold:
+            return True
+
+    else:
+        return False
+
+
+def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
+    
+    #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sparse strings
+    #Ideally, this method will capture columns with names, etc.
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
     pii_fuzzy_restricted_words = restricted_words_list.get_fuzzy_restricted_words()
@@ -111,26 +132,34 @@ def find_piis_word_match(dataset, label_dict, columns_to_check, sensitivity = 3,
         #For every restricted word
         for restricted_word, type_of_matching in restricted_words.items():
             #Check if restricted word is in the column name
-            if word_match(column_name, restricted_word, type_of_matching):
+            column_name_match = word_match(column_name, restricted_word, type_of_matching)
 
-                log_and_print("Column '"+column_name+ "' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
-                
-                possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
-
-                #If found, I dont need to keep checking this column with other restricted words
-                break
-
-            #If dictionary of labels is not of booleans, check labels
-            if type(label_dict) is not bool:
-                
-                #Check words of label of given column
+            #If there is a dictionary of labels, check match with label
+            if label_dict is not False: #label_dict will be False in case of no labels
                 column_label = label_dict[column_name]
-               
-                if word_match(column_label, restricted_word, type_of_matching):
-                    log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+                column_label_match = word_match(column_label, restricted_word, type_of_matching)
+            else:
+                column_label_match = False
+
+            #If there was a match between column name or label with restricted word
+            if column_name_match or column_label_match:
+
+                #If column has strings and is sparse    
+                if column_has_sparse_strings(dataset, column_name):
+
+                    #Log result and save column as possible pii. Theres different log depending if match was with column or label
+                    if(column_name_match):
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+                
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
                     
-                    possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
+                    elif(column_label_match):
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+                    
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
+                    #If found, I dont need to keep checking this column with other restricted words
                     break
+
     return possible_pii
 
 
@@ -272,7 +301,7 @@ def find_piis(dataset, label_dict, options):
     all_piis_detected.update(piis_suspicious_format)
 
     #Find piis based on word matching
-    piis_word_match = find_piis_word_match(dataset, label_dict, columns_to_check)
+    piis_word_match = column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check)
     all_piis_detected.update(piis_word_match)
     
 
@@ -375,11 +404,11 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/cases_1.csv'
+    dataset_path = 'test_files/piicheck_test_RECOVR_Mexico_NoPII.dta'
 
     find_piis_options={}
     find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
-    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path,find_piis_options)
+    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis(dataset_path, find_piis_options)
 
     #Check if reading was succesful
     if(reading_status is False):    
