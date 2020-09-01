@@ -10,7 +10,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -98,8 +97,6 @@ ENV/
 # mypy
 .mypy_cache/
 setup.py
-
-*.exe
 
 Untitled.ipynb
 
