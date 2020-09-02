@@ -12,7 +12,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.7"
+app_title = "IPA's PII Detector - v0.2.8"
 
 window_width = 1086
 window_height = 466
@@ -78,10 +78,6 @@ def tkinter_display_pii_candidates(pii_candidates, label_dict, default_dropdown_
 
     return pii_frame
 
-
-def open_deidentified_file():
-    os.system("start " + new_file_path)
-
 def create_anonymized_dataset():
 
     creating_new_dataset_message = tkinter_display("Creating new dataset...")
@@ -103,8 +99,7 @@ def create_anonymized_dataset():
 
     if(new_file_path):
         tkinter_display_title("Congratulations! Task ready!")
-        tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.")
-        ttk.Button(frame, text="Open de-identified dataset", command=open_deidentified_file, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))        
+        tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n")
         
         tkinter_display("Do you want to work on a new file? Click Restart buttom.")
         ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
