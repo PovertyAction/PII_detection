@@ -90,19 +90,35 @@ def word_match(column_name, restricted_word, type_of_matching=STRICT):
         return restricted_word.lower() in column_name.lower()
 
 
-def column_has_sparse_strings(dataset, column, min_entries_threshold=0.7):
+def remove_other_refuse_and_dont_know(column):
 
-    if(column =='end5'):
-        print("Aca estamosssssssss")
-        print(dataset[column].dtypes)
+    filtered_column = column.loc[(column != '777') & (column != '888') & (column != '999')]
 
-    #Check if column ty
+    return filtered_column
+
+def column_has_sparse_strings(dataset, column, sparse_threshold=0.3):
+    '''
+    Checks if 'valid' column entries are sparse, defined as ratio between unique_entries/total_entries.
+    Consider only valid stands, aka, exludet NaN, '', Other, Refuse to respond, Not Know
+    '''
+
+    #Check if column type is string
     if dataset[column].dtypes == 'object':
-        #Check column has sparse entries
-        n_not_na_rows = len(dataset[column].dropna())
-        n_unique_entries = dataset[column].nunique()
 
-        if n_not_na_rows != 0 and n_unique_entries/n_not_na_rows > min_entries_threshold:
+        #Drop NaNs
+        column_filtered = dataset[column].dropna()
+
+        #Remove empty entries
+        column_filtered = column_filtered[column_filtered!='']
+
+        #Remove other, refuses and dont knows
+        column_filtered = remove_other_refuse_and_dont_know(column_filtered)
+
+        #Check sparcity
+        n_entries = len(column_filtered)
+        n_unique_entries = column_filtered.nunique()
+
+        if n_entries != 0 and n_unique_entries/n_entries > sparse_threshold:
             return True
 
     else:
@@ -151,17 +167,25 @@ def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
 
+                # print("Checking column with suspicious name")
+                # print("Column: "+column_name)
+                # if(column_label):
+                #     print("Label: "+ column_label)
+                # print("Column type: "+str(dataset[column_name].dtypes))
+
                 #If column has strings and is sparse    
                 if column_has_sparse_strings(dataset, column_name):
 
+                    # print("Is sparse!!")
+
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
-                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sparse strings")
                 
                         possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
                     
                     elif(column_label_match):
-                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sparse strings")
                     
                         possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
                     #If found, I dont need to keep checking this column with other restricted words
@@ -444,7 +468,7 @@ def export(dataset, dataset_path, variable_labels = None):
 
 
 def main_when_script_run_from_console():
-    dataset_path = 'test_files/piicheck_test_RECOVR_Mexico_NoPII.dta'
+    dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
 
     find_piis_options={}
     find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
