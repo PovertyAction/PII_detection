@@ -128,21 +128,21 @@ def clear_window_removing_all_widgets():
 
 
 
-def find_piis_based_on_unique_entries():
+def find_piis_based_on_sparse_entries():
 
     global dataset
     global dataset_path
     global label_dict
     global columns_still_to_check
 
-    pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+    pii_candidates = PII_data_processor.find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
 
     clear_window_removing_all_widgets()
 
     #Update global columns_still_to_check
     columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
 
-    pii_candidates_title_label = tkinter_display_title('PII candidates found based on unique entries:')
+    pii_candidates_title_label = tkinter_display_title('PII candidates found based on sparse entries:')
     widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
     
     if(len(pii_candidates)==0):
@@ -150,14 +150,13 @@ def find_piis_based_on_unique_entries():
         widgets_visible_ready_to_remove.extend([no_pii_label])
     else:
         #Create title, instructions, and display piis
-        pii_candidates_title_label = tkinter_display_title('PII candidates found based on unique entries:')
         pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
         piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-
+        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
     #Show a create anonymized dataframe buttom
     create_anonymized_df_button = ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton')
     create_anonymized_df_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-
+    frame.update()
     #Add widgets to list for future removal of canvas
     widgets_visible_ready_to_remove.extend([create_anonymized_df_button])
 
@@ -187,11 +186,11 @@ def find_piis_based_on_column_format():
         widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
 
     #Show a create anonymized dataframe buttom
-    find_piis_based_unique_entries_button = ttk.Button(frame, text="Continue: Find PIIs based on unique entries", command=find_piis_based_on_unique_entries, style='my.TButton')
-    find_piis_based_unique_entries_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    find_piis_based_sparse_entries_button = ttk.Button(frame, text="Continue: Find PIIs based on sparse entries", command=find_piis_based_on_sparse_entries, style='my.TButton')
+    find_piis_based_sparse_entries_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
-    widgets_visible_ready_to_remove.extend([find_piis_based_unique_entries_button])
+    widgets_visible_ready_to_remove.extend([find_piis_based_sparse_entries_button])
 
 
 def read_file_and_find_piis_based_on_column_name():

@@ -96,38 +96,47 @@ def remove_other_refuse_and_dont_know(column):
 
     return filtered_column
 
-def column_has_sparse_strings(dataset, column, sparse_threshold=0.3):
+
+
+
+def column_is_sparse(dataset, column_name, sparse_threshold):
+    
+    #Drop NaNs
+    column_filtered = dataset[column_name].dropna()
+
+    #Remove empty entries
+    column_filtered = column_filtered[column_filtered!='']
+
+    #Remove other, refuses and dont knows
+    column_filtered = remove_other_refuse_and_dont_know(column_filtered)
+
+    #Check sparcity
+    n_entries = len(column_filtered)
+    n_unique_entries = column_filtered.nunique()
+
+    if n_entries != 0 and n_unique_entries/n_entries > sparse_threshold:
+        # print(column_name)
+        # print(n_unique_entries/n_entries)
+        return True
+    else:
+        return False
+
+def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshold=0.3):
     '''
     Checks if 'valid' column entries are sparse, defined as ratio between unique_entries/total_entries.
     Consider only valid stands, aka, exludet NaN, '', Other, Refuse to respond, Not Know
     '''
 
     #Check if column type is string
-    if dataset[column].dtypes == 'object':
-
-        #Drop NaNs
-        column_filtered = dataset[column].dropna()
-
-        #Remove empty entries
-        column_filtered = column_filtered[column_filtered!='']
-
-        #Remove other, refuses and dont knows
-        column_filtered = remove_other_refuse_and_dont_know(column_filtered)
-
-        #Check sparcity
-        n_entries = len(column_filtered)
-        n_unique_entries = column_filtered.nunique()
-
-        if n_entries != 0 and n_unique_entries/n_entries > sparse_threshold:
-            return True
-
+    if dataset[column_name].dtypes == 'object':
+        return column_is_sparse(dataset, column_name, sparse_threshold)
     else:
         return False
 
 
-def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
+def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
     
-    #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sparse strings
+    #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings
     #Ideally, this method will capture columns with names, etc.
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
@@ -140,7 +149,6 @@ def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_
     for word in pii_fuzzy_restricted_words:
         restricted_words[word] = FUZZY
 
-
     #Currently not doing any stem matching
     #Get stem of the restricted words
     #pii_restricted_words = add_stem_of_words(pii_restricted_words)
@@ -148,7 +156,6 @@ def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_
     # Looks for matches between column names (and labels) to restricted words
  
     possible_pii = {}
-    log_and_print("List of identified PIIs: ")
 
     #For every column name in our dataset
     for column_name in columns_to_check:
@@ -174,20 +181,20 @@ def column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_
                 # print("Column type: "+str(dataset[column_name].dtypes))
 
                 #If column has strings and is sparse    
-                if column_has_sparse_strings(dataset, column_name):
+                if column_has_sufficiently_sparse_strings(dataset, column_name):
 
                     # print("Is sparse!!")
 
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
-                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sparse strings")
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                 
-                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'' and has sparse sufficiently strings"
                     
                     elif(column_label_match):
-                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sparse strings")
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                     
-                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'' and has sufficiently sparse strings"
                     #If found, I dont need to keep checking this column with other restricted words
                     break
 
@@ -200,31 +207,16 @@ def log_and_print(message)    :
     file.close() 
     print(message)
 
-def unique_entries(dataset, columns_to_check, min_entries_not_NA = 0.5, sparse_threshold=0.85):
-    #Identifies pii based on columns having only unique values
-    #Requires that at least 50% of entries in given column are not NA   
+def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, sparse_values_threshold=0.85):
+    #Identifies pii based on columns having sparse values
 
     possible_pii={}
-    for v in columns_to_check:
+    for column_name in columns_to_check:
 
-        n_not_na_rows = len(dataset[v].dropna())
-        n_unique_entries = dataset[v].nunique()
-
-        #If all rows are empty, dont check column
-        if(n_not_na_rows==0):
-            continue
-
-        at_least_50_p_not_NA = n_not_na_rows/len(dataset) > min_entries_not_NA
-
-        if n_not_na_rows == n_unique_entries and at_least_50_p_not_NA:
+        if column_is_sparse(dataset, column_name, sparse_threshold=sparse_values_threshold):
             
-            log_and_print("Column '"+v+"' considered possible pii given all entries are unique")
-            possible_pii[v] = "Column entries are unique"
-
-        #We will not ask absolute unique values, but rather than the amount of unique values is very high
-        elif n_unique_entries/n_not_na_rows>sparse_threshold:
-            possible_pii[v] = "Column entries are sparse strings (>"+str(sparse_threshold*100)+"%)"
-            log_and_print("Column '"+v+"' considered possible pii given "+str(sparse_threshold*100)+"% of entries are unique")
+            log_and_print("Column '"+column_name+"' considered possible pii given entries are sparse")
+            possible_pii[column_name] = "Column entries are sparse"
 
     return possible_pii
 
@@ -318,7 +310,7 @@ def find_piis_based_on_column_name_or_label(dataset, label_dict, columns_to_chec
     all_piis_detected = {}
 
     #Find piis based on word matching
-    piis_word_match = column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check)
+    piis_word_match = column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check)
     all_piis_detected.update(piis_word_match)
 
     return all_piis_detected
@@ -333,24 +325,6 @@ def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
     return all_piis_detected
 
-def find_piis(dataset, label_dict, options):
-    
-    all_piis_detected = {}
-
-
-
-    #Find piis based on unique_entries detections
-    piis_unique_entries = unique_entries(dataset, columns_to_check)
-    all_piis_detected.update(piis_unique_entries)
-
-
-
-    #Find piis based on word matching
-    piis_word_match = column_name_restricted_word_and_sparse_strings(dataset, label_dict, columns_to_check)
-    all_piis_detected.update(piis_word_match)
-    
-
-    return all_piis_detected
 
 def create_log_file_path(dataset_path):
 
