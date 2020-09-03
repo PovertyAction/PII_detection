@@ -19,7 +19,7 @@ Once the PIIs are identified, users have the opportunity to say what they would 
 
 * PII_data_processor.py: App backend, it reads data files, identifies PIIs and creates new de-identified data files.
 * restricted_words.py: Script to get restricted words for PII identification
-* tkinter_script.py: App frontend, using python tkinter.
+* app_frontend.py: App frontend, using python tkinter.
 * dist folder: Contains .exe file for execution
 
 ### Help and Support
