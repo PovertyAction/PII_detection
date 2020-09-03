@@ -189,12 +189,12 @@ def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, lab
                     if(column_name_match):
                         log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                 
-                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'' and has sparse sufficiently strings"
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sparse sufficiently strings"
                     
                     elif(column_label_match):
                         log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                     
-                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"'' and has sufficiently sparse strings"
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sufficiently sparse strings"
                     #If found, I dont need to keep checking this column with other restricted words
                     break
 
@@ -423,8 +423,7 @@ def export(dataset, dataset_path, variable_labels = None):
         try:
             dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
         except:
-            dataset.to_stata(new_file_path, version = 117, variable_labels = variable_labels, write_index=False)
-            
+            dataset.to_stata(new_file_path, version = 118, variable_labels = variable_labels, write_index=False)
 
     elif(dataset_type == 'xlsx'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
