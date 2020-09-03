@@ -11,6 +11,10 @@ from constant_strings import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
+def get_surveycto_restricted_vars():
+    return restricted_words_list.get_surveycto_restricted_vars()
+
 def import_dataset(dataset_path):
     
     dataset, label_dict, value_label_dict = False, False, False
@@ -134,13 +138,23 @@ def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshol
         return False
 
 
-def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, sensitivity = 3, stemmer = None):
+def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, consider_locations_cols, sensitivity = 3, stemmer = None):
     
     #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings
     #Ideally, this method will capture columns with names, etc.
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
     pii_fuzzy_restricted_words = restricted_words_list.get_fuzzy_restricted_words()
+
+
+    #If consider_locations_cols = 1, then all locations columns get flagged. else, do not check them (they will be checked later by method that will look at locations populations)
+    if(consider_locations_cols == 1):
+        #If we are not checking locations populations, then include locations columns as part of restricted words
+        locations_strict_restricted_words = restricted_words_list.get_locations_strict_restricted_words()
+        locations_fuzzy_restricted_words = restricted_words_list.get_locations_fuzzy_restricted_words()
+
+        pii_strict_restricted_words = set(pii_strict_restricted_words + locations_strict_restricted_words)
+        pii_fuzzy_restricted_words = set(pii_fuzzy_restricted_words + locations_fuzzy_restricted_words)
 
     #We will save all restricted words in a dictionary, where the keys are the words and their values is if we are looking for a strict or fuzzy matching with that word
     restricted_words = {}
@@ -206,6 +220,10 @@ def log_and_print(message)    :
     file.write(message+'\n') 
     file.close() 
     print(message)
+
+def find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check):
+    #PENDING!!
+    return []
 
 def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, sparse_values_threshold=0.85):
     #Identifies pii based on columns having sparse values
@@ -305,13 +323,15 @@ def find_survey_cto_vars(dataset):
     return possible_pii
 
 
-def find_piis_based_on_column_name_or_label(dataset, label_dict, columns_to_check):
+def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consider_locations_cols):
 
     all_piis_detected = {}
 
     #Find piis based on word matching
-    piis_word_match = column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check)
+    piis_word_match = column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, consider_locations_cols)
     all_piis_detected.update(piis_word_match)
+
+    log_and_print("Identified PIIs: "+" ".join(list(all_piis_detected.keys())))
 
     return all_piis_detected
 
@@ -338,40 +358,29 @@ def create_log_file_path(dataset_path):
     print(LOG_FILE)
 
 
-def read_file_and_find_piis_based_on_column_name(dataset_path, options):
-    
-    create_log_file_path(dataset_path)
 
-    response_content = {}
+
+    
+
+def import_file(dataset_path):
 
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
     
     #Check if error ocurr
     if import_status is False:
-        response_content[ERROR_MESSAGE] = import_result
-        return import_status, response_content
+        return import_status, import_result
     
-    #Else, decouple import result
+    #If no error, decouple import result
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
-
-    #If survey cto vars are to excluded, remove them from columns to check
-    if(options[CONSIDER_SURVEY_CTO_VARS]==0):
-        columns_to_check = [column for column in dataset.columns if column not in restricted_words_list.get_surveycto_vars()]
-    else:
-        columns_to_check = dataset.columns
-
-    #Find piis
-    piis = find_piis_based_on_column_name_or_label(dataset, label_dict, columns_to_check)
-
-    log_and_print("Identified PIIs: "+" ".join(list(piis.keys())))
-
     #Save results in dictionary for return
-    response_content[PII_CANDIDATES] = piis
+    response_content = {}
     response_content[DATASET] = dataset
     response_content[LABEL_DICT] = label_dict
-    response_content[COLUMNS_STILL_TO_CHECK] = [c for c in columns_to_check if c not in list(piis.keys())]
+
+
+    create_log_file_path(dataset_path)
 
     return True, response_content
 

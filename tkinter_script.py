@@ -12,7 +12,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.9"
+app_title = "IPA's PII Detector - v0.2.10"
 
 window_width = 1086
 window_height = 466
@@ -27,6 +27,7 @@ new_file_path = None
 label_dict = None
 
 widgets_visible_ready_to_remove = []
+find_piis_options={}
 
 def tkinter_display_title(title):
     label = ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -84,6 +85,7 @@ def create_anonymized_dataset():
     widgets_visible_ready_to_remove.append(creating_new_dataset_message)
     #Automatic scroll down
     canvas.yview_moveto( 1 )
+    frame.update()
 
     global new_file_path
 
@@ -123,77 +125,63 @@ def clear_window_removing_all_widgets():
 
     canvas.yview_moveto(0)
 
-# IM ABANDONING THE IDEA OF A SELECT ALL BUTTON: WE WANT USERS TO CHECK THEM ALL BY ONE ONE, THATS THE WHOLE POINT
-# def tkinter_display_select_all_frame():
-   
-#     select_all_frame = tk.Frame(master=frame, bg="white")
-#     select_all_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-#     select_all_instruction_label = ttk.Label(select_all_frame, text='Or select one option for all:', wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
-#     label.grid(row=0, column=0)
-
-#     drop_all_var = tk.IntVar()
-#     drop_all_checkbutton = tk.Checkbutton(select_all_frame, text="Drop All",
-#             bg="white",
-#             activebackground="white",
-#             variable=drop_all_var,
-#             onvalue=1, offvalue=0)
-
-#     check_survey_cto_button.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-
-#     return select_all_frame
-
-
-    
-
-def find_piis_based_on_sparse_entries():
-
+def find_piis():
     global dataset
     global dataset_path
     global label_dict
     global columns_still_to_check
-
-    pii_candidates = PII_data_processor.find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
-
-    clear_window_removing_all_widgets()
-
-    #Update global columns_still_to_check
-    columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-
-    pii_candidates_title_label = tkinter_display_title('PII candidates found based on sparse entries:')
-
-    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
     
-    if(len(pii_candidates)==0):
-        no_pii_label = tkinter_display('No PII candidates found.')
-        widgets_visible_ready_to_remove.extend([no_pii_label])
-    else:
-        #Create title, instructions, and display piis
-        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
-        # select_all_frame = tkinter_display_select_all_frame()
-        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
-    #Show a create anonymized dataframe buttom
-    create_anonymized_df_button = ttk.Button(frame, text="Create anonymized dataset", command=create_anonymized_dataset, style='my.TButton')
-    create_anonymized_df_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-    frame.update()
-    #Add widgets to list for future removal of canvas
-    widgets_visible_ready_to_remove.extend([create_anonymized_df_button])
+    global search_method
+    global next_search_method
 
-def find_piis_based_on_column_format():
-    global dataset
-    global dataset_path
-    global label_dict
-    global columns_still_to_check
+    #Update search method (considering find_piis() is recurrently called)
+    search_method = next_search_method
 
-    pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+    #Figure out what method for finding pii to use
+    if (search_method == COLUMNS_NAMES_SEARCH_METHOD):
 
-    clear_window_removing_all_widgets()
+        #Check if surveyCTO vars should be considered
+        if(check_survey_cto_checkbutton_var.get()==0):
+            columns_still_to_check = [column for column in dataset.columns if column not in PII_data_processor.get_surveycto_restricted_vars()]
+        else:
+            columns_still_to_check = dataset.columns
 
-    #Update global columns_still_to_check
+        #Find piis basen on column names
+        #If we are not checking locations populations, then we do include locations column in the next search
+        consider_locations_col = 1 if check_locations_pop_checkbutton_var.get()==0 else 0
+
+        pii_candidates = PII_data_processor.find_piis_based_on_column_name(dataset, label_dict, columns_still_to_check, consider_locations_col)
+
+        #Indicate next search method
+        if(check_locations_pop_checkbutton_var.get()==1):
+            next_search_method_button_text = "Continue: Find PIIs in columns with locations"
+            next_search_method = LOCATIONS_POPULATIONS_SEARCH_METHOD
+        else:
+            next_search_method_button_text = "Continue: Find PIIs based on columns format"
+            next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
+
+    elif(search_method == LOCATIONS_POPULATIONS_SEARCH_METHOD):
+        pii_candidates = PII_data_processor.find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
+        next_search_method_button_text = "Continue: Find PIIs based on columns format"
+        next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
+
+    elif(search_method == COLUMNS_FORMAT_SEARCH_METHOD):
+        pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+        next_search_method_button_text = "Continue: Find PIIs based on sparse entries"
+        next_search_method = SPARSE_ENTRIES_SEARCH_METHOD
+
+    elif(search_method == SPARSE_ENTRIES_SEARCH_METHOD):
+        pii_candidates = PII_data_processor.find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
+        next_search_method_button_text = "Create anonymized dataset"
+        next_search_method = None
+
+    #Update columns_still_to_check, removing pii candidates found
     columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
 
-    pii_candidates_title_label = tkinter_display_title('PII candidates found based on column format:')
+    #Clean and display pii found
+    clear_window_removing_all_widgets()
+    pii_candidates_title_label = tkinter_display_title('PII candidates found using '+search_method+':')
     widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
     
     if(len(pii_candidates)==0):
@@ -205,23 +193,26 @@ def find_piis_based_on_column_format():
         piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
         widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
 
-    #Show a create anonymized dataframe buttom
-    find_piis_based_sparse_entries_button = ttk.Button(frame, text="Continue: Find PIIs based on sparse entries", command=find_piis_based_on_sparse_entries, style='my.TButton')
-    find_piis_based_sparse_entries_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    if(next_search_method is not None):
+        buttom_text = next_search_method_button_text
+        next_command = find_piis
+    else:
+        buttom_text = 'Create anonymized dataset'
+        next_command = create_anonymized_dataset
+
+    next_method_button = ttk.Button(frame, text=buttom_text, command=next_command, style='my.TButton')
+    next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     frame.update()
 
-    widgets_visible_ready_to_remove.extend([find_piis_based_sparse_entries_button])
+    widgets_visible_ready_to_remove.extend([next_method_button])
 
 
-def read_file_and_find_piis_based_on_column_name():
-
-    #Create options dictionary
-    find_piis_options={}
-    find_piis_options[CONSIDER_SURVEY_CTO_VARS] = check_survey_cto_var.get()
+def import_file():
 
     global dataset
     global dataset_path
     global label_dict
+    global next_search_method
     global columns_still_to_check
 
     dataset_path = askopenfilename()
@@ -230,44 +221,41 @@ def read_file_and_find_piis_based_on_column_name():
     if not dataset_path:
         return
 
-    reading_file_label = tkinter_display("Reading file and looking for piis...")
-    widgets_visible_ready_to_remove.append(reading_file_label)
-
-    #The first step of the search will be to find piis based on column names
-    reading_status, reading_content = PII_data_processor.read_file_and_find_piis_based_on_column_name(dataset_path, find_piis_options)
-
-    clear_window_removing_all_widgets()
+    importing_file_label = tkinter_display("Importing file...")
     
-    if(reading_status is False):
-        tkinter_display(reading_content[ERROR_MESSAGE])
-        return
-    else:
-        pii_candidates = reading_content[PII_CANDIDATES]
-        dataset = reading_content[DATASET]
-        label_dict = reading_content[LABEL_DICT]
-        columns_still_to_check = reading_content[COLUMNS_STILL_TO_CHECK]
-
-    pii_candidates_title_label = tkinter_display_title('PII candidates found based on column names:')
-    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
-    if(len(pii_candidates)==0):
-        no_pii_label = tkinter_display('No PII candidates found.')
-        widgets_visible_ready_to_remove.extend([no_pii_label])
-    else:
-        #Create title, instructions, and display piis
-        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
-        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-
-        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
-
-    #Show a create anonymized dataframe buttom
-    find_piis_based_column_format_button = ttk.Button(frame, text="Continue: Find PIIs based on column format", command=find_piis_based_on_column_format, style='my.TButton')
-    find_piis_based_column_format_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    #Scroll down
+    canvas.yview_moveto( 1 )
     frame.update()
 
-    #Add widgets to list for future removal of canvas
-    widgets_visible_ready_to_remove.extend([find_piis_based_column_format_button])
+    widgets_visible_ready_to_remove.append(importing_file_label)
 
+    #Read file
+    reading_status, reading_content = PII_data_processor.import_file(dataset_path)
+    
+    #Remove 'importiung file label'
+    importing_file_label.pack_forget()
 
+    if(reading_status is False):
+        reading_status_label = tkinter_display(reading_content[ERROR_MESSAGE])
+        return
+    else:
+        reading_status_label = tkinter_display("Success reading file: "+dataset_path)
+        dataset = reading_content[DATASET]
+        label_dict = reading_content[LABEL_DICT]
+        columns_still_to_check = dataset.columns
+
+    #Creat bottom to find piis based on columns names
+    next_search_method = COLUMNS_NAMES_SEARCH_METHOD
+    buttom_text = "Find PIIs based on column name"
+
+    find_piis_next_step_button = ttk.Button(frame, text=buttom_text, command=find_piis, style='my.TButton')
+    find_piis_next_step_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    
+    #Scroll down
+    frame.update()
+    canvas.yview_moveto( 1 )
+
+    widgets_visible_ready_to_remove.extend([reading_status_label, find_piis_next_step_button])
 
 
 def restart_program():
@@ -426,23 +414,33 @@ if __name__ == '__main__':
     options_label = ttk.Label(frame, text="Options: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
-    check_survey_cto_var = tk.IntVar()
-    check_survey_cto_button = tk.Checkbutton(frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime')",
+    check_survey_cto_checkbutton_var = tk.IntVar()
+    check_survey_cto_checkbutton = tk.Checkbutton(frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime').",
             bg="white",
             activebackground="white",
-            variable=check_survey_cto_var,
+            variable=check_survey_cto_checkbutton_var,
             onvalue=1, offvalue=0)
-    check_survey_cto_button.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    check_survey_cto_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+
+    check_locations_pop_checkbutton_var = tk.IntVar()
+    check_locations_pop_checkbutton = tk.Checkbutton(frame, text="Flag locations column (ex: Village) as PII only if population of a location is under 20,000. [Feature under development]",
+            bg="white",
+            activebackground="white",
+            variable=check_locations_pop_checkbutton_var,
+            onvalue=1, offvalue=0)
+    check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
 
     #Labels and buttoms to run app
-    start_application_label = ttk.Label(frame, text="Start Application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    start_application_label = ttk.Label(frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
-    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=read_file_and_find_piis_based_on_column_name, style='my.TButton')
+    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=import_file, style='my.TButton')
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     #Add widgets to list of widgets to remove later on
-    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button, options_label, check_survey_cto_button])
+    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button, options_label, check_survey_cto_checkbutton, check_locations_pop_checkbutton])
 
     # Constantly looping event listener
     root.mainloop()  
