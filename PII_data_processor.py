@@ -216,7 +216,7 @@ def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, spa
         if column_is_sparse(dataset, column_name, sparse_threshold=sparse_values_threshold):
             
             log_and_print("Column '"+column_name+"' considered possible pii given entries are sparse")
-            possible_pii[column_name] = "Column entries are sparse"
+            possible_pii[column_name] = "Column entries are too sparse"
 
     return possible_pii
 

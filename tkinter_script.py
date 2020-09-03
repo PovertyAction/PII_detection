@@ -12,7 +12,7 @@ import os
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.8"
+app_title = "IPA's PII Detector - v0.2.9"
 
 window_width = 1086
 window_height = 466
@@ -123,7 +123,28 @@ def clear_window_removing_all_widgets():
 
     canvas.yview_moveto(0)
 
+# IM ABANDONING THE IDEA OF A SELECT ALL BUTTON: WE WANT USERS TO CHECK THEM ALL BY ONE ONE, THATS THE WHOLE POINT
+# def tkinter_display_select_all_frame():
+   
+#     select_all_frame = tk.Frame(master=frame, bg="white")
+#     select_all_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
+#     select_all_instruction_label = ttk.Label(select_all_frame, text='Or select one option for all:', wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+#     label.grid(row=0, column=0)
+
+#     drop_all_var = tk.IntVar()
+#     drop_all_checkbutton = tk.Checkbutton(select_all_frame, text="Drop All",
+#             bg="white",
+#             activebackground="white",
+#             variable=drop_all_var,
+#             onvalue=1, offvalue=0)
+
+#     check_survey_cto_button.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+#     return select_all_frame
+
+
+    
 
 def find_piis_based_on_sparse_entries():
 
@@ -140,6 +161,7 @@ def find_piis_based_on_sparse_entries():
     columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
 
     pii_candidates_title_label = tkinter_display_title('PII candidates found based on sparse entries:')
+
     widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
     
     if(len(pii_candidates)==0):
@@ -148,6 +170,7 @@ def find_piis_based_on_sparse_entries():
     else:
         #Create title, instructions, and display piis
         pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
+        # select_all_frame = tkinter_display_select_all_frame()
         piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
         widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
     #Show a create anonymized dataframe buttom
