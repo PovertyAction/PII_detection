@@ -121,6 +121,8 @@ def clear_window_removing_all_widgets():
         widget.pack_forget()
     widgets_visible_ready_to_remove.clear()
 
+    canvas.yview_moveto(0)
+
 
 
 def find_piis_based_on_sparse_entries():
