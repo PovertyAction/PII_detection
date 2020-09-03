@@ -42,4 +42,4 @@ J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
 The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE).
 
 ### To create .exe from source file
-`pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." tkinter_script.py`
+`pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." app_frontend.py`
