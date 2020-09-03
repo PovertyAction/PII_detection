@@ -138,7 +138,7 @@ def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshol
         return False
 
 
-def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, consider_locations_cols, sensitivity = 3, stemmer = None):
+def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consider_locations_cols):
     
     #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings
     #Ideally, this method will capture columns with names, etc.
@@ -163,12 +163,7 @@ def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, lab
     for word in pii_fuzzy_restricted_words:
         restricted_words[word] = FUZZY
 
-    #Currently not doing any stem matching
-    #Get stem of the restricted words
-    #pii_restricted_words = add_stem_of_words(pii_restricted_words)
-
     # Looks for matches between column names (and labels) to restricted words
- 
     possible_pii = {}
 
     #For every column name in our dataset
@@ -188,16 +183,8 @@ def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, lab
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
 
-                # print("Checking column with suspicious name")
-                # print("Column: "+column_name)
-                # if(column_label):
-                #     print("Label: "+ column_label)
-                # print("Column type: "+str(dataset[column_name].dtypes))
-
                 #If column has strings and is sparse    
                 if column_has_sufficiently_sparse_strings(dataset, column_name):
-
-                    # print("Is sparse!!")
 
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
@@ -213,7 +200,6 @@ def column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, lab
                     break
 
     return possible_pii
-
 
 def log_and_print(message)    :
     file = open(LOG_FILE, "a") 
@@ -322,18 +308,6 @@ def find_survey_cto_vars(dataset):
 
     return possible_pii
 
-
-def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consider_locations_cols):
-
-    all_piis_detected = {}
-
-    #Find piis based on word matching
-    piis_word_match = column_name_has_restricted_word_and_sufficiently_sparse_strings(dataset, label_dict, columns_to_check, consider_locations_cols)
-    all_piis_detected.update(piis_word_match)
-
-    log_and_print("Identified PIIs: "+" ".join(list(all_piis_detected.keys())))
-
-    return all_piis_detected
 
 def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
