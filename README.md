@@ -22,6 +22,10 @@ Once the PIIs are identified, users have the opportunity to say what they would 
 * app_frontend.py: App frontend, using python tkinter.
 * dist folder: Contains .exe file for execution
 
+In addition, a small app to find PIIs in unstructured text is offered
+* find_piis_in_unstructured_text_backend.py
+* find_piis_in_unstructured_text_frontend.py
+
 ### Help and Support
 
 Please feel free to open an issue for fixes or new feature requests. You can also contact researchsupport@poverty-action.org
@@ -43,3 +47,5 @@ The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/
 
 ### To create .exe from source file
 `pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." app_frontend.py`
+
+

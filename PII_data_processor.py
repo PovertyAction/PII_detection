@@ -7,6 +7,8 @@ LOG_FILE = None
 
 from constant_strings import *
 
+import query_google_answer_boxes as google
+
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -101,18 +103,21 @@ def remove_other_refuse_and_dont_know(column):
     return filtered_column
 
 
-
-
-def column_is_sparse(dataset, column_name, sparse_threshold):
-    
+def clean_column(column):
     #Drop NaNs
-    column_filtered = dataset[column_name].dropna()
+    column_filtered = column.dropna()
 
     #Remove empty entries
     column_filtered = column_filtered[column_filtered!='']
 
     #Remove other, refuses and dont knows
     column_filtered = remove_other_refuse_and_dont_know(column_filtered)
+
+    return column_filtered
+
+def column_is_sparse(dataset, column_name, sparse_threshold):
+    
+    column_filtered = clean_column(dataset[column_name])
 
     #Check sparcity
     n_entries = len(column_filtered)
@@ -201,15 +206,79 @@ def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consid
 
     return possible_pii
 
+
+
+def column_has_locations_with_low_populations(dataset, column_name):
+
+    column_filtered = clean_column(dataset[column_name])
+
+    #Get unique values
+    unique_locations = column_filtered.unique()
+
+    #Check if any location has pop under 20,000
+    return google.check_if_any_row_is_location_has_low_population(locations)
+
+
+
+
 def log_and_print(message)    :
     file = open(LOG_FILE, "a") 
     file.write(message+'\n') 
     file.close() 
     print(message)
 
-def find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check):
-    #PENDING!!
-    return []
+def find_piis_based_on_locations_population(dataset, label_dict, columns_to_check):
+    #Identifies columns whose names or labels match (strict or fuzzy) words related to locations. Then, check if for those columns, any value relates to a location with population under 20,000. If it is the case, then it flags the column.
+
+    #Lots of repeated code respect to find_piis_based_on_column_name, could refactor.
+
+    locations_strict_restricted_words = restricted_words_list.get_locations_strict_restricted_words()
+    locations_fuzzy_restricted_words = restricted_words_list.get_locations_fuzzy_restricted_words()
+
+    #We will save all restricted words in a dictionary, where the keys are the words and their values is if we are looking for a strict or fuzzy matching with that word
+    restricted_words = {}
+    for word in locations_strict_restricted_words:
+        restricted_words[word] = STRICT
+    for word in locations_fuzzy_restricted_words:
+        restricted_words[word] = FUZZY
+
+    # Looks for matches between column names (and labels) to restricted words
+    possible_pii = {}
+
+    #For every column name in our dataset
+    for column_name in columns_to_check:
+        #For every restricted word
+        for restricted_word, type_of_matching in restricted_words.items():
+            #Check if restricted word is in the column name
+            column_name_match = word_match(column_name, restricted_word, type_of_matching)
+
+            #If there is a dictionary of labels, check match with label
+            if label_dict is not False: #label_dict will be False in case of no labels
+                column_label = label_dict[column_name]
+                column_label_match = word_match(column_label, restricted_word, type_of_matching)
+            else:
+                column_label_match = False
+
+            #If there was a match between column name or label with restricted word
+            if column_name_match or column_label_match:
+
+                #If column has strings and is sparse    
+                if column_has_locations_with_low_populations(dataset, column_name):
+
+                    #Log result and save column as possible pii. Theres different log depending if match was with column or label
+                    if(column_name_match):
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has values with populations under 20,000")
+                
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has values with populations under 20,000"
+                    
+                    elif(column_label_match):
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has values with populations under 20,000")
+                    
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has values with populations under 20,000"
+                    #If found, I dont need to keep checking this column with other restricted words
+                    break
+
+    return possible_pii
 
 def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, sparse_values_threshold=0.85):
     #Identifies pii based on columns having sparse values
@@ -423,6 +492,8 @@ def export(dataset, dataset_path, variable_labels = None):
     return new_file_path
 
 
+
+
 def main_when_script_run_from_console():
     dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
 
@@ -448,5 +519,3 @@ def main_when_script_run_from_console():
 
 if __name__ == "__main__":
     main_when_script_run_from_console()
-
-
