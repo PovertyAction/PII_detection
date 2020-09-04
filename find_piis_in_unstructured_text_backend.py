@@ -41,7 +41,7 @@ def find_phone_numbers_in_list_strings(list_strings):
 
 def generate_names_parameter_for_api(list_strings, option):
     #PENDING
-    return []
+    return ""
 
 def get_names_from_json_response(response):
     #PENDING
@@ -53,7 +53,7 @@ def find_names_in_list_string(list_strings):
     from forebears_api_key import get_api_key
     API_KEY = get_api_key()
 
-    all_names_found= []
+    all_names_found = []
 
     for forename_or_surname in ['forename', 'surname']:
         names_parameter = generate_names_parameter_for_api(list_strings, forename_or_surname)
@@ -63,7 +63,7 @@ def find_names_in_list_string(list_strings):
 
         response = requests.request("GET", api_url)
         names_found = get_names_from_json_response(response)
-        all_names_found.expand(names_found)
+        all_names_found.extend(names_found)
 
     return all_names_found
 
@@ -117,17 +117,17 @@ def get_list_unique_strings_in_dataset(dataset, columns_to_check):
     
     return list(set_string_in_dataset)
 
-def find_piis(dataset, dataset_path, label_dict):
+def find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict):
 
     #Do not check surveyCTO columns
     columns_to_check = [column for column in dataset.columns if column not in restricted_words_list.get_surveycto_restricted_vars()]
 
     #First we will make a list of all strings that need to be checked
-    print("->Getting liust of unique strings in dataset...")
+    print("->Getting list of unique strings in dataset...")
     strings_to_check = get_list_unique_strings_in_dataset(dataset, columns_to_check)
 
     
-    #Remove string with less than 4 chars - piis should be longer than that
+    #Remove string with less than 3 chars - piis should be longer than that
     print("->Removing strings with less than 3 characters")
     filtered_strings_to_check = [s for s in strings_to_check if len(s)>2]
 
@@ -156,6 +156,8 @@ def find_piis(dataset, dataset_path, label_dict):
 
 if __name__ == "__main__":
 
+    dataset_path = 'test_files/almond_etal_2008.dta'
+
     reading_status, reading_content = import_file(dataset_path)
 
     if(reading_status is False):
@@ -164,4 +166,4 @@ if __name__ == "__main__":
     dataset = reading_content[DATASET]
     label_dict = reading_content[LABEL_DICT]
     
-    find_piis(dataset, dataset_path, label_dict)
+    find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
