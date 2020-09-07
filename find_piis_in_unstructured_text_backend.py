@@ -2,6 +2,9 @@ from PII_data_processor import column_has_sufficiently_sparse_strings, clean_col
 from constant_strings import *
 import restricted_words as restricted_words_list
 import query_google_answer_boxes as google
+import requests
+from forebears_api_key import get_api_key
+import json
 
 def get_stopwords(languages=None):
 
@@ -39,33 +42,59 @@ def find_phone_numbers_in_list_strings(list_strings):
 
     return phone_numbers_found
 
-def generate_names_parameter_for_api(list_strings, option):
-    #PENDING
-    return ""
+
+def generate_names_parameter_for_api(list_names, option):
+    #According to https://forebears.io/onograph/documentation/api/location/batch
+
+    list_of_names_json=[]
+    for name in list_names:
+        list_of_names_json.append('{"name":"'+name+'","type":"'+option+'","limit":1}')
+
+    names_parameter = '['+','.join(list_of_names_json)+']'
+    return names_parameter
 
 def get_names_from_json_response(response):
-    #PENDING
-    return []
+    
+    names_found = []
 
-def find_names_in_list_string(list_strings):
-    import requests
+    json_response = json.loads(response)
+    for result in json_response["results"]:
+        #Names that exist come with the field 'jurisdictions'
+        if('jurisdictions' in result):
+            names_found.append(result['name'])
+        # else:
+        #     print(result['name']+" is not a name")
 
-    from forebears_api_key import get_api_key
+    return names_found
+
+
+def find_names_in_list_string(list_potential_names):
+    '''
+    Uses https://forebears.io/onograph/documentation/api/location/batch to find names in list_potential_names
+    '''
     API_KEY = get_api_key()
 
-    all_names_found = []
+    all_names_found = set()
 
-    for forename_or_surname in ['forename', 'surname']:
-        names_parameter = generate_names_parameter_for_api(list_strings, forename_or_surname)
-        
-        #BULK CALL TO API NOT WORKING CORRECTLY YET, WAITING FOR REPSONSE
-        api_url = 'https://ono.4b.rs/v1/jurs?key='+API_KEY+'&names='+names_parameter
+    #Api calls must query at most 1,000 names.
+    n = 1000
+    print(len(list_potential_names))
+    list_of_list_1000_potential_names = [list_potential_names[i:i + n] for i in range(0, len(list_potential_names), n)]
 
-        response = requests.request("GET", api_url)
-        names_found = get_names_from_json_response(response)
-        all_names_found.extend(names_found)
+    for list_1000_potential_names in list_of_list_1000_potential_names:
+        #Need to 2 to API calls, one checking forenames and one checking surnames
+        for forename_or_surname in ['forename', 'surname']:
+            api_url = 'https://ono.4b.rs/v1/jurs?key='+API_KEY
 
-    return all_names_found
+            names_parameter = generate_names_parameter_for_api(list_1000_potential_names, forename_or_surname)
+
+            response = requests.post(api_url, data={'names':names_parameter})
+
+            names_found = get_names_from_json_response(response.text)
+            for name in names_found:
+                all_names_found.add(name)
+
+    return list(all_names_found)
 
 def find_piis_in_list_strings(list_strings):
 
@@ -78,17 +107,18 @@ def find_piis_in_list_strings(list_strings):
     #Update strings_to_check
     strings_to_check = [s for s in strings_to_check if s not in phone_numbers_found]
     
-    #Find all locations with pop less than 20,000
-    print("-->Finding locations")
-    locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check)
-    print("found "+str(len(locations_with_low_population_found)))
-    #Update strings_to_check
-    strings_to_check = [s for s in strings_to_check if s not in locations_with_low_population_found]
-
     #Find all names
     print("-->Finding names")
     names_found = find_names_in_list_string(strings_to_check)
     print("found "+str(len(names_found)))
+
+    #Update strings_to_check
+    strings_to_check = [s for s in strings_to_check if s not in names_found]
+
+    #Find all locations with pop less than 20,000
+    print("-->Finding locations with low population")
+    locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check)
+    print("found "+str(len(locations_with_low_population_found)))
 
     return list(set(phone_numbers_found + locations_with_low_population_found + names_found))
 
@@ -156,14 +186,17 @@ def find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
 
 if __name__ == "__main__":
 
-    dataset_path = 'test_files/almond_etal_2008.dta'
+    # dataset_path = 'test_files/almond_etal_2008.dta'
 
-    reading_status, reading_content = import_file(dataset_path)
+    # reading_status, reading_content = import_file(dataset_path)
 
-    if(reading_status is False):
-        print("Problem importing file")
+    # if(reading_status is False):
+    #     print("Problem importing file")
 
-    dataset = reading_content[DATASET]
-    label_dict = reading_content[LABEL_DICT]
+    # dataset = reading_content[DATASET]
+    # label_dict = reading_content[LABEL_DICT]
     
-    find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
+    # find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
+
+    print(find_names_in_list_string(['Felipe','nombrequenoexiste', 'George', 'Felipe', 'Enriqueta', 'dededede']))
+
