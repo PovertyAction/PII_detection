@@ -46,9 +46,6 @@ def tkinter_display(the_message):
     return label
 
 
-
-
-
 def clear_window_removing_all_widgets():
     #Remove widgets currently visible
     for widget in widgets_visible_ready_to_remove:
@@ -64,34 +61,20 @@ def find_piis():
     global label_dict
     global columns_still_to_check
     
-    find_piis_in_unstructured_text_backend.find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
+    new_file_path = find_piis_in_unstructured_text_backend.find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
 
     #Clean and display pii found
-    # clear_window_removing_all_widgets()
-    # pii_candidates_title_label = tkinter_display_title('PII candidates found:')
-    # widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
+    clear_window_removing_all_widgets()
     
-    # if(len(pii_candidates)==0):
-    #     no_pii_label = tkinter_display('No PII candidates found.')
-    #     widgets_visible_ready_to_remove.extend([no_pii_label])
-    # else:
-    #     #Create title, instructions, and display piis
-    #     pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
-    #     piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-    #     widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
 
-    # if(next_search_method is not None):
-    #     buttom_text = next_search_method_button_text
-    #     next_command = find_piis
-    # else:
-    #     buttom_text = 'Create anonymized dataset'
-    #     next_command = create_anonymized_dataset
+    if(new_file_path):
+        tkinter_display_title("Congratulations! Task ready!")
+        tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.")
+        
+        tkinter_display("Do you want to work on a new file? Click Restart buttom.")
+        ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-    # next_method_button = ttk.Button(frame, text=buttom_text, command=next_command, style='my.TButton')
-    # next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-    # frame.update()
-
-    # widgets_visible_ready_to_remove.extend([next_method_button])
+        frame.update()
 
 
 def import_file():
