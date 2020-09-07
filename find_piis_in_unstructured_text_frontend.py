@@ -64,7 +64,7 @@ def find_piis():
     global label_dict
     global columns_still_to_check
     
-    find_piis_in_unstructured_text_backend.find_piis(dataset, dataset_path, label_dict)
+    find_piis_in_unstructured_text_backend.find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
 
     #Clean and display pii found
     # clear_window_removing_all_widgets()
