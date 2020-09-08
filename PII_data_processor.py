@@ -160,7 +160,7 @@ def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, column
     pii_fuzzy_restricted_words = restricted_words_list.get_fuzzy_restricted_words()
 
 
-    #If consider_locations_cols = 1, then all locations columns get flagged. else, do not check them (they will be checked later by method that will look at locations populations)
+    #If consider_locations_cols = 1, then consider locations columns in the search
     if(consider_locations_cols == 1):
         #If we are not checking locations populations, then include locations columns as part of restricted words
         locations_strict_restricted_words = restricted_words_list.get_locations_strict_restricted_words()
@@ -414,12 +414,13 @@ def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
 def create_log_file_path(dataset_path):
 
-    dataset_directory_path = "/".join(dataset_path.split('/')[:-1])
+    # path_without_extension = dataset_path[0:dataset_path.rfind(".")]
+    dataset_directory_path = "\\".join(dataset_path.split('\\')[:-1])
     
-    file_name = dataset_path.split('/')[-1].split('.')[0]
+    file_name = dataset_path.split('\\')[-1].split('.')[0]
 
     global LOG_FILE
-    LOG_FILE = dataset_directory_path+"/log_"+file_name+str(time.time()).replace('.','')+'.txt'
+    LOG_FILE = dataset_directory_path+"\\log_"+file_name+'.txt'
 
     print(LOG_FILE)
 
@@ -482,7 +483,6 @@ def recode(dataset, columns_to_encode):
     return dataset, econding_used
 
 
-# In[13]:
 
 def export(dataset, dataset_path, variable_labels = None):
 
@@ -515,45 +515,70 @@ def export(dataset, dataset_path, variable_labels = None):
     return new_file_path
 
 
+def get_test_files_tuples():
 
+    all_test_files_tuples = []
+
+    recover_mex_data = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
+    recover_mex_true_piis = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw_true_piis.xlsx'
+    all_test_files_tuples.append((recover_mex_data, recover_mex_true_piis))
+
+    return all_test_files_tuples
 
 def main_when_script_run_from_console():
-    dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
 
-    find_piis_options={}
-    find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
-    reading_status, reading_content = import_file(dataset_path)
+    test_files_tuples = get_test_files_tuples()
 
-    #Check if reading was succesful
-    if(reading_status is False):    
-        return
+    for test_files_tuple in test_files_tuples:
+        dataset_path, true_piis_path = test_files_tuple
 
-    dataset = reading_content[DATASET]
-    label_dict = reading_content[LABEL_DICT]
-    value_label_dict = reading_content[VALUE_LABEL_DICT]
-    columns_still_to_check = dataset.columns
+        #Import dataset
+        reading_status, reading_content = import_file(dataset_path)
+        #Check if reading was succesful
+        if(reading_status is False):    
+            return
+
+        dataset = reading_content[DATASET]
+        label_dict = reading_content[LABEL_DICT]
+        value_label_dict = reading_content[VALUE_LABEL_DICT]
+        columns_still_to_check = [c for c in dataset.columns if c not in restricted_words_list.get_surveycto_restricted_vars()]
 
 
-    for key, value in value_label_dict.items():
-        # if key == 'dem4_otro':
-        #     print (value)
+        #Search piis using all methods
+        all_piis_found = {}
+        consider_locations_cols = 1
+        pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
+        all_piis_found.update(pii_candidates)
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+        print("Piis found using column names: "+",".join(pii_candidates.keys()))
 
-        if value != '':
-            print(key+":"+label_dict[key])
-            print(dataset[key].dtypes)
+        pii_candidates = find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
+        all_piis_found.update(pii_candidates)
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+        print("Piis found using column formats: "+",".join(pii_candidates.keys()))
 
-    consider_locations_col = 0
+        pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
+        all_piis_found.update(pii_candidates)
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+        print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
 
-    # pii_candidates = find_piis_based_on_column_name(dataset, label_dict, columns_still_to_check, consider_locations_col)
+        #Now we check identified PIIs are the correct ones based on ground truth
+        reading_status, reading_content = import_file(true_piis_path)
+        if(reading_status is False):    
+            return
+        true_piis_dataset = reading_content[DATASET]
+        true_piis = true_piis_dataset.iloc[:,0].to_list()
 
- 
+        #Announce wrongly detected ppis
+        print("THE FOLLOWING PIIS WERE WRONGLY DETECTED:")
+        wrongly_detected = [pii for pii in all_piis_found.keys() if pii not in true_piis]
+        print(wrongly_detected)
 
-    # #Manually set action for piis
-    # pii_candidates_to_action ={}
-    # for pii in pii_candidates:
-    #     pii_candidates_to_action[pii] = 'Drop'
+        #Announce missing piis
+        print("THE FOLLOWING PIIS WERE NOT DETECTED:")
+        not_detected = [pii for pii in true_piis if pii not in all_piis_found.keys()]
+        print(not_detected)
 
-    # create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
 
 
 if __name__ == "__main__":
