@@ -39,6 +39,7 @@ We welcome contributions in any form! To contribute please fork the project, mak
 IPA's RT-DEG teams.
 
 J-PAL: stata_PII_scan. 2020. https://github.com/J-PAL/stata_PII_scan
+
 J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
 
 ### Licensing
