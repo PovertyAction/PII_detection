@@ -130,6 +130,7 @@ def find_piis():
     global dataset
     global dataset_path
     global label_dict
+    global value_label_dict
     global columns_still_to_check
     
     global search_method
@@ -151,7 +152,7 @@ def find_piis():
         #If we are not checking locations populations, then we do include locations column in the next search
         consider_locations_col = 1 if check_locations_pop_checkbutton_var.get()==0 else 0
 
-        pii_candidates = PII_data_processor.find_piis_based_on_column_name(dataset, label_dict, columns_still_to_check, consider_locations_col)
+        pii_candidates = PII_data_processor.find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_col)
 
         #Indicate next search method
         if(check_locations_pop_checkbutton_var.get()==1):
@@ -212,6 +213,7 @@ def import_file():
     global dataset
     global dataset_path
     global label_dict
+    global value_label_dict
     global next_search_method
     global columns_still_to_check
 
@@ -242,6 +244,7 @@ def import_file():
         reading_status_label = tkinter_display("Success reading file: "+dataset_path)
         dataset = reading_content[DATASET]
         label_dict = reading_content[LABEL_DICT]
+        value_label_dict = reading_content[VALUE_LABEL_DICT]
         columns_still_to_check = dataset.columns
 
     #Creat bottom to find piis based on columns names

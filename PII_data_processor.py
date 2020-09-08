@@ -143,10 +143,18 @@ def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshol
         return False
 
 
-def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consider_locations_cols):
+def column_has_sparse_value_label_dicts(column_name, value_label_dict, sparse_threshold = 10):
+    '''
+    Check if for a given column, its values come encoded in a dictionary and are sufficiently sparse
+    '''
+    if column_name in value_label_dict and value_label_dict[column_name] != '' and len(value_label_dict[column_name])>sparse_threshold:
+        return True
+    else:
+        return False
+
+def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_to_check, consider_locations_cols):
     
-    #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings
-    #Ideally, this method will capture columns with names, etc.
+    #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings (Ideally, this method will capture columns with people names) or value label dictionaries (for locations)
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
     pii_fuzzy_restricted_words = restricted_words_list.get_fuzzy_restricted_words()
@@ -195,12 +203,27 @@ def find_piis_based_on_column_name(dataset, label_dict, columns_to_check, consid
                     if(column_name_match):
                         log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                 
-                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sparse sufficiently strings"
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sufficiently sparse strings"
                     
                     elif(column_label_match):
                         log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
                     
                         possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sufficiently sparse strings"
+                    #If found, I dont need to keep checking this column with other restricted words
+                    break
+
+                #Else, check if column has values labels (locations are usually stores this way)
+                elif column_has_sparse_value_label_dicts(column_name, value_label_dict):
+
+                    if(column_name_match):
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and values labels are sparse")
+                
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and values labels are sparse"
+                    
+                    elif(column_label_match):
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and values labels are sparse")
+                    
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and values labels are sparse"
                     #If found, I dont need to keep checking this column with other restricted words
                     break
 
@@ -421,7 +444,7 @@ def import_file(dataset_path):
     response_content = {}
     response_content[DATASET] = dataset
     response_content[LABEL_DICT] = label_dict
-
+    response_content[VALUE_LABEL_DICT] = value_label_dict
 
     create_log_file_path(dataset_path)
 
@@ -499,22 +522,38 @@ def main_when_script_run_from_console():
 
     find_piis_options={}
     find_piis_options[CONSIDER_SURVEY_CTO_VARS] = 0
-    reading_status, pii_candidates_or_message, dataset, label_dict = read_file_and_find_piis_based_on_column_name(dataset_path, find_piis_options)
+    reading_status, reading_content = import_file(dataset_path)
 
     #Check if reading was succesful
     if(reading_status is False):    
-        error_message = pii_candidates_or_message
-        log_and_print(error_message)
         return
-    else:
-        pii_candidates = pii_candidates_or_message
 
-    #Manually set action for piis
-    pii_candidates_to_action ={}
-    for pii in pii_candidates:
-        pii_candidates_to_action[pii] = 'Drop'
+    dataset = reading_content[DATASET]
+    label_dict = reading_content[LABEL_DICT]
+    value_label_dict = reading_content[VALUE_LABEL_DICT]
+    columns_still_to_check = dataset.columns
 
-    create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
+
+    for key, value in value_label_dict.items():
+        # if key == 'dem4_otro':
+        #     print (value)
+
+        if value != '':
+            print(key+":"+label_dict[key])
+            print(dataset[key].dtypes)
+
+    consider_locations_col = 0
+
+    # pii_candidates = find_piis_based_on_column_name(dataset, label_dict, columns_still_to_check, consider_locations_col)
+
+ 
+
+    # #Manually set action for piis
+    # pii_candidates_to_action ={}
+    # for pii in pii_candidates:
+    #     pii_candidates_to_action[pii] = 'Drop'
+
+    # create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
 
 
 if __name__ == "__main__":

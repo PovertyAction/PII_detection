@@ -13,5 +13,6 @@ ERROR_MESSAGE = 'error_message'
 PII_CANDIDATES = 'pii_candidates'
 DATASET = 'dataset'
 LABEL_DICT = 'label_dict'
+VALUE_LABEL_DICT = 'value_label_dict'
 
 COLUMNS_STILL_TO_CHECK = 'COLUMNS_STILL_TO_CHECK'
