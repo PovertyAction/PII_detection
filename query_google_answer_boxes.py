@@ -2,14 +2,20 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 import pandas as pd
+from secret_keys import get_geonames_username
+import requests
+import json
 
-chrome_options = Options()
-chrome_options.add_argument("--window-size=1024x768")
-chrome_options.add_argument("--headless")
 
-driver = webdriver.Chrome(executable_path=r'chromedriver.exe',options=chrome_options)
-
+driver=None
 def ask_google(query):
+	global driver
+
+	if driver is None:
+		chrome_options = Options()
+		chrome_options.add_argument("--window-size=1024x768")
+		chrome_options.add_argument("--headless")
+		driver = webdriver.Chrome(executable_path=r'chromedriver.exe',options=chrome_options)
 
 	# Search for query
 	query = query.replace(' ', '+')
@@ -17,87 +23,135 @@ def ask_google(query):
 	driver.get('http://www.google.com/search?q=' + query)
 
 	# Get text from Google answer box
+	for different_answer_box_y_location in [230,350]: #Usually 230 is fine, but for searches that come with images (La Magdalena Contreras population for ex) 350 is better
+		answer = driver.execute_script("return document.elementFromPoint(arguments[0], arguments[1]);",
+	        350, different_answer_box_y_location).text
+		if answer != "":
+			return answer
 
-	answer = driver.execute_script(
-	        "return document.elementFromPoint(arguments[0], arguments[1]);",
-	        350, 230).text
+	return False
 
-	return answer
+def check_location_exists_and_population_size(location):
+	#https://www.geonames.org/export/geonames-search.html
+	api_url = 'http://api.geonames.org/searchJSON?name='+location+'&maxRows=1&orderby=population&isNameRequired=true&username='+get_geonames_username()
+	response = requests.get(api_url)
+	
+	response_json = json.loads(response.text)
 
+	if 'totalResultsCount' in response_json and response_json['totalResultsCount'] > 0:
 
+		if 'population' in response_json['geonames'][0] and response_json['geonames'][0]['population'] !=0:
+			# print("Location "+location+" exists and its population is "+str(response_json['geonames'][0]['population']))
+			return True, response_json['geonames'][0]['population']
+		else:
+			# print("Location "+location+" exists but we couldnt find population")
+			return True, False
+	else:
+		# print(location+" is NOT a location")
+		return False, False
 
-
-
-def is_location(location):
-	#PENDING
-    #Check result using https://forebears.io/place-search?q=new+england
-    return True
-
-def get_clean_query_result(query_result):
+def get_population_from_google_query_result(query_result):
 	'''
 	Get ready to receive populations in different formats, such as:
-	 91,411 (2018)
-	 3,685\n2010
-	 17 million people
+	 
+	3,685\n2010
+	91,411 (2018)
+	14,810,001 // New england
+	
+	 
+	17 million people
+	1.655 million (2010) // Ecatepec de Morelos
 	'''
 
-	clean_query_result = query_result
-	clean_query_result = clean_query_result.replace(" million","000,000")
-	clean_query_result = clean_query_result.split(" ")[0]
-	clean_query_result = clean_query_result.split("\n")[0]
-	clean_query_result = clean_query_result.replace(',','')
-
-	return clean_query_result
-def get_population(location):
-	#Query google
-	query_result = ask_google(location+" population")
-
 	try:
-		clean_query_result = get_clean_query_result(query_result)
-		population = int(clean_query_result)
+		clean_query_result = query_result
 
-		return population
-	except:
-		# print("EXCEPTION")
-		# print("Couldnt parse query result to int")
-		# print(location)
+		#14,810,001
+		clean_query_result = clean_query_result.replace(',','')
+
+		#3685\n2010
+		clean_query_result = clean_query_result.split("\n")[0]
+
+		#1.655 million (2010)
+		if(" " in clean_query_result):
+			clean_query_result = " ".join(clean_query_result.split(" ")[:-1])
+
+		#1.655 million
+		#Replace '.' and million
+		if len(clean_query_result.split(" "))>1:
+			result = float(clean_query_result.split(" ")[0])
+			multiplier = clean_query_result.split(" ")[1]
+			if multiplier == 'million':
+				result = result * 1000000
+
+			clean_query_result = result
+		
+		result =  int(clean_query_result)
+	except Exception as e:
+		# print("problem paring query result to int")
+		# print(e)
 		# print(query_result)
 		return False
 
-def get_locations_with_low_population(locations, low_populations_threshold=20000):
+	return result
 
+def google_population(location):
+	#Query google
+	query_result = ask_google(location+" population")
+
+	# print("Google query result: ")
+	# print(query_result)
+
+	population = get_population_from_google_query_result(query_result)
+	if population:
+		# print("Population for "+location+" is "+str(population))
+		return population
+	else:
+		# print("Could not find population for "+location)
+		return False
+
+def get_locations_with_low_population(locations, low_populations_threshold=20000, return_one=None, consider_low_population_if_unknown_population=False):
+	#Check which strings of locations correspond to locations whith low_populations
+	#If return_one is set to True, method returns first location with low population
+	#If consider_low_population_if_unknown_population is set to True, locations with unknown population will be labelled as low population (conservative approach)
 	locations_with_low_population = []
 
-	'''
-	Instead of using locations.csv, I could use some of the following resources
-	https://geonames.nga.mil/gns/html/namefiles.html
-	http://www.geonames.org/
-	'''
-	all_existing_locations = pd.read_csv('locations.csv')['name'].to_list()
-
 	for index, location in enumerate(locations):
-		if(index%50==0):
-			print(str(index)+'/'+str(len(locations))+':'+location)
-		#Check if location string is indeed a location
-		if location in all_existing_locations:
-			
-			population = get_population(location)
-			
-			if population:# and population < low_populations_threshold:
-				locations_with_low_population.append(location)
-	return locations_with_low_population
 
-def check_if_any_row_is_location_has_low_population(locations, low_populations_threshold=20000):
-
-	#Check that for elements in locations array, at least one is a location and has pop under threshold
-	for location in locations:
-		if is_location(location):
-			population = get_population(location)
+		location_exists, population = check_location_exists_and_population_size(location)
+		if location_exists:
+			if not population:
+				population = google_population(location)
 			
-			if population and population < low_populations_threshold:
-				return True
-	return False
+			if population:
+				if population < low_populations_threshold:
+					# print(location+" is a location with LOW pop")
+					if return_one:
+						return location
+					else:
+						locations_with_low_population.append(location)
+				# else:
+				# 	print(location+" is a location with HIGH pop")
+			
+			elif consider_low_population_if_unknown_population:
+				#In this case, we rather assume its a small unknown location
+				if return_one:
+					return location
+				else:
+					locations_with_low_population.append(location)
+		
+	if return_one:
+		return False
+	else:
+		return locations_with_low_population
 
 
 if __name__ == "__main__":
-	print(get_locations_with_low_population(["Cabildo","New England", "Santa Monica", "Yolanda"]))
+	# print(get_locations_with_low_population(["Cabildo","New England", "Santa Monica", "Yolanda"]))
+
+	# print(is_location('chicago'))
+
+	# get_population('cabildo')
+	# get_locations_with_low_population(['La paz', 'cabildo', 'chicago','santa monica', 'new england', 'yolanda'])
+
+	google_population('La Magdalena Contreras')

@@ -9,7 +9,6 @@ from constant_strings import *
 
 import query_google_answer_boxes as google
 
-
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -236,11 +235,10 @@ def column_has_locations_with_low_populations(dataset, column_name):
     column_filtered = clean_column(dataset[column_name])
 
     #Get unique values
-    unique_locations = column_filtered.unique()
+    unique_locations = column_filtered.unique().tolist()
 
     #Check if any location has pop under 20,000
-    return google.check_if_any_row_is_location_has_low_population(locations)
-
+    return google.get_locations_with_low_population(unique_locations, return_one=True)
 
 
 
@@ -284,20 +282,20 @@ def find_piis_based_on_locations_population(dataset, label_dict, columns_to_chec
 
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
+    
+                location_with_low_population = column_has_locations_with_low_populations(dataset, column_name)
 
-                #If column has strings and is sparse    
-                if column_has_locations_with_low_populations(dataset, column_name):
-
+                if(location_with_low_population):
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
-                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has values with populations under 20,000")
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
                 
-                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has values with populations under 20,000"
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
                     
                     elif(column_label_match):
-                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has values with populations under 20,000")
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
                     
-                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has values with populations under 20,000"
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
                     #If found, I dont need to keep checking this column with other restricted words
                     break
 
@@ -414,13 +412,10 @@ def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
 def create_log_file_path(dataset_path):
 
-    # path_without_extension = dataset_path[0:dataset_path.rfind(".")]
-    dataset_directory_path = "\\".join(dataset_path.split('\\')[:-1])
-    
-    file_name = dataset_path.split('\\')[-1].split('.')[0]
+    path_without_extension = dataset_path[0:dataset_path.rfind(".")]
 
     global LOG_FILE
-    LOG_FILE = dataset_directory_path+"\\log_"+file_name+'.txt'
+    LOG_FILE = path_without_extension+"_log.txt"
 
     print(LOG_FILE)
 
@@ -546,11 +541,17 @@ def main_when_script_run_from_console():
 
         #Search piis using all methods
         all_piis_found = {}
-        consider_locations_cols = 1
+        consider_locations_cols = 0
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
         print("Piis found using column names: "+",".join(pii_candidates.keys()))
+
+
+        pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
+        all_piis_found.update(pii_candidates)
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+        print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
 
         pii_candidates = find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
         all_piis_found.update(pii_candidates)
