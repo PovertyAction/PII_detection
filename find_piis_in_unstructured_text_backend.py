@@ -3,8 +3,10 @@ from constant_strings import *
 import restricted_words as restricted_words_list
 import query_google_answer_boxes as google
 import requests
-from forebears_api_key import get_api_key
+from secret_keys import get_forebears_api_key
 import json
+from datetime import datetime
+
 
 def get_stopwords(languages=None):
 
@@ -72,13 +74,12 @@ def find_names_in_list_string(list_potential_names):
     '''
     Uses https://forebears.io/onograph/documentation/api/location/batch to find names in list_potential_names
     '''
-    API_KEY = get_api_key()
+    API_KEY = get_forebears_api_key()
 
     all_names_found = set()
 
     #Api calls must query at most 1,000 names.
     n = 1000
-    print(len(list_potential_names))
     list_of_list_1000_potential_names = [list_potential_names[i:i + n] for i in range(0, len(list_potential_names), n)]
 
     for list_1000_potential_names in list_of_list_1000_potential_names:
@@ -100,7 +101,7 @@ def find_piis_in_list_strings(list_strings):
 
     strings_to_check = list_strings
 
-    #Find all telephone numbers
+    # #Find all telephone numbers
     print("-->Finding phone numbers")
     phone_numbers_found = find_phone_numbers_in_list_strings(strings_to_check)
     print("found "+str(len(phone_numbers_found)))
@@ -119,6 +120,7 @@ def find_piis_in_list_strings(list_strings):
     print("-->Finding locations with low population")
     locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check)
     print("found "+str(len(locations_with_low_population_found)))
+    print(locations_with_low_population_found)
 
     return list(set(phone_numbers_found + locations_with_low_population_found + names_found))
 
@@ -169,14 +171,18 @@ def find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
     print("->Findind PIIs")
     piis_found = find_piis_in_list_strings(filtered_strings_to_check)
 
-    print("All PIIS found:")
-    print(piis_found)
     #Replace found piis found from the dataset
     print("->Replacing PIIs in new dataset")
-    deidentified_dataset = dataset.replace(piis_found, 'XXXX', regex=True)
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print("Current Time =", current_time)
+    deidentified_dataset = dataset.replace(piis_found, 'XXXX', regex=True) 
 
     #Save new dataframe
     print("->Exporting new dataset")
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print("Current Time =", current_time)
     new_file_path = export(deidentified_dataset, dataset_path)
 
     print("Task ready!")
@@ -186,17 +192,17 @@ def find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
 
 if __name__ == "__main__":
 
-    # dataset_path = 'test_files/almond_etal_2008.dta'
+    dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
 
-    # reading_status, reading_content = import_file(dataset_path)
+    reading_status, reading_content = import_file(dataset_path)
 
-    # if(reading_status is False):
-    #     print("Problem importing file")
+    if(reading_status is False):
+        print("Problem importing file")
 
-    # dataset = reading_content[DATASET]
-    # label_dict = reading_content[LABEL_DICT]
+    dataset = reading_content[DATASET]
+    label_dict = reading_content[LABEL_DICT]
     
-    # find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
+    find_piis_and_create_deidentified_dataset(dataset, dataset_path, label_dict)
 
-    print(find_names_in_list_string(['Felipe','nombrequenoexiste', 'George', 'Felipe', 'Enriqueta', 'dededede']))
+    # print(find_names_in_list_string(['Felipe','nombrequenoexiste', 'George', 'Felipe', 'Enriqueta', 'dededede']))
 

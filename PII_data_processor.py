@@ -97,7 +97,7 @@ def word_match(column_name, restricted_word, type_of_matching=STRICT):
 
 def remove_other_refuse_and_dont_know(column):
 
-    filtered_column = column.loc[(column != '777') & (column != '888') & (column != '999')]
+    filtered_column = column.loc[(column != '777') & (column != '888') & (column != '999') & (column != '-888')]
 
     return filtered_column
 

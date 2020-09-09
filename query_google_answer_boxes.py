@@ -33,7 +33,7 @@ def ask_google(query):
 
 def check_location_exists_and_population_size(location):
 	#https://www.geonames.org/export/geonames-search.html
-	api_url = 'http://api.geonames.org/searchJSON?name='+location+'&maxRows=1&orderby=population&isNameRequired=true&username='+get_geonames_username()
+	api_url = 'http://api.geonames.org/searchJSON?name='+location+'&name_equals='+location+'&maxRows=1&orderby=population&isNameRequired=true&username='+get_geonames_username()
 	response = requests.get(api_url)
 	
 	response_json = json.loads(response.text)
@@ -41,10 +41,10 @@ def check_location_exists_and_population_size(location):
 	if 'totalResultsCount' in response_json and response_json['totalResultsCount'] > 0:
 
 		if 'population' in response_json['geonames'][0] and response_json['geonames'][0]['population'] !=0:
-			# print("Location "+location+" exists and its population is "+str(response_json['geonames'][0]['population']))
+			print("Location "+location+" exists and its population is "+str(response_json['geonames'][0]['population']))
 			return True, response_json['geonames'][0]['population']
 		else:
-			# print("Location "+location+" exists but we couldnt find population")
+			print("Location "+location+" exists but we couldnt find population")
 			return True, False
 	else:
 		# print(location+" is NOT a location")
@@ -104,17 +104,22 @@ def google_population(location):
 
 	population = get_population_from_google_query_result(query_result)
 	if population:
-		# print("Population for "+location+" is "+str(population))
+		# print("Googled population for "+location+" is "+str(population))
 		return population
 	else:
-		# print("Could not find population for "+location)
+		# print("Could not google population for "+location)
 		return False
 
 def get_locations_with_low_population(locations, low_populations_threshold=20000, return_one=None, consider_low_population_if_unknown_population=False):
 	#Check which strings of locations correspond to locations whith low_populations
 	#If return_one is set to True, method returns first location with low population
 	#If consider_low_population_if_unknown_population is set to True, locations with unknown population will be labelled as low population (conservative approach)
+	
 	locations_with_low_population = []
+	locations_with_unknown_population = []
+
+	# print("Locations to look at:")
+	# print(locations)
 
 	for index, location in enumerate(locations):
 
@@ -130,15 +135,31 @@ def get_locations_with_low_population(locations, low_populations_threshold=20000
 						return location
 					else:
 						locations_with_low_population.append(location)
-				# else:
-				# 	print(location+" is a location with HIGH pop")
-			
-			elif consider_low_population_if_unknown_population:
-				#In this case, we rather assume its a small unknown location
-				if return_one:
-					return location
 				else:
-					locations_with_low_population.append(location)
+					# print(location+" is a location with HIGH pop")
+
+					#We add all locations found so far with unkwon population to the list of locations with low population
+					if consider_low_population_if_unknown_population is False:
+						# print(locations_with_unknown_population)
+						locations_with_low_population.extend(locations_with_unknown_population)
+
+					#We want to activate consider_low_population_if_unknown_population as long as we are sure that this column has locations (aka, we have already found at least one location and we were able to extract its population)
+					consider_low_population_if_unknown_population = True
+
+			
+			else:
+				#If the population is unknown, there are 2 possibilities. 
+				#The first one is a conservative approach: a location with unkown population is considered to have low population
+				#The other is to discard them. This is useful for the case of columns that actually dont have locations, but some word might match a location
+				#For this second scenario, we will save all locations with unknown population, and if we happen to realize we are in the scenario of a column with locations, only then we will add them all to the list of location wit low populations.
+				if consider_low_population_if_unknown_population:
+					if return_one:
+						return location
+					else:
+						locations_with_low_population.append(location)
+				else: #We still dont know if we are in a column with locations
+					locations_with_unknown_population.append(location)
+
 		
 	if return_one:
 		return False
