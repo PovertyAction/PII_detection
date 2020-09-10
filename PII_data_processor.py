@@ -550,7 +550,7 @@ def main_when_script_run_from_console():
         all_piis_found = {}
 
         #Options
-        consider_locations_cols = 0
+        consider_locations_cols = 1
         search_pii_in_unstructured_text = 1
 
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
@@ -576,7 +576,7 @@ def main_when_script_run_from_console():
             print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
         else:
             import find_piis_in_unstructured_text
-            pii_candidates_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check)
+            pii_candidates_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, SPANISH)
 
             print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
             print(len(pii_candidates_unstructured_text))

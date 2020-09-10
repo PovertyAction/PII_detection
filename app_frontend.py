@@ -16,7 +16,7 @@ intro_text_p2 = "You will first load a dataset that might contain PII variables.
 app_title = "IPA's PII Detector - v0.2.11"
 
 window_width = 1086
-window_height = 566
+window_height = 666
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -185,7 +185,7 @@ def find_piis():
 
 
     elif(search_method == UNSTRUCTURED_TEXT_SEARCH_METHOD):
-        pii_found_in_ustructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check)
+        pii_found_in_ustructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, language_dropdown.get())
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
@@ -491,6 +491,15 @@ if __name__ == '__main__':
         command=uncheck_column_level_option_for_unstructured_text_checkbutton)
     keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
+    #Create a frame for the language selection
+    language_frame = tk.Frame(master=frame, bg="white")
+    language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    ttk.Label(language_frame, text='In which language are the answers of questions?', wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
+
+    language_dropdown = tk.StringVar(language_frame)
+    w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
+
     #Labels and buttoms to run app
     start_application_label = ttk.Label(frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -508,7 +517,8 @@ if __name__ == '__main__':
         check_locations_pop_checkbutton,
         unstructured_text_label,
         column_level_option_for_unstructured_text_checkbutton,
-        keep_unstructured_text_option_checkbutton])
+        keep_unstructured_text_option_checkbutton,
+        language_frame])
 
     # Constantly looping event listener
     root.mainloop()  

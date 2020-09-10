@@ -13,6 +13,10 @@ FUZZY = 'fuzzy'
 PHONE_NUMBER = 'phone number'
 DATE = 'date'
 
+ENGLISH = 'English'
+SPANISH = 'Spanish'
+OTHER = 'Other'
+
 ERROR_MESSAGE = 'error_message'
 PII_CANDIDATES = 'pii_candidates'
 DATASET = 'dataset'
