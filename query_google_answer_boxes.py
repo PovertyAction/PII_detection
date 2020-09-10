@@ -41,10 +41,10 @@ def check_location_exists_and_population_size(location):
 	if 'totalResultsCount' in response_json and response_json['totalResultsCount'] > 0:
 
 		if 'population' in response_json['geonames'][0] and response_json['geonames'][0]['population'] !=0:
-			print("Location "+location+" exists and its population is "+str(response_json['geonames'][0]['population']))
+			# print("Location "+location+" exists and its population is "+str(response_json['geonames'][0]['population']))
 			return True, response_json['geonames'][0]['population']
 		else:
-			print("Location "+location+" exists but we couldnt find population")
+			# print("Location "+location+" exists but we couldnt find population")
 			return True, False
 	else:
 		# print(location+" is NOT a location")
@@ -122,6 +122,8 @@ def get_locations_with_low_population(locations, low_populations_threshold=20000
 	# print(locations)
 
 	for index, location in enumerate(locations):
+		print(str(index)+'/'+str(len(locations)))
+		print(location)
 
 		location_exists, population = check_location_exists_and_population_size(location)
 		if location_exists:
@@ -175,4 +177,4 @@ if __name__ == "__main__":
 	# get_population('cabildo')
 	# get_locations_with_low_population(['La paz', 'cabildo', 'chicago','santa monica', 'new england', 'yolanda'])
 
-	google_population('La Magdalena Contreras')
+	print(get_locations_with_low_population(['Dificultad']))

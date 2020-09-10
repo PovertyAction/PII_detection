@@ -123,8 +123,6 @@ def column_is_sparse(dataset, column_name, sparse_threshold):
     n_unique_entries = column_filtered.nunique()
 
     if n_entries != 0 and n_unique_entries/n_entries > sparse_threshold:
-        # print(column_name)
-        # print(n_unique_entries/n_entries)
         return True
     else:
         return False
@@ -301,7 +299,7 @@ def find_piis_based_on_locations_population(dataset, label_dict, columns_to_chec
 
     return possible_pii
 
-def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, sparse_values_threshold=0.85):
+def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, sparse_values_threshold=0.3):
     #Identifies pii based on columns having sparse values
 
     possible_pii={}
@@ -315,11 +313,23 @@ def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, spa
     return possible_pii
 
 
-def find_columns_with_phone_numbers(dataset, columns_to_check):
+def find_columns_with_specific_format(dataset, format_to_search, columns_to_check):
 
     columns_with_phone_numbers = {}
 
-    phone_n_regex_expression = "(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})"
+    if format_to_search == PHONE_NUMBER:
+        regex_expression = ".*(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4}).*"
+
+    elif format_to_search == DATE:
+
+        #dd/mm/yy, (with -, / or .)
+        regex_date_1 = "((0[1-9]|[12]\d|3[01])(\/|-|\.)(0[1-9]|1[0-2])(\/|-|\.)[12]\d{3})"
+        #mm/dd/yyy, (with -, / or .)
+        regex_date_2 = "((0[1-9]|1[0-2])(\/|-|\.)(0[1-9]|[12]\d|3[01])(\/|-|\.)[12]\d{3})"
+        #yyyy/mm/dd, (with -, / or .)
+        regex_date_3 = "([12]\d{3}(\/|-|\.)(0[1-9]|1[0-2])(\/|-|\.)(0[1-9]|[12]\d|3[01]))"
+
+        regex_expression = regex_date_1+'|'+regex_date_2+'|'+regex_date_3        
 
     for column in columns_to_check:
 
@@ -331,23 +341,17 @@ def find_columns_with_phone_numbers(dataset, columns_to_check):
             column_with_no_empty_valyes = column_with_no_nan[column_with_no_nan != '']
             first_10_values = column_with_no_empty_valyes.iloc[0:10]
 
-            match_result = first_10_values.astype(str).str.match(pat = phone_n_regex_expression)
+            match_result = first_10_values.astype(str).str.match(pat = regex_expression)
+
             #If all not NaN values matched with regex, save column as PII candidate
             if(any(match_result)):
-                log_and_print("Column '"+column+"' considered possible pii given column entries have phone number format")
-                columns_with_phone_numbers[column]= "Column entries have phone number format"
+                log_and_print("Column '"+column+"' considered possible pii given column entries have "+format_to_search+" format")
+                columns_with_phone_numbers[column]= "Column entries have "+format_to_search+" format"
 
     return columns_with_phone_numbers
 
 
-def format_detection(dataset, columns_to_check):
-    
-    #Find columns with phone numbers formats
-    possible_pii = find_columns_with_phone_numbers(dataset, columns_to_check)
 
-    #Check other formats
-
-    return possible_pii
 
 
 def export_encoding(dataset_path, encoding_dict):
@@ -402,10 +406,13 @@ def find_survey_cto_vars(dataset):
 def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
     all_piis_detected = {}
+    
+    #Find columns with phone numbers formats
+    columns_with_phone_numbers = find_columns_with_specific_format(dataset, PHONE_NUMBER, columns_to_check)
+    all_piis_detected.update(columns_with_phone_numbers)
 
-    #Find piis based on entries format
-    piis_suspicious_format = format_detection(dataset, columns_to_check)
-    all_piis_detected.update(piis_suspicious_format)
+    columns_with_dates = find_columns_with_specific_format(dataset, DATE, columns_to_check)
+    all_piis_detected.update(columns_with_dates)
 
     return all_piis_detected
 
@@ -541,27 +548,38 @@ def main_when_script_run_from_console():
 
         #Search piis using all methods
         all_piis_found = {}
+
+        #Options
         consider_locations_cols = 0
+        search_pii_in_unstructured_text = 1
+
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
         print("Piis found using column names: "+",".join(pii_candidates.keys()))
 
+        if(consider_locations_cols==0):
+            pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
+            all_piis_found.update(pii_candidates)
+            columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+            print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
 
-        pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
-        all_piis_found.update(pii_candidates)
-        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-        print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
 
         pii_candidates = find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
         all_piis_found.update(pii_candidates)
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
         print("Piis found using column formats: "+",".join(pii_candidates.keys()))
 
-        pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
-        all_piis_found.update(pii_candidates)
-        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-        print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
+        if search_pii_in_unstructured_text == 0:
+            pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
+            all_piis_found.update(pii_candidates)
+            print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
+        else:
+            import find_piis_in_unstructured_text
+            pii_candidates_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check)
+
+            print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
+            print(len(pii_candidates_unstructured_text))
 
         #Now we check identified PIIs are the correct ones based on ground truth
         reading_status, reading_content = import_file(true_piis_path)

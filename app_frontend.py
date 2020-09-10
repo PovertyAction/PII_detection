@@ -4,18 +4,19 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk, Image
-import PII_data_processor
-from constant_strings import *
-
 import webbrowser
 import os
+
+import PII_data_processor
+import find_piis_in_unstructured_text
+from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - v0.2.11"
 
 window_width = 1086
-window_height = 466
+window_height = 566
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -156,43 +157,63 @@ def find_piis():
 
         #Indicate next search method
         if(check_locations_pop_checkbutton_var.get()==1):
-            next_search_method_button_text = "Continue: Find PIIs in columns with locations"
+            next_search_method_button_text = "Continue: Find columns with potential PIIs for columns with locations"
             next_search_method = LOCATIONS_POPULATIONS_SEARCH_METHOD
         else:
-            next_search_method_button_text = "Continue: Find PIIs based on columns format"
+            next_search_method_button_text = "Continue: Find columns with potential PIIs based on columns format"
             next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
 
     elif(search_method == LOCATIONS_POPULATIONS_SEARCH_METHOD):
         pii_candidates = PII_data_processor.find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
-        next_search_method_button_text = "Continue: Find PIIs based on columns format"
+        next_search_method_button_text = "Continue: Find columns with potential PIIs based on columns format"
         next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
 
     elif(search_method == COLUMNS_FORMAT_SEARCH_METHOD):
         pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
-        next_search_method_button_text = "Continue: Find PIIs based on sparse entries"
-        next_search_method = SPARSE_ENTRIES_SEARCH_METHOD
+
+        if(column_level_option_for_unstructured_text_checkbutton_var.get()==1):
+            next_search_method_button_text = "Continue: Find columns with potential PIIs based on sparse entries"
+            next_search_method = SPARSE_ENTRIES_SEARCH_METHOD
+        else:
+            next_search_method_button_text = "Continue: Find PIIs in open ended questions"
+            next_search_method = UNSTRUCTURED_TEXT_SEARCH_METHOD
 
     elif(search_method == SPARSE_ENTRIES_SEARCH_METHOD):
         pii_candidates = PII_data_processor.find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
-    #Update columns_still_to_check, removing pii candidates found
-    columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+
+    elif(search_method == UNSTRUCTURED_TEXT_SEARCH_METHOD):
+        pii_found_in_ustructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check)
+        next_search_method_button_text = "Create anonymized dataset"
+        next_search_method = None
 
     #Clean and display pii found
     clear_window_removing_all_widgets()
-    pii_candidates_title_label = tkinter_display_title('PII candidates found using '+search_method+':')
-    widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
+
+    #If we are displaying PII columns, which is the case for all search methods but the unstructured text one
+    if search_method != UNSTRUCTURED_TEXT_SEARCH_METHOD:
+        pii_candidates_title_label = tkinter_display_title('PII candidates found using '+search_method+':')
+        widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
+        
+        if(len(pii_candidates)==0):
+            no_pii_label = tkinter_display('No PII candidates found.')
+            widgets_visible_ready_to_remove.extend([no_pii_label])
+        else:
+            #Create title, instructions, and display piis
+            pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
+            piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
+            widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
+
+
+        #Update columns_still_to_check, removing pii candidates found
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
     
-    if(len(pii_candidates)==0):
-        no_pii_label = tkinter_display('No PII candidates found.')
-        widgets_visible_ready_to_remove.extend([no_pii_label])
-    else:
-        #Create title, instructions, and display piis
-        pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
-        piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-        widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
+    else: #We are in the unstructure text search. Display PIIs found.
+        tkinter_display('This are the PIIs we found in open ended questions')
+        tkinter_display(",".join(pii_found_in_ustructured_text))
+
 
     if(next_search_method is not None):
         buttom_text = next_search_method_button_text
@@ -417,6 +438,7 @@ if __name__ == '__main__':
     options_label = ttk.Label(frame, text="Options: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
+    #SurveyCTO vars option
     check_survey_cto_checkbutton_var = tk.IntVar()
     check_survey_cto_checkbutton = tk.Checkbutton(frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime').",
             bg="white",
@@ -425,15 +447,49 @@ if __name__ == '__main__':
             onvalue=1, offvalue=0)
     check_survey_cto_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-
+    #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
-    check_locations_pop_checkbutton = tk.Checkbutton(frame, text="Flag locations column (ex: Village) as PII only if population of a location is under 20,000. [Feature under development]",
+    check_locations_pop_checkbutton = tk.Checkbutton(frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
             bg="white",
             activebackground="white",
             variable=check_locations_pop_checkbutton_var,
             onvalue=1, offvalue=0)
     check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
+
+    #Option related to unstructured text
+    unstructured_text_label = ttk.Label(frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
+    unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    def uncheck_keep_unstructured_text_option_checkbutton():
+        keep_unstructured_text_option_checkbutton.deselect()
+
+    def uncheck_column_level_option_for_unstructured_text_checkbutton():
+        column_level_option_for_unstructured_text_checkbutton.deselect()
+
+    column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
+    column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
+    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(frame,
+        text=column_level_option_for_unstructured_text_checkbutton_text,
+        bg="white",
+        activebackground="white",
+        variable=column_level_option_for_unstructured_text_checkbutton_var,
+        onvalue=1,
+        offvalue=0,
+        command = uncheck_keep_unstructured_text_option_checkbutton)
+    column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    keep_unstructured_text_option_checkbutton_var = tk.IntVar()
+    keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if really need to keep unstructured text]"
+    keep_unstructured_text_option_checkbutton = tk.Checkbutton(frame,
+        text=keep_unstructured_text_option_checkbutton_text,
+        bg="white",
+        activebackground="white",
+        variable=keep_unstructured_text_option_checkbutton_text,
+        onvalue=1,
+        offvalue=0,
+        command=uncheck_column_level_option_for_unstructured_text_checkbutton)
+    keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     #Labels and buttoms to run app
     start_application_label = ttk.Label(frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -443,7 +499,16 @@ if __name__ == '__main__':
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     #Add widgets to list of widgets to remove later on
-    widgets_visible_ready_to_remove.extend([intro_text_1_label, intro_text_2_label, start_application_label, select_dataset_button, options_label, check_survey_cto_checkbutton, check_locations_pop_checkbutton])
+    widgets_visible_ready_to_remove.extend([intro_text_1_label,
+        intro_text_2_label,
+        start_application_label,
+        select_dataset_button,
+        options_label,
+        check_survey_cto_checkbutton,
+        check_locations_pop_checkbutton,
+        unstructured_text_label,
+        column_level_option_for_unstructured_text_checkbutton,
+        keep_unstructured_text_option_checkbutton])
 
     # Constantly looping event listener
     root.mainloop()  
