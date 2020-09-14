@@ -17,14 +17,17 @@ Once the PIIs are identified, users have the opportunity to say what they would 
 
 ### Files included
 
+#### Main files
+* app_frontend.py: App GUI script using tkinter.
 * PII_data_processor.py: App backend, it reads data files, identifies PIIs and creates new de-identified data files.
-* restricted_words.py: Script to get restricted words for PII identification
-* app_frontend.py: App frontend, using python tkinter.
-* dist folder: Contains .exe file for execution
+* find_piis_in_unstructed_text.py: Script used by PII_data_processor to particularly detect piis in unstructured text
 
-In addition, a small app to find PIIs in unstructured text is offered
-* find_piis_in_unstructured_text_backend.py
-* find_piis_in_unstructured_text_frontend.py
+### Other utility files
+* restricted_words.py: Script to get restricted words for PII identification
+* constant_strings.py: Declares strings used across app.
+* query_google_answer_boxes.py: Script to query locations and populations
+* dist folder: Contains .exe file for execution
+* hook-spacy.py: Dependency file needed when creating .exe
 
 ### Help and Support
 
@@ -47,6 +50,4 @@ J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
 The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE).
 
 ### To create .exe from source file
-`pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." app_frontend.py`
-
-
+`pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util app_frontend.py`
