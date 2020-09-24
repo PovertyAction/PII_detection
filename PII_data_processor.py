@@ -386,9 +386,7 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
 
     #Replace piis in unstructured text
     if(columns_where_to_replace_piis and piis_found_in_ustructured_text):
-        print("here we go")
         for c in columns_where_to_replace_piis:
-            print(f'working on {c}')
             dataset[c].replace(piis_found_in_ustructured_text, 'XXXX', regex=True, inplace=True)
 
     exported_file_path = export(dataset, dataset_path, label_dict)
@@ -557,7 +555,6 @@ def main_when_script_run_from_console():
         value_label_dict = reading_content[VALUE_LABEL_DICT]
         columns_still_to_check = [c for c in dataset.columns if c not in restricted_words_list.get_surveycto_restricted_vars()]
 
-
         #Search piis using all methods
         all_piis_found = {}
 
@@ -592,7 +589,6 @@ def main_when_script_run_from_console():
 
             print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
             print(len(pii_candidates_unstructured_text))
-
 
         #Create deidentified dataset
         create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action, pii_candidates_unstructured_text, column_with_unstructured_text)

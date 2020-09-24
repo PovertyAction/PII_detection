@@ -152,15 +152,13 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 					else:
 						locations_with_low_population.append(location)
 				else:
-					# print(location+" is a location with HIGH pop")
-
-					#We add all locations found so far with unkwon population to the list of locations with low population
-					if consider_low_population_if_unknown_population is False:
-						# print(locations_with_unknown_population)
-						locations_with_low_population.extend(locations_with_unknown_population)
+					#We know for sure now that we are indeed in a column with locations, given that for one of them we were able to get its population
 
 					#We want to activate consider_low_population_if_unknown_population as long as we are sure that this column has locations (aka, we have already found at least one location and we were able to extract its population)
-					consider_low_population_if_unknown_population = True
+					#We also add all locations found so far with unkwon population to the list of locations with low population
+					if consider_low_population_if_unknown_population is False:
+						locations_with_low_population.extend(locations_with_unknown_population)				
+						consider_low_population_if_unknown_population = True
 
 			
 			else:
