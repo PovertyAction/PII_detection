@@ -7,6 +7,8 @@ LOG_FILE = None
 
 from constant_strings import *
 
+import urllib.request as urllib2
+
 import query_google_answer_boxes as google
 
 import warnings
@@ -519,6 +521,13 @@ def export(dataset, dataset_path, variable_labels = None):
             
     return new_file_path
 
+
+def internet_on():
+    try:
+        urllib2.urlopen('http://google.com', timeout=1)
+        return True
+    except urllib2.URLError as err: 
+        return False
 
 def get_test_files_tuples():
 

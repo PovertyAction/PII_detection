@@ -3,6 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
+from tkinter import messagebox
 from PIL import ImageTk, Image
 import webbrowser
 import os
@@ -494,13 +495,19 @@ if __name__ == '__main__':
             onvalue=1, offvalue=0)
     check_survey_cto_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
+    def check_locations_pop_checkbutton_command():
+        if PII_data_processor.internet_on() is False:
+            messagebox.showinfo("Error", "Feature requires internet connection")
+            check_locations_pop_checkbutton.deselect()
     #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
     check_locations_pop_checkbutton = tk.Checkbutton(frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
             bg="white",
             activebackground="white",
             variable=check_locations_pop_checkbutton_var,
-            onvalue=1, offvalue=0)
+            onvalue=1,
+            offvalue=0,
+            command = check_locations_pop_checkbutton_command)
     check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
 
@@ -508,11 +515,45 @@ if __name__ == '__main__':
     unstructured_text_label = ttk.Label(frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
     unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    def uncheck_keep_unstructured_text_option_checkbutton():
-        keep_unstructured_text_option_checkbutton.deselect()
+    def column_level_option_for_unstructured_text_checkbutton_command():
+        print("As soon after the click:")
+        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
-    def uncheck_column_level_option_for_unstructured_text_checkbutton():
-        column_level_option_for_unstructured_text_checkbutton.deselect()
+        #If both are now off, reselect this one
+        if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
+            messagebox.showinfo("Error", "You must have one option selected")
+            column_level_option_for_unstructured_text_checkbutton_var.set(True)
+
+        #If the other one is on, turn it off.
+        if(column_level_option_for_unstructured_text_checkbutton_var.get()==1 and keep_unstructured_text_option_checkbutton_var.get()==1):
+            keep_unstructured_text_option_checkbutton.deselect()
+
+        print("At the end of the method:")
+        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+
+
+    def keep_unstructured_text_option_checkbutton_command():
+        print("As soon after the click:")
+        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+        #If there is no internet connection, this feature should be disabled
+        if PII_data_processor.internet_on() is False:
+            messagebox.showinfo("Error", "Feature requires internet connection")
+            keep_unstructured_text_option_checkbutton.deselect()
+        else:
+           #If both are now off, reselect this one
+            if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
+                messagebox.showinfo("Error", "You must have one option selected")
+                keep_unstructured_text_option_checkbutton_var.set(True)
+
+            else:#Disable other option
+                column_level_option_for_unstructured_text_checkbutton.deselect()
+        
+        print("At the end of the method:")
+        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
     column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
     column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
@@ -523,19 +564,20 @@ if __name__ == '__main__':
         variable=column_level_option_for_unstructured_text_checkbutton_var,
         onvalue=1,
         offvalue=0,
-        command = uncheck_keep_unstructured_text_option_checkbutton)
+        command = column_level_option_for_unstructured_text_checkbutton_command)
+
     column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    keep_unstructured_text_option_checkbutton_var = tk.IntVar()
+    keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
     keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if really need to keep unstructured text]"
     keep_unstructured_text_option_checkbutton = tk.Checkbutton(frame,
         text=keep_unstructured_text_option_checkbutton_text,
         bg="white",
         activebackground="white",
-        variable=keep_unstructured_text_option_checkbutton_text,
+        variable=keep_unstructured_text_option_checkbutton_var,
         onvalue=1,
         offvalue=0,
-        command=uncheck_column_level_option_for_unstructured_text_checkbutton)
+        command=keep_unstructured_text_option_checkbutton_command)
     keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     #Labels and buttoms to run app
