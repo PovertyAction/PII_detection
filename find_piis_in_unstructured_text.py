@@ -50,7 +50,7 @@ def generate_names_parameter_for_api(list_names, option):
 
     list_of_names_json=[]
     for name in list_names:
-        list_of_names_json.append('{"name":"'+name+'","type":"'+option+'","limit":1}')
+        list_of_names_json.append('{"name":"'+name+'","type":"'+option+'","limit":2}')
 
     names_parameter = '['+','.join(list_of_names_json)+']'
     return names_parameter
@@ -62,10 +62,12 @@ def get_names_from_json_response(response):
     json_response = json.loads(response)
     for result in json_response["results"]:
         #Names that exist come with the field 'jurisdictions'
+        #We will also ask a minimum of 50 world incidences 
         if('jurisdictions' in result):
-            names_found.append(result['name'])
-        # else:
-        #     print(result['name']+" is not a name")
+            world_incidences = int(result['world']['incidence'])
+
+            if world_incidences > 50:
+                names_found.append(result['name'])
 
     return names_found
 
@@ -77,19 +79,23 @@ def filter_based_type_of_word(list_strings, language):
     else:
         nlp = spacy.load("en_core_web_sm")
     
-
     #Accepted types of words
     #Reference https://spacy.io/api/annotation#pos-tagging
     accepted_types = ['PROPN', 'X','PER','LOC','ORG','MISC','']
 
     filtered_list = []
-    for string in list_strings:    
-        doc = nlp(string)
-        for token in doc:
-            if token.pos_ in accepted_types:
-                filtered_list.append(token.text)
+    import datetime
 
-    return list(set(filtered_list))
+    filtered_list = []
+    doc = nlp(" ".join(list_strings))
+    # print("b")
+    for token in doc:
+        if token.pos_ in accepted_types:
+            filtered_list.append(token.text)
+
+    filtered_list = list(set(filtered_list))
+
+    return filtered_list
 
 def find_names_in_list_string(list_potential_names):
     '''
@@ -153,7 +159,7 @@ def get_list_unique_strings_in_dataset(dataset, columns_to_check):
 
     return list(set_string_in_dataset)
 
-def find_piis(dataset, label_dict, columns_to_check_not_filtered, language):
+def find_piis(dataset, label_dict, columns_to_check_not_filtered, language, country):
 
     #Filter columns to those that have sparse entries
     columns_to_check = []
@@ -201,51 +207,27 @@ def find_piis(dataset, label_dict, columns_to_check_not_filtered, language):
 
     #Find all locations with pop less than 20,000
     print("-->Finding locations with low population")
-    locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check)
+    locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check, country)
     print("found "+str(len(locations_with_low_population_found)))
     print(locations_with_low_population_found)
 
-    return list(set(phone_numbers_found + names_found + locations_with_low_population_found))
-
-
-    #Find piis in list
-    print("->Findind PIIs")
-    piis_found = find_piis_in_list_strings(filtered_strings_to_check)
-
-    # #Replace found piis found from the dataset
-    # print("->Replacing PIIs in new dataset")
-    # now = datetime.now()
-    # current_time = now.strftime("%H:%M:%S")
-    # print("Current Time =", current_time)
-    # deidentified_dataset = dataset.replace(piis_found, 'XXXX', regex=True) 
-
-    # #Save new dataframe
-    # print("->Exporting new dataset")
-    # now = datetime.now()
-    # current_time = now.strftime("%H:%M:%S")
-    # print("Current Time =", current_time)
-    # new_file_path = export(deidentified_dataset, dataset_path)
-
-    print("Task ready!")
-
-    return piis_found
-
+    return list(set(phone_numbers_found + names_found + locations_with_low_population_found)), columns_to_check
 
 if __name__ == "__main__":
 
-    dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
+    # dataset_path = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
 
-    reading_status, reading_content = import_file(dataset_path)
+    # reading_status, reading_content = import_file(dataset_path)
 
-    if(reading_status is False):
-        print("Problem importing file")
+    # if(reading_status is False):
+    #     print("Problem importing file")
 
-    dataset = reading_content[DATASET]
-    label_dict = reading_content[LABEL_DICT]
+    # dataset = reading_content[DATASET]
+    # label_dict = reading_content[LABEL_DICT]
     
-    columns_to_check = [c for c in dataset.columns if c not in restricted_words_list.get_surveycto_restricted_vars()]
+    # columns_to_check = [c for c in dataset.columns if c not in restricted_words_list.get_surveycto_restricted_vars()]
 
-    find_piis(dataset, label_dict, columns_to_check)
+    # find_piis(dataset, label_dict, columns_to_check)
 
-    # print(find_names_in_list_string(['Felipe','nombrequenoexiste', 'George', 'Felipe', 'Enriqueta', 'dededede']))
+    print(find_names_in_list_string(['Felipe','nombrequenoexiste', 'George', 'Felipe', 'Enriqueta', 'dededede']))
 

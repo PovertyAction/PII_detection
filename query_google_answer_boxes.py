@@ -6,6 +6,8 @@ from secret_keys import get_geonames_username
 import requests
 import json
 
+from constant_strings import *
+
 
 driver=None
 def ask_google(query):
@@ -31,9 +33,21 @@ def ask_google(query):
 
 	return False
 
-def check_location_exists_and_population_size(location):
+def get_country_iso_code(country_name):
+
+	if country_name in COUNTRY_NAME_TO_ISO_CODE:
+		return COUNTRY_NAME_TO_ISO_CODE[country_name]
+	else:
+		return None
+
+def check_location_exists_and_population_size(location, country):
 	#https://www.geonames.org/export/geonames-search.html
+	
 	api_url = 'http://api.geonames.org/searchJSON?name='+location+'&name_equals='+location+'&maxRows=1&orderby=population&isNameRequired=true&username='+get_geonames_username()
+	country_iso = get_country_iso_code(country)
+	if country_iso:
+		api_url = api_url+'&country='+country_iso
+
 	response = requests.get(api_url)
 	
 	response_json = json.loads(response.text)
@@ -110,7 +124,7 @@ def google_population(location):
 		# print("Could not google population for "+location)
 		return False
 
-def get_locations_with_low_population(locations, low_populations_threshold=20000, return_one=None, consider_low_population_if_unknown_population=False):
+def get_locations_with_low_population(locations, country, low_populations_threshold=20000, return_one=None, consider_low_population_if_unknown_population=False):
 	#Check which strings of locations correspond to locations whith low_populations
 	#If return_one is set to True, method returns first location with low population
 	#If consider_low_population_if_unknown_population is set to True, locations with unknown population will be labelled as low population (conservative approach)
@@ -125,7 +139,7 @@ def get_locations_with_low_population(locations, low_populations_threshold=20000
 		# print(str(index)+'/'+str(len(locations)))
 		# print(location)
 
-		location_exists, population = check_location_exists_and_population_size(location)
+		location_exists, population = check_location_exists_and_population_size(location, country)
 		if location_exists:
 			if not population:
 				population = google_population(location)
@@ -169,12 +183,12 @@ def get_locations_with_low_population(locations, low_populations_threshold=20000
 		return locations_with_low_population
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 	# print(get_locations_with_low_population(["Cabildo","New England", "Santa Monica", "Yolanda"]))
 
 	# print(is_location('chicago'))
 
 	# get_population('cabildo')
 	# get_locations_with_low_population(['La paz', 'cabildo', 'chicago','santa monica', 'new england', 'yolanda'])
-
-	print(get_locations_with_low_population(['Dificultad']))
+	# 
+	# print(get_locations_with_low_population(['Dificultad']))

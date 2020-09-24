@@ -15,9 +15,6 @@ intro_text = "This script is meant to assist in the detection of PII (personally
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 app_title = "IPA's PII Detector - v0.2.12"
 
-window_width = 1086
-window_height = 666
-
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
 
@@ -29,6 +26,13 @@ label_dict = None
 
 widgets_visible_ready_to_remove = []
 find_piis_options={}
+
+window_width=None
+window_height=None
+
+columns_where_to_replace_piis = None
+
+piis_in_text_box = None
 
 def tkinter_display_title(title):
     label = ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -95,8 +99,11 @@ def create_anonymized_dataset():
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
     
+    #Capture words to replace in unstructured text
+    # if(keep_unstructured_text_option_checkbutton_var.get()==1):
+    piis_found_in_ustructured_text = [w.strip() for w in piis_in_text_box.get("1.0", "end").split(',')]
 
-    new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action)
+    new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action, columns_where_to_replace_piis, piis_found_in_ustructured_text)
     
     clear_window_removing_all_widgets()
 
@@ -126,6 +133,13 @@ def clear_window_removing_all_widgets():
 
     canvas.yview_moveto(0)
 
+def display_pii_found_in_ustructured_text(piis_found_in_ustructured_text):
+    global piis_in_text_box
+    piis_in_text_box = tk.Text(frame, height=20, width=70)
+    piis_in_text_box.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    piis_in_text_box.insert(tk.END, ", ".join(piis_found_in_ustructured_text))
+    return piis_in_text_box
+
 
 def find_piis():
     global dataset
@@ -136,6 +150,8 @@ def find_piis():
     
     global search_method
     global next_search_method
+
+    global columns_where_to_replace_piis
 
     #Update search method (considering find_piis() is recurrently called)
     search_method = next_search_method
@@ -185,7 +201,7 @@ def find_piis():
 
 
     elif(search_method == UNSTRUCTURED_TEXT_SEARCH_METHOD):
-        pii_found_in_ustructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, language_dropdown.get())
+        piis_found_in_ustructured_text, columns_where_to_replace_piis = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, language_dropdown.get(), country_dropdown.get())
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
@@ -211,8 +227,10 @@ def find_piis():
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
     
     else: #We are in the unstructure text search. Display PIIs found.
-        tkinter_display('This are the PIIs we found in open ended questions')
-        tkinter_display(",".join(pii_found_in_ustructured_text))
+        t1 = tkinter_display("This are the potential PIIs found in open ended questions and which will be replaced by 'XXXX' in the new de-identified dataset")
+        t2 = tkinter_display("Feel free to edit the list if you find wrongly identified PIIs, just keep words separated by commas.")
+        t3 = display_pii_found_in_ustructured_text(piis_found_in_ustructured_text)
+        widgets_visible_ready_to_remove.extend([t1, t2, t3])
 
 
     if(next_search_method is not None):
@@ -270,7 +288,7 @@ def import_file():
 
     #Creat bottom to find piis based on columns names
     next_search_method = COLUMNS_NAMES_SEARCH_METHOD
-    buttom_text = "Find PIIs based on column name"
+    buttom_text = "Find PIIs!"
 
     find_piis_next_step_button = ttk.Button(frame, text=buttom_text, command=find_piis, style='my.TButton')
     find_piis_next_step_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
@@ -291,6 +309,9 @@ def restart_program():
 
 def window_setup(master):
 
+    global window_width
+    global window_height
+
     #Add window title
     master.title(app_title)
     
@@ -301,8 +322,11 @@ def window_setup(master):
         icon_location = 'app.ico'
     master.iconbitmap(icon_location)
 
-    #Define window size
-    master.minsize(width=1, height=1)
+    #Set window position and max size
+    window_width, window_height = master.winfo_screenwidth(), master.winfo_screenheight()
+    # master.geometry("%dx%d+0+0" % (window_width, window_height))
+    master.state('zoomed')
+
 
     #Make window reziable
     master.resizable(True, True)
@@ -427,15 +451,38 @@ if __name__ == '__main__':
     app_title_label = ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel')
     app_title_label.pack(anchor='nw', padx=(30, 30), pady=(30, 10))
     
-    intro_text_1_label = ttk.Label(frame, text=intro_text, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    intro_text_1_label = ttk.Label(frame, text=intro_text, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_1_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     
 
-    intro_text_2_label = ttk.Label(frame, text=intro_text_p2, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    intro_text_2_label = ttk.Label(frame, text=intro_text_p2, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_2_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     
+    #Labels and checkbox for settings
+    settings_label = ttk.Label(frame, text="Settings:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    settings_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    #Create a frame for the language selection
+    language_frame = tk.Frame(master=frame, bg="white")
+    language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    ttk.Label(language_frame, text='In which language are the answers in the dataset?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
+
+    language_dropdown = tk.StringVar(language_frame)
+    w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
+
+    #Create a frame for country selection
+    country_frame = tk.Frame(master=frame, bg="white")
+    country_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    ttk.Label(country_frame, text='In which country was this survey run?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
+
+    country_dropdown = tk.StringVar(country_frame)
+    w = ttk.OptionMenu(country_frame, country_dropdown, MEXICO, *ALL_COUNTRIES, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
+
+
     #Labels and checkbox for options
-    options_label = ttk.Label(frame, text="Options: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    options_label = ttk.Label(frame, text="Options:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
     #SurveyCTO vars option
@@ -491,15 +538,6 @@ if __name__ == '__main__':
         command=uncheck_column_level_option_for_unstructured_text_checkbutton)
     keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    #Create a frame for the language selection
-    language_frame = tk.Frame(master=frame, bg="white")
-    language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-
-    ttk.Label(language_frame, text='In which language are the answers of questions?', wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
-
-    language_dropdown = tk.StringVar(language_frame)
-    w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
-
     #Labels and buttoms to run app
     start_application_label = ttk.Label(frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -518,7 +556,9 @@ if __name__ == '__main__':
         unstructured_text_label,
         column_level_option_for_unstructured_text_checkbutton,
         keep_unstructured_text_option_checkbutton,
-        language_frame])
+        language_frame,
+        settings_label,
+        country_frame])
 
     # Constantly looping event listener
     root.mainloop()  

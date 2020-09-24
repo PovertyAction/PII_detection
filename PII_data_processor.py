@@ -365,7 +365,7 @@ def export_encoding(dataset_path, encoding_dict):
             encoding_df.index = encoding_df.index + 1
     encoding_df.to_csv(encoding_file_path, index=False)
 
-def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action):
+def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action, columns_where_to_replace_piis = None, piis_found_in_ustructured_text = None):
 
     #Drop columns
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
@@ -381,6 +381,13 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
         dataset, encoding_used = recode(dataset, columns_to_encode)
         log_and_print("Map file for encoded values created.")
         export_encoding(dataset_path, encoding_used)
+
+    #Replace piis in unstructured text
+    if(columns_where_to_replace_piis and piis_found_in_ustructured_text):
+        print("here we go")
+        for c in columns_where_to_replace_piis:
+            print(f'working on {c}')
+            dataset[c].replace(piis_found_in_ustructured_text, 'XXXX', regex=True, inplace=True)
 
     exported_file_path = export(dataset, dataset_path, label_dict)
 
@@ -425,10 +432,6 @@ def create_log_file_path(dataset_path):
     LOG_FILE = path_without_extension+"_log.txt"
 
     print(LOG_FILE)
-
-
-
-
     
 
 def import_file(dataset_path):
@@ -521,8 +524,8 @@ def get_test_files_tuples():
 
     all_test_files_tuples = []
 
-    recover_mex_data = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw.dta'
-    recover_mex_true_piis = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_MEX_r1_Raw_true_piis.xlsx'
+    recover_mex_data = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_RD1_MEX\RECOVR_MEX_r1_Raw.dta'
+    recover_mex_true_piis = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_RD1_MEX\RECOVR_MEX_r1_Raw_true_piis.xlsx'
     all_test_files_tuples.append((recover_mex_data, recover_mex_true_piis))
 
     return all_test_files_tuples
@@ -576,10 +579,14 @@ def main_when_script_run_from_console():
             print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
         else:
             import find_piis_in_unstructured_text
-            pii_candidates_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, SPANISH)
+            pii_candidates_unstructured_text, column_with_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, SPANISH, MEXICO)
 
             print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
             print(len(pii_candidates_unstructured_text))
+
+
+        #Create deidentified dataset
+        create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action, pii_candidates_unstructured_text, column_with_unstructured_text)
 
         #Now we check identified PIIs are the correct ones based on ground truth
         reading_status, reading_content = import_file(true_piis_path)
