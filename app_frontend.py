@@ -37,6 +37,20 @@ piis_in_text_box = None
 
 check_survey_cto_checkbutton_var = None
 check_locations_pop_checkbutton_var = None
+column_level_option_for_unstructured_text_checkbutton_var = None
+keep_unstructured_text_option_checkbutton_var = None
+
+def display_title(title, frame_where_to_display):
+    label = ttk.Label(frame_where_to_display, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    label.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+    return label
+
+def display_message(the_message, frame_where_to_display):
+    label = ttk.Label(frame_where_to_display, text=the_message, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel')
+    label.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+    return label
 
 def tkinter_display_title(title):
     label = ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -51,11 +65,11 @@ def tkinter_display(the_message):
     frame.update()
     return label
 
-def tkinter_display_pii_candidates(pii_candidates, label_dict, default_dropdown_option="Drop"):
+def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, default_dropdown_option="Drop"):
 
     #Create a frame for the pii labels and actions dropdown
     #padx determines space between label and dropdown
-    pii_frame = tk.Frame(master=frame, bg="white")
+    pii_frame = tk.Frame(master=frame_where_to_display, bg="white")
     pii_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     #Add title to grid
@@ -104,8 +118,10 @@ def create_anonymized_dataset():
         pii_candidates_to_action[pii] = dropdown_elem.get()
     
     #Capture words to replace in unstructured text
-    # if(keep_unstructured_text_option_checkbutton_var.get()==1):
-    piis_found_in_ustructured_text = [w.strip() for w in piis_in_text_box.get("1.0", "end").split(',')]
+    if(keep_unstructured_text_option_checkbutton_var.get()==1):
+        piis_found_in_ustructured_text = [w.strip() for w in piis_in_text_box.get("1.0", "end").split(',')]
+    else:
+        piis_found_in_ustructured_text = None
 
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action, columns_where_to_replace_piis, piis_found_in_ustructured_text)
     
@@ -137,26 +153,58 @@ def clear_window_removing_all_widgets():
 
     canvas.yview_moveto(0)
 
-def display_pii_found_in_ustructured_text(piis_found_in_ustructured_text):
+def display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, frame_where_to_display):
     global piis_in_text_box
-    piis_in_text_box = tk.Text(frame, height=20, width=70)
+    piis_in_text_box = tk.Text(frame_where_to_display, height=20, width=70)
     piis_in_text_box.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
     piis_in_text_box.insert(tk.END, ", ".join(piis_found_in_ustructured_text))
     return piis_in_text_box
 
+def create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text):
+
+    global columns_still_to_check
+
+    piis_frame = tk.Frame(master=frame, bg="white")
+    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))    
+
+    #If we are displaying PII columns, which is the case for all search methods but the unstructured text one
+    if search_method != UNSTRUCTURED_TEXT_SEARCH_METHOD:
+        display_title('PII candidates found using '+search_method+':', piis_frame)
+        
+        if(len(pii_candidates)==0):
+            display_message('No PII candidates found.', piis_frame)
+        else:
+            #Create title, instructions, and display piis
+            display_message('For each PII candidate, select an action', piis_frame)
+            display_pii_candidates(pii_candidates, label_dict, piis_frame)
+
+        #Update columns_still_to_check, removing pii candidates found
+        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+    
+    else: #We are in the unstructure text search. Display PIIs found.
+        display_title('PIIs found in unstructured text:', piis_frame)
+        display_message("These are the potential PIIs found in open ended questions and which will be replaced by 'XXXX' in the new de-identified dataset", piis_frame)
+        display_message("Feel free to remove from the list if you find wrongly identified PIIs, just keep words separated by commas.", piis_frame)
+        display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, piis_frame)
+
+    if(next_search_method is not None):
+        buttom_text = next_search_method_button_text
+        next_command = find_piis
+    else:
+        buttom_text = 'Create anonymized dataset'
+        next_command = create_anonymized_dataset
+
+    next_method_button = ttk.Button(piis_frame, text=buttom_text, command=next_command, style='my.TButton')
+    next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+
+    return piis_frame
 
 def find_piis():
-    global dataset
-    global dataset_path
-    global label_dict
-    global value_label_dict
-    global columns_still_to_check
-    
+    global columns_still_to_check    
     global search_method
     global next_search_method
-
     global columns_where_to_replace_piis
-
 
     #Update search method (considering find_piis() is recurrently called)
     search_method = next_search_method
@@ -204,106 +252,17 @@ def find_piis():
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
-
     elif(search_method == UNSTRUCTURED_TEXT_SEARCH_METHOD):
         piis_found_in_ustructured_text, columns_where_to_replace_piis = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, language_dropdown.get(), country_dropdown.get())
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
-    #Clean and display pii found
-    clear_window_removing_all_widgets()
+    #Remove first page from view
+    first_view_frame.pack_forget()
 
-    #If we are displaying PII columns, which is the case for all search methods but the unstructured text one
-    if search_method != UNSTRUCTURED_TEXT_SEARCH_METHOD:
-        pii_candidates_title_label = tkinter_display_title('PII candidates found using '+search_method+':')
-        widgets_visible_ready_to_remove.extend([pii_candidates_title_label])
-        
-        if(len(pii_candidates)==0):
-            no_pii_label = tkinter_display('No PII candidates found.')
-            widgets_visible_ready_to_remove.extend([no_pii_label])
-        else:
-            #Create title, instructions, and display piis
-            pii_candidates_instruction_label = tkinter_display('For each PII candidate, select an action')
-            piis_frame = tkinter_display_pii_candidates(pii_candidates, label_dict)
-            widgets_visible_ready_to_remove.extend([pii_candidates_instruction_label, piis_frame])
+    piis_frame = create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text)
 
-
-        #Update columns_still_to_check, removing pii candidates found
-        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-    
-    else: #We are in the unstructure text search. Display PIIs found.
-        t1 = tkinter_display("This are the potential PIIs found in open ended questions and which will be replaced by 'XXXX' in the new de-identified dataset")
-        t2 = tkinter_display("Feel free to edit the list if you find wrongly identified PIIs, just keep words separated by commas.")
-        t3 = display_pii_found_in_ustructured_text(piis_found_in_ustructured_text)
-        widgets_visible_ready_to_remove.extend([t1, t2, t3])
-
-
-    if(next_search_method is not None):
-        buttom_text = next_search_method_button_text
-        next_command = find_piis
-    else:
-        buttom_text = 'Create anonymized dataset'
-        next_command = create_anonymized_dataset
-
-    next_method_button = ttk.Button(frame, text=buttom_text, command=next_command, style='my.TButton')
-    next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-    frame.update()
-
-    widgets_visible_ready_to_remove.extend([next_method_button])
-
-
-def import_file():
-
-    global dataset
-    global dataset_path
-    global label_dict
-    global value_label_dict
-    global next_search_method
-    global columns_still_to_check
-
-    dataset_path = askopenfilename()
-
-    #If no file was selected, do nothing
-    if not dataset_path:
-        return
-
-    importing_file_label = tkinter_display("Importing file...")
-    
-    #Scroll down
-    canvas.yview_moveto( 1 )
-    frame.update()
-
-    widgets_visible_ready_to_remove.append(importing_file_label)
-
-    #Read file
-    reading_status, reading_content = PII_data_processor.import_file(dataset_path)
-    
-    #Remove 'importiung file label'
-    importing_file_label.pack_forget()
-
-    if(reading_status is False):
-        reading_status_label = tkinter_display(reading_content[ERROR_MESSAGE])
-        return
-    else:
-        reading_status_label = tkinter_display("Success reading file: "+dataset_path)
-        dataset = reading_content[DATASET]
-        label_dict = reading_content[LABEL_DICT]
-        value_label_dict = reading_content[VALUE_LABEL_DICT]
-        columns_still_to_check = dataset.columns
-
-    #Creat bottom to find piis based on columns names
-    next_search_method = COLUMNS_NAMES_SEARCH_METHOD
-    buttom_text = "Find PIIs!"
-
-    find_piis_next_step_button = ttk.Button(frame, text=buttom_text, command=find_piis, style='my.TButton')
-    find_piis_next_step_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-    
-    #Scroll down
-    frame.update()
-    canvas.yview_moveto( 1 )
-
-    widgets_visible_ready_to_remove.extend([reading_status_label, find_piis_next_step_button])
-
+    widgets_visible_ready_to_remove.append(piis_frame)
 
 def restart_program():
     """Restarts the current program.
@@ -422,6 +381,8 @@ def create_first_view_page():
 
     global check_survey_cto_checkbutton_var
     global check_locations_pop_checkbutton_var
+    global column_level_option_for_unstructured_text_checkbutton_var
+    global keep_unstructured_text_option_checkbutton_var
 
     first_view_frame = tk.Frame(master=frame, bg="white")
     first_view_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))
@@ -472,6 +433,7 @@ def create_first_view_page():
         if PII_data_processor.internet_on() is False:
             messagebox.showinfo("Error", "Feature requires internet connection")
             check_locations_pop_checkbutton.deselect()
+   
     #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
     check_locations_pop_checkbutton = tk.Checkbutton(first_view_frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
@@ -506,6 +468,18 @@ def create_first_view_page():
         print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
         print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
+    column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
+    column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
+    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(first_view_frame,
+        text=column_level_option_for_unstructured_text_checkbutton_text,
+        bg="white",
+        activebackground="white",
+        variable=column_level_option_for_unstructured_text_checkbutton_var,
+        onvalue=1,
+        offvalue=0,
+        command = column_level_option_for_unstructured_text_checkbutton_command)
+
+    column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     def keep_unstructured_text_option_checkbutton_command():
         print("As soon after the click:")
@@ -528,19 +502,6 @@ def create_first_view_page():
         print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
         print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
-    column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
-    column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
-    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(first_view_frame,
-        text=column_level_option_for_unstructured_text_checkbutton_text,
-        bg="white",
-        activebackground="white",
-        variable=column_level_option_for_unstructured_text_checkbutton_var,
-        onvalue=1,
-        offvalue=0,
-        command = column_level_option_for_unstructured_text_checkbutton_command)
-
-    column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-
     keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
     keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if really need to keep unstructured text]"
     keep_unstructured_text_option_checkbutton = tk.Checkbutton(first_view_frame,
@@ -552,6 +513,52 @@ def create_first_view_page():
         offvalue=0,
         command=keep_unstructured_text_option_checkbutton_command)
     keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+
+    def import_file():
+
+        global dataset
+        global dataset_path
+        global label_dict
+        global value_label_dict
+        global next_search_method
+        global columns_still_to_check
+
+        dataset_path = askopenfilename()
+
+        #If no file was selected, do nothing
+        if not dataset_path:
+            return
+
+        display_message("Importing file...", first_view_frame)
+        
+        #Scroll down
+        canvas.yview_moveto( 1 )
+        frame.update()
+
+        #Read file
+        reading_status, reading_content = PII_data_processor.import_file(dataset_path)
+
+        if(reading_status is False):
+            display_message(reading_content[ERROR_MESSAGE], first_view_frame)
+            return
+        else:
+            display_message("Success reading file: "+dataset_path, first_view_frame)
+            dataset = reading_content[DATASET]
+            label_dict = reading_content[LABEL_DICT]
+            value_label_dict = reading_content[VALUE_LABEL_DICT]
+            columns_still_to_check = dataset.columns
+
+        #Creat bottom to find piis based on columns names
+        next_search_method = COLUMNS_NAMES_SEARCH_METHOD
+        buttom_text = "Find PIIs!"
+
+        find_piis_next_step_button = ttk.Button(first_view_frame, text=buttom_text, command=find_piis, style='my.TButton')
+        find_piis_next_step_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        
+        #Scroll down
+        frame.update()
+        canvas.yview_moveto( 1 )
 
     #Labels and buttoms to run app
     start_application_label = ttk.Label(first_view_frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -599,7 +606,6 @@ if __name__ == '__main__':
 
     #Create first view page
     first_view_frame = create_first_view_page()
-    widgets_visible_ready_to_remove.append(first_view_frame)
 
     # Constantly looping event listener
     root.mainloop()  
