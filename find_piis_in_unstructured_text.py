@@ -1,4 +1,3 @@
-from PII_data_processor import column_has_sufficiently_sparse_strings, clean_column, import_file, export
 from constant_strings import *
 import restricted_words as restricted_words_list
 import query_google_answer_boxes as google
@@ -60,14 +59,25 @@ def get_names_from_json_response(response):
     names_found = []
 
     json_response = json.loads(response)
-    for result in json_response["results"]:
-        #Names that exist come with the field 'jurisdictions'
-        #We will also ask a minimum of 50 world incidences 
-        if('jurisdictions' in result):
-            world_incidences = int(result['world']['incidence'])
 
-            if world_incidences > 50:
-                names_found.append(result['name'])
+    if "results" in json_response:
+        for result in json_response["results"]:
+            #Names that exist come with the field 'jurisdictions'
+            #We will also ask a minimum of 50 world incidences 
+            if('jurisdictions' in result and len(result['jurisdictions'])>0):
+                try:
+                    world_incidences = int(result['world']['incidence'])
+
+                    if world_incidences > 50:
+                        names_found.append(result['name'])
+                except Exception as e:
+                    print("error in get_names_from_json_response")
+                    print(e)
+                    print(result)
+                    print(json_response["results"])
+    else:
+        print("NO RESULTS IN RESPONSE")
+        print(json_response)
 
     return names_found
 
@@ -125,14 +135,38 @@ def find_names_in_list_string(list_potential_names):
 
             names_parameter = generate_names_parameter_for_api(list_1000_potential_names, forename_or_surname)
 
+            
             response = requests.post(api_url, data={'names':names_parameter})
+            
 
             names_found = get_names_from_json_response(response.text)
             for name in names_found:
                 all_names_found.add(name)
+            
+            #Opportunity of improvement: If i already found a name as a forename, dont query it as a surname
 
     return list(all_names_found)
   
+
+#REPEATED FUNCTION FROM PII_DATA_PROCESSOR
+def remove_other_refuse_and_dont_know(column):
+
+    filtered_column = column.loc[(column != '777') & (column != '888') & (column != '999') & (column != '-888')]
+
+    return filtered_column
+
+#REPEATED FUNCTION FROM PII_DATA_PROCESSOR
+def clean_column(column):
+    #Drop NaNs
+    column_filtered = column.dropna()
+
+    #Remove empty entries
+    column_filtered = column_filtered[column_filtered!='']
+
+    #Remove other, refuses and dont knows
+    column_filtered = remove_other_refuse_and_dont_know(column_filtered)
+
+    return column_filtered
 
 def get_list_unique_strings_in_dataset(dataset, columns_to_check):
     #To make the list, we will go over all columns that have sparse strings
@@ -140,32 +174,24 @@ def get_list_unique_strings_in_dataset(dataset, columns_to_check):
 
     #For every column in the dataset
     for column_name in columns_to_check:
-        #If column contains strings
-        if(column_has_sufficiently_sparse_strings(dataset, column_name)):
         
-            #Clean column
-            column = clean_column(dataset[column_name])
+        #Clean column
+        column = clean_column(dataset[column_name])
 
-            for row in column:
-                #If row contains more than one word, add each word
-                if (' ' in row):
-                    #For every word in the row
-                    for word in row.split(" "):
-                        #Add word to strings to check
-                        set_string_in_dataset.add(word)
-                #If row does not contain spaces, add whole row (its only one string)
-                else:
-                    set_string_in_dataset.add(row)
+        for row in column:
+            #If row contains more than one word, add each word
+            if (' ' in row):
+                #For every word in the row
+                for word in row.split(" "):
+                    #Add word to strings to check
+                    set_string_in_dataset.add(word)
+            #If row does not contain spaces, add whole row (its only one string)
+            else:
+                set_string_in_dataset.add(row)
 
     return list(set_string_in_dataset)
 
-def find_piis(dataset, label_dict, columns_to_check_not_filtered, language, country):
-
-    #Filter columns to those that have sparse entries
-    columns_to_check = []
-    for column_name in columns_to_check_not_filtered:
-        if column_has_sufficiently_sparse_strings(dataset, column_name):            
-            columns_to_check.append(column_name)
+def find_piis(dataset, label_dict, columns_to_check, language, country):
 
     print("columns_to_check")
     print(columns_to_check)
@@ -184,7 +210,9 @@ def find_piis(dataset, label_dict, columns_to_check_not_filtered, language, coun
     #Find all telephone numbers
     print("-->Finding phone numbers")
     phone_numbers_found = find_phone_numbers_in_list_strings(strings_to_check)
-    print("found "+str(len(phone_numbers_found)))
+    print(f'Found {len(phone_numbers_found)} phone numbers in open ended questions')
+    if len(phone_numbers_found)>0:
+        print(phone_numbers_found)
 
     #Update strings_to_check
     strings_to_check = [s for s in strings_to_check if s not in phone_numbers_found]
@@ -200,18 +228,25 @@ def find_piis(dataset, label_dict, columns_to_check_not_filtered, language, coun
     #Find all names
     print("->Finding names")
     names_found = find_names_in_list_string(strings_to_check)
-    print("found "+str(len(names_found)))
-    print(names_found)
+    print(f'Found {len(names_found)} names in open ended questions')
+    if len(names_found)>0:
+        print(names_found)
+
+
     #Update strings_to_check
+    from datetime import datetime
+    print(datetime.now())
     strings_to_check = [s for s in strings_to_check if s not in names_found]
+    print(datetime.now())
 
     #Find all locations with pop less than 20,000
     print("-->Finding locations with low population")
     locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check, country)
-    print("found "+str(len(locations_with_low_population_found)))
-    print(locations_with_low_population_found)
+    print(f'Found {len(locations_with_low_population_found)} locations with low populations')
+    if len(locations_with_low_population_found)>0:
+        print(locations_with_low_population_found)
 
-    return list(set(phone_numbers_found + names_found + locations_with_low_population_found)), columns_to_check
+    return list(set(phone_numbers_found + names_found + locations_with_low_population_found))
 
 if __name__ == "__main__":
 

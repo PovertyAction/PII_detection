@@ -136,8 +136,8 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 	# print(locations)
 
 	for index, location in enumerate(locations):
-		# print(str(index)+'/'+str(len(locations)))
-		# print(location)
+		print(str(index)+'/'+str(len(locations)))
+		print(location)
 
 		location_exists, population = check_location_exists_and_population_size(location, country)
 		if location_exists:

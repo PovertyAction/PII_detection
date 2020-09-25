@@ -11,6 +11,7 @@ import urllib.request as urllib2
 
 import query_google_answer_boxes as google
 
+import find_piis_in_unstructured_text as unstructured_text
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -70,7 +71,7 @@ def import_dataset(dataset_path):
         log_and_print(status_message)
         return (False, status_message)
 
-    print('The dataset has been read successfully.\n')
+    log_and_print('The dataset has been read successfully.\n')
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
     return (True, dataset_read_return)
 
@@ -230,25 +231,24 @@ def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, column
 
 
 
-def column_has_locations_with_low_populations(dataset, column_name):
+def column_has_locations_with_low_populations(dataset, column_name, country):
 
     column_filtered = clean_column(dataset[column_name])
 
     #Get unique values
     unique_locations = column_filtered.unique().tolist()
 
-    #Check if any location has pop under 20,000
-    return google.get_locations_with_low_population(unique_locations, return_one=True)
+    return google.get_locations_with_low_population(unique_locations, country=country, return_one=True)
 
 
 
-def log_and_print(message)    :
+def log_and_print(message):
     file = open(LOG_FILE, "a") 
     file.write(message+'\n') 
     file.close() 
     print(message)
 
-def find_piis_based_on_locations_population(dataset, label_dict, columns_to_check):
+def find_piis_based_on_locations_population(dataset, label_dict, columns_to_check, country):
     #Identifies columns whose names or labels match (strict or fuzzy) words related to locations. Then, check if for those columns, any value relates to a location with population under 20,000. If it is the case, then it flags the column.
 
     #Lots of repeated code respect to find_piis_based_on_column_name, could refactor.
@@ -283,7 +283,7 @@ def find_piis_based_on_locations_population(dataset, label_dict, columns_to_chec
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
     
-                location_with_low_population = column_has_locations_with_low_populations(dataset, column_name)
+                location_with_low_population = column_has_locations_with_low_populations(dataset, column_name, country)
 
                 if(location_with_low_population):
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
@@ -429,12 +429,12 @@ def create_log_file_path(dataset_path):
     path_without_extension = dataset_path[0:dataset_path.rfind(".")]
 
     global LOG_FILE
-    LOG_FILE = path_without_extension+"_log.txt"
-
-    print(LOG_FILE)
-    
+    LOG_FILE = path_without_extension+"_log.txt" 
 
 def import_file(dataset_path):
+
+    #Create log file
+    create_log_file_path(dataset_path)
 
     #Read file
     import_status, import_result = import_dataset(dataset_path)    
@@ -451,8 +451,6 @@ def import_file(dataset_path):
     response_content[DATASET] = dataset
     response_content[LABEL_DICT] = label_dict
     response_content[VALUE_LABEL_DICT] = value_label_dict
-
-    create_log_file_path(dataset_path)
 
     return True, response_content
 
@@ -487,7 +485,19 @@ def recode(dataset, columns_to_encode):
 
     return dataset, econding_used
 
+def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, language, country):
+    
+    #Filter columns to those that have sparse entries
+    columns_to_check = []
+    for column_name in columns_still_to_check:
+        if column_has_sufficiently_sparse_strings(dataset, column_name):            
+            columns_to_check.append(column_name)
 
+    pii_candidates_unstructured_text = unstructured_text.find_piis(dataset, label_dict, columns_to_check, language, country)
+
+    log_and_print(f'Piis found in columns {column_with_unstructured_text} with unstructured text: {pii_candidates_unstructured_text}')
+
+    return pii_candidates_unstructured_text, columns_to_check
 
 def export(dataset, dataset_path, variable_labels = None):
 
@@ -561,7 +571,7 @@ def main_when_script_run_from_console():
 
         #Options
         consider_locations_cols = 1
-        search_pii_in_unstructured_text = 0
+        search_pii_in_unstructured_text = 1
 
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
@@ -589,8 +599,7 @@ def main_when_script_run_from_console():
             print("Piis based on sparse entries: "+",".join(pii_candidates.keys()))
 
         else:
-            import find_piis_in_unstructured_text
-            pii_candidates_unstructured_text, column_with_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, SPANISH, MEXICO)
+            pii_candidates_unstructured_text, column_with_unstructured_text = find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, SPANISH, MEXICO)
 
             print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
             print(len(pii_candidates_unstructured_text))

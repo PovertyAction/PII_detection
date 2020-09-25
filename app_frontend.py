@@ -9,7 +9,7 @@ import webbrowser
 import os
 
 import PII_data_processor
-import find_piis_in_unstructured_text
+
 from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
@@ -38,6 +38,9 @@ check_survey_cto_checkbutton_var = None
 check_locations_pop_checkbutton_var = None
 column_level_option_for_unstructured_text_checkbutton_var = None
 keep_unstructured_text_option_checkbutton_var = None
+
+country_dropdown = None
+language_dropdown = None
 
 piis_frame = None
 
@@ -168,32 +171,53 @@ def display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, frame
     piis_in_text_box.insert(tk.END, ", ".join(piis_found_in_ustructured_text))
     return piis_in_text_box
 
-def create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text):
+
+def create_unstructured_piis_frame(next_search_method, next_search_method_button_text, piis_found_in_ustructured_text):
+
+    piis_frame = tk.Frame(master=frame, bg="white")
+    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
+
+
+    display_title('PIIs found in unstructured text:', piis_frame)
+    display_message("These are the potential PIIs found in open ended questions and which will be replaced by 'XXXX' in the new de-identified dataset", piis_frame)
+    display_message("Feel free to remove from the list if you find wrongly identified PIIs, just keep words separated by commas.", piis_frame)
+    display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, piis_frame)
+
+
+    #COPIED FROM create_piis_frame()
+    if(next_search_method is not None):
+        buttom_text = next_search_method_button_text
+        next_command = find_piis
+    else:
+        buttom_text = 'Create anonymized dataset'
+        next_command = create_anonymized_dataset
+
+    next_method_button = ttk.Button(piis_frame, text=buttom_text, command=next_command, style='my.TButton')
+    next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    frame.update()
+
+    return piis_frame
+
+def create_piis_frame(next_search_method, next_search_method_button_text, pii_candidates):
 
     global columns_still_to_check
 
     piis_frame = tk.Frame(master=frame, bg="white")
-    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))    
+    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))    
 
-    #If we are displaying PII columns, which is the case for all search methods but the unstructured text one
-    if search_method != UNSTRUCTURED_TEXT_SEARCH_METHOD:
-        display_title('PII candidates found using '+search_method+':', piis_frame)
-        
-        if(len(pii_candidates)==0):
-            display_message('No PII candidates found.', piis_frame)
-        else:
-            #Create title, instructions, and display piis
-            display_message('For each PII candidate, select an action', piis_frame)
-            display_pii_candidates(pii_candidates, label_dict, piis_frame)
 
-        #Update columns_still_to_check, removing pii candidates found
-        columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+    display_title('PII candidates found using '+search_method+':', piis_frame)
     
-    else: #We are in the unstructure text search. Display PIIs found.
-        display_title('PIIs found in unstructured text:', piis_frame)
-        display_message("These are the potential PIIs found in open ended questions and which will be replaced by 'XXXX' in the new de-identified dataset", piis_frame)
-        display_message("Feel free to remove from the list if you find wrongly identified PIIs, just keep words separated by commas.", piis_frame)
-        display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, piis_frame)
+    if(len(pii_candidates)==0):
+        display_message('No PII candidates found.', piis_frame)
+    else:
+        #Create title, instructions, and display piis
+        display_message('For each PII candidate, select an action', piis_frame)
+        display_pii_candidates(pii_candidates, label_dict, piis_frame)
+
+    #Update columns_still_to_check, removing pii candidates found
+    columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
+    
 
     if(next_search_method is not None):
         buttom_text = next_search_method_button_text
@@ -242,7 +266,7 @@ def find_piis():
             next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
 
     elif(search_method == LOCATIONS_POPULATIONS_SEARCH_METHOD):
-        pii_candidates = PII_data_processor.find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
+        pii_candidates = PII_data_processor.find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check, country_dropdown.get())
         next_search_method_button_text = "Continue: Find columns with potential PIIs based on columns format"
         next_search_method = COLUMNS_FORMAT_SEARCH_METHOD
 
@@ -262,9 +286,10 @@ def find_piis():
         next_search_method = None
 
     elif(search_method == UNSTRUCTURED_TEXT_SEARCH_METHOD):
-        piis_found_in_ustructured_text, columns_where_to_replace_piis = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, language_dropdown.get(), country_dropdown.get())
+        piis_found_in_ustructured_text, columns_where_to_replace_piis = PII_data_processor.find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, language_dropdown.get(), country_dropdown.get())
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
+        pii_candidates = None
 
 
     #UPDATE VIEW
@@ -273,12 +298,13 @@ def find_piis():
     if (search_method == COLUMNS_NAMES_SEARCH_METHOD):
         first_view_frame.pack_forget()
     else:
-        if(piis_frame is None):
-            print("sip es none")
         piis_frame.pack_forget()
 
     #Create new frame
-    piis_frame = create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text)
+    if(search_method != UNSTRUCTURED_TEXT_SEARCH_METHOD):
+        piis_frame = create_piis_frame(pii_candidates=pii_candidates, next_search_method=next_search_method, next_search_method_button_text=next_search_method_button_text)
+    else:
+        piis_frame = create_unstructured_piis_frame(piis_found_in_ustructured_text=piis_found_in_ustructured_text, next_search_method=next_search_method, next_search_method_button_text=next_search_method_button_text)
 
 def restart_program():
     """Restarts the current program.
@@ -399,6 +425,9 @@ def create_first_view_page(internet_connection):
     global check_locations_pop_checkbutton_var
     global column_level_option_for_unstructured_text_checkbutton_var
     global keep_unstructured_text_option_checkbutton_var
+
+    global country_dropdown
+    global language_dropdown
 
     first_view_frame = tk.Frame(master=frame, bg="white")
     first_view_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))
