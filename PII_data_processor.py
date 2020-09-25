@@ -522,9 +522,10 @@ def export(dataset, dataset_path, variable_labels = None):
 
 def internet_on():
     try:
-        urllib2.urlopen('http://google.com', timeout=1)
+        urllib2.urlopen('http://google.com', timeout=2)
         return True
-    except urllib2.URLError as err: 
+    except Exception as e:
+        print(e) 
         return False
 
 def get_test_files_tuples():
@@ -560,7 +561,7 @@ def main_when_script_run_from_console():
 
         #Options
         consider_locations_cols = 1
-        search_pii_in_unstructured_text = 1
+        search_pii_in_unstructured_text = 0
 
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
@@ -580,15 +581,25 @@ def main_when_script_run_from_console():
         print("Piis found using column formats: "+",".join(pii_candidates.keys()))
 
         if search_pii_in_unstructured_text == 0:
+            pii_candidates_unstructured_text = None
+            column_with_unstructured_text = None
+            
             pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
             all_piis_found.update(pii_candidates)
-            print("Piis found using sparsity: "+",".join(pii_candidates.keys()))
+            print("Piis based on sparse entries: "+",".join(pii_candidates.keys()))
+
         else:
             import find_piis_in_unstructured_text
             pii_candidates_unstructured_text, column_with_unstructured_text = find_piis_in_unstructured_text.find_piis(dataset, label_dict, columns_still_to_check, SPANISH, MEXICO)
 
             print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
             print(len(pii_candidates_unstructured_text))
+
+
+        #Create fake pii_candidate_to_action
+        pii_candidate_to_action = {}
+        for pii in pii_candidates:
+            pii_candidate_to_action[pii] = 'Drop'
 
         #Create deidentified dataset
         create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_to_action, pii_candidates_unstructured_text, column_with_unstructured_text)

@@ -14,7 +14,7 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.12"
+app_title = "IPA's PII Detector - v0.2.13"
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -393,7 +393,7 @@ def add_scrollbar(root, canvas, frame):
     vsb.pack(side="right", fill="y")
 
 
-def create_first_view_page():
+def create_first_view_page(internet_connection):
 
     global check_survey_cto_checkbutton_var
     global check_locations_pop_checkbutton_var
@@ -444,11 +444,6 @@ def create_first_view_page():
             variable=check_survey_cto_checkbutton_var,
             onvalue=1, offvalue=0)
     check_survey_cto_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-
-    def check_locations_pop_checkbutton_command():
-        if PII_data_processor.internet_on() is False:
-            messagebox.showinfo("Error", "Feature requires internet connection")
-            check_locations_pop_checkbutton.deselect()
    
     #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
@@ -457,19 +452,20 @@ def create_first_view_page():
             activebackground="white",
             variable=check_locations_pop_checkbutton_var,
             onvalue=1,
-            offvalue=0,
-            command = check_locations_pop_checkbutton_command)
-    check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+            offvalue=0)
 
+    if internet_connection:
+        check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     #Option related to unstructured text
     unstructured_text_label = ttk.Label(first_view_frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
-    unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    if internet_connection:
+        unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     def column_level_option_for_unstructured_text_checkbutton_command():
-        print("As soon after the click:")
-        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+        # print("As soon after the click:")
+        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
         #If both are now off, reselect this one
         if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
@@ -480,9 +476,9 @@ def create_first_view_page():
         if(column_level_option_for_unstructured_text_checkbutton_var.get()==1 and keep_unstructured_text_option_checkbutton_var.get()==1):
             keep_unstructured_text_option_checkbutton.deselect()
 
-        print("At the end of the method:")
-        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+        # print("At the end of the method:")
+        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
     column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
     column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
@@ -495,28 +491,26 @@ def create_first_view_page():
         offvalue=0,
         command = column_level_option_for_unstructured_text_checkbutton_command)
 
-    column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+    if internet_connection:
+        column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     def keep_unstructured_text_option_checkbutton_command():
-        print("As soon after the click:")
-        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+        # print("As soon after the click:")
+        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
         #If there is no internet connection, this feature should be disabled
-        if PII_data_processor.internet_on() is False:
-            messagebox.showinfo("Error", "Feature requires internet connection")
-            keep_unstructured_text_option_checkbutton.deselect()
-        else:
-           #If both are now off, reselect this one
-            if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
-                messagebox.showinfo("Error", "You must have one option selected")
-                keep_unstructured_text_option_checkbutton_var.set(True)
-
-            else:#Disable other option
-                column_level_option_for_unstructured_text_checkbutton.deselect()
         
-        print("At the end of the method:")
-        print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+       #If both are now off, reselect this one
+        if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
+            messagebox.showinfo("Error", "You must have one option selected")
+            keep_unstructured_text_option_checkbutton_var.set(True)
+
+        else:#Disable other option
+            column_level_option_for_unstructured_text_checkbutton.deselect()
+        
+        # print("At the end of the method:")
+        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
+        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
     keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
     keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if ryou really need to keep unstructured text]"
@@ -528,7 +522,9 @@ def create_first_view_page():
         onvalue=1,
         offvalue=0,
         command=keep_unstructured_text_option_checkbutton_command)
-    keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+    if internet_connection:
+        keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
 
     def import_file():
@@ -583,10 +579,18 @@ def create_first_view_page():
     select_dataset_button = ttk.Button(first_view_frame, text="Select Dataset", command=import_file, style='my.TButton')
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
+
+    print(f'Internet connection: {internet_connection}')
+    if(internet_connection is False):
+        messagebox.showinfo("Message", "No internet connection, some features are diabled")
+
     return first_view_frame
 
 if __name__ == '__main__':
 
+    #Check internet connection
+    internet_connection = PII_data_processor.internet_on()
+    
     # Create GUI window
     root = tk.Tk()  
 
@@ -621,7 +625,7 @@ if __name__ == '__main__':
     app_title_label.pack(anchor='nw', padx=(30, 30), pady=(30, 10))
 
     #Create first view page
-    first_view_frame = create_first_view_page()
+    first_view_frame = create_first_view_page(internet_connection)
 
     # Constantly looping event listener
     root.mainloop()  
