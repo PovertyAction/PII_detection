@@ -35,6 +35,9 @@ columns_where_to_replace_piis = None
 
 piis_in_text_box = None
 
+check_survey_cto_checkbutton_var = None
+check_locations_pop_checkbutton_var = None
+
 def tkinter_display_title(title):
     label = ttk.Label(frame, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     label.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
@@ -153,6 +156,7 @@ def find_piis():
     global next_search_method
 
     global columns_where_to_replace_piis
+
 
     #Update search method (considering find_piis() is recurrently called)
     search_method = next_search_method
@@ -414,57 +418,27 @@ def add_scrollbar(root, canvas, frame):
     vsb.pack(side="right", fill="y")
 
 
-if __name__ == '__main__':
+def create_first_view_page():
 
-    # Create GUI window
-    root = tk.Tk()  
+    global check_survey_cto_checkbutton_var
+    global check_locations_pop_checkbutton_var
 
-    window_setup(root)  
+    first_view_frame = tk.Frame(master=frame, bg="white")
+    first_view_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))
 
-    menubar_setup(root)
-    
-    window_style_setup(root)
-
-    # Create canvas where app will displayed
-
-    canvas = tk.Canvas(root, width=window_width, height=window_height, bg="white")
-    canvas.pack(side="left", fill="both", expand=True)
-
-    # Create frame inside canvas
-    frame = tk.Frame(canvas, width=window_width, height=window_height, bg="white")
-    frame.pack(side="left", fill="both", expand=True)
-    # frame.place(x=0, y=0)
-
-    #This create_window is related to the scrollbar. Im going to delete it atm
-    canvas.create_window(0,0, window=frame, anchor="nw")
-
-    add_scrollbar(root, canvas, frame)
-
-    #Add logo
-    if hasattr(tk.sys, "_MEIPASS"):    
-        logo_location = os.path.join(sys._MEIPASS, 'ipa_logo.jpg')
-    else:
-        logo_location = 'ipa_logo.jpg'
-    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
-    tk.Label(frame, image=logo, borderwidth=0).pack(anchor="nw", padx=(30, 30), pady=(30, 0))
-
-    #Add intro text
-    app_title_label = ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel')
-    app_title_label.pack(anchor='nw', padx=(30, 30), pady=(30, 10))
-    
-    intro_text_1_label = ttk.Label(frame, text=intro_text, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    #Add intro text    
+    intro_text_1_label = ttk.Label(first_view_frame, text=intro_text, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_1_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    
 
-    intro_text_2_label = ttk.Label(frame, text=intro_text_p2, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
+    intro_text_2_label = ttk.Label(first_view_frame, text=intro_text_p2, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_2_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
     
     #Labels and checkbox for settings
-    settings_label = ttk.Label(frame, text="Settings:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    settings_label = ttk.Label(first_view_frame, text="Settings:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     settings_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     #Create a frame for the language selection
-    language_frame = tk.Frame(master=frame, bg="white")
+    language_frame = tk.Frame(master=first_view_frame, bg="white")
     language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     ttk.Label(language_frame, text='In which language are the answers in the dataset?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
@@ -473,7 +447,7 @@ if __name__ == '__main__':
     w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
 
     #Create a frame for country selection
-    country_frame = tk.Frame(master=frame, bg="white")
+    country_frame = tk.Frame(master=first_view_frame, bg="white")
     country_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     ttk.Label(country_frame, text='In which country was this survey run?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
@@ -481,14 +455,13 @@ if __name__ == '__main__':
     country_dropdown = tk.StringVar(country_frame)
     w = ttk.OptionMenu(country_frame, country_dropdown, MEXICO, *ALL_COUNTRIES, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
 
-
     #Labels and checkbox for options
-    options_label = ttk.Label(frame, text="Options:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    options_label = ttk.Label(first_view_frame, text="Options:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
     #SurveyCTO vars option
     check_survey_cto_checkbutton_var = tk.IntVar()
-    check_survey_cto_checkbutton = tk.Checkbutton(frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime').",
+    check_survey_cto_checkbutton = tk.Checkbutton(first_view_frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime').",
             bg="white",
             activebackground="white",
             variable=check_survey_cto_checkbutton_var,
@@ -501,7 +474,7 @@ if __name__ == '__main__':
             check_locations_pop_checkbutton.deselect()
     #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
-    check_locations_pop_checkbutton = tk.Checkbutton(frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
+    check_locations_pop_checkbutton = tk.Checkbutton(first_view_frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
             bg="white",
             activebackground="white",
             variable=check_locations_pop_checkbutton_var,
@@ -512,7 +485,7 @@ if __name__ == '__main__':
 
 
     #Option related to unstructured text
-    unstructured_text_label = ttk.Label(frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
+    unstructured_text_label = ttk.Label(first_view_frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
     unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     def column_level_option_for_unstructured_text_checkbutton_command():
@@ -557,7 +530,7 @@ if __name__ == '__main__':
 
     column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
     column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
-    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(frame,
+    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(first_view_frame,
         text=column_level_option_for_unstructured_text_checkbutton_text,
         bg="white",
         activebackground="white",
@@ -570,7 +543,7 @@ if __name__ == '__main__':
 
     keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
     keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if really need to keep unstructured text]"
-    keep_unstructured_text_option_checkbutton = tk.Checkbutton(frame,
+    keep_unstructured_text_option_checkbutton = tk.Checkbutton(first_view_frame,
         text=keep_unstructured_text_option_checkbutton_text,
         bg="white",
         activebackground="white",
@@ -581,26 +554,52 @@ if __name__ == '__main__':
     keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
     #Labels and buttoms to run app
-    start_application_label = ttk.Label(frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
+    start_application_label = ttk.Label(first_view_frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
     
-    select_dataset_button = ttk.Button(frame, text="Select Dataset", command=import_file, style='my.TButton')
+    select_dataset_button = ttk.Button(first_view_frame, text="Select Dataset", command=import_file, style='my.TButton')
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-    #Add widgets to list of widgets to remove later on
-    widgets_visible_ready_to_remove.extend([intro_text_1_label,
-        intro_text_2_label,
-        start_application_label,
-        select_dataset_button,
-        options_label,
-        check_survey_cto_checkbutton,
-        check_locations_pop_checkbutton,
-        unstructured_text_label,
-        column_level_option_for_unstructured_text_checkbutton,
-        keep_unstructured_text_option_checkbutton,
-        language_frame,
-        settings_label,
-        country_frame])
+    return first_view_frame
+
+if __name__ == '__main__':
+
+    # Create GUI window
+    root = tk.Tk()  
+
+    window_setup(root)  
+
+    menubar_setup(root)
+    
+    window_style_setup(root)
+
+    # Create canvas where app will displayed
+    canvas = tk.Canvas(root, width=window_width, height=window_height, bg="white")
+    canvas.pack(side="left", fill="both", expand=True)
+
+    # Create main frame inside canvas
+    frame = tk.Frame(canvas, width=window_width, height=window_height, bg="white")
+    frame.pack(side="left", fill="both", expand=True)
+
+    #Add scrollbar
+    canvas.create_window(0,0, window=frame, anchor="nw")
+    add_scrollbar(root, canvas, frame)
+
+    #Add logo
+    if hasattr(tk.sys, "_MEIPASS"):    
+        logo_location = os.path.join(sys._MEIPASS, 'ipa_logo.jpg')
+    else:
+        logo_location = 'ipa_logo.jpg'
+    logo = ImageTk.PhotoImage(Image.open(logo_location).resize((147, 71), Image.ANTIALIAS)) # Source is 2940 x 1416
+    tk.Label(frame, image=logo, borderwidth=0).pack(anchor="nw", padx=(30, 30), pady=(30, 0))
+
+    #Add app title
+    app_title_label = ttk.Label(frame, text=app_title, wraplength=536, justify=tk.LEFT, font=("Calibri", 13, 'bold'), style='my.TLabel')
+    app_title_label.pack(anchor='nw', padx=(30, 30), pady=(30, 10))
+
+    #Create first view page
+    first_view_frame = create_first_view_page()
+    widgets_visible_ready_to_remove.append(first_view_frame)
 
     # Constantly looping event listener
     root.mainloop()  
