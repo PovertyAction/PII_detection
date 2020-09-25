@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 import pandas as pd
-from secret_keys import get_geonames_username
+from secret_keys import get_geonames_username, get_forebears_api_key
 import requests
 import json
 
@@ -181,12 +181,73 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 		return locations_with_low_population
 
 
-# if __name__ == "__main__":
-	# print(get_locations_with_low_population(["Cabildo","New England", "Santa Monica", "Yolanda"]))
 
-	# print(is_location('chicago'))
+#**************FOREBEARS API TO CHECK NAMES*********
 
-	# get_population('cabildo')
-	# get_locations_with_low_population(['La paz', 'cabildo', 'chicago','santa monica', 'new england', 'yolanda'])
-	# 
-	# print(get_locations_with_low_population(['Dificultad']))
+def generate_names_parameter_for_api(list_names, option):
+    #According to https://forebears.io/onograph/documentation/api/location/batch
+
+    list_of_names_json=[]
+    for name in list_names:
+        list_of_names_json.append('{"name":"'+name+'","type":"'+option+'","limit":2}')
+
+    names_parameter = '['+','.join(list_of_names_json)+']'
+    return names_parameter
+
+def get_names_from_json_response(response):
+    
+    names_found = []
+
+    json_response = json.loads(response)
+
+    if "results" in json_response:
+        for result in json_response["results"]:
+            #Names that exist come with the field 'jurisdictions'
+            #We will also ask a minimum of 50 world incidences 
+            if('jurisdictions' in result and len(result['jurisdictions'])>0):
+                try:
+                    world_incidences = int(result['world']['incidence'])
+
+                    if world_incidences > 50:
+                        names_found.append(result['name'])
+                except Exception as e:
+                    print("error in get_names_from_json_response")
+                    print(e)
+                    print(result)
+                    print(json_response["results"])
+    else:
+        print("NO RESULTS IN RESPONSE")
+        print(json_response)
+
+    return names_found
+
+def find_names_in_list_string(list_potential_names):
+    '''
+    Uses https://forebears.io/onograph/documentation/api/location/batch to find names in list_potential_names
+    '''
+    API_KEY = get_forebears_api_key()
+
+    all_names_found = set()
+
+    #Api calls must query at most 1,000 names.
+    n = 1000
+    list_of_list_1000_potential_names = [list_potential_names[i:i + n] for i in range(0, len(list_potential_names), n)]
+
+    for list_1000_potential_names in list_of_list_1000_potential_names:
+        #Need to 2 to API calls, one checking forenames and one checking surnames
+        for forename_or_surname in ['forename', 'surname']:
+            api_url = 'https://ono.4b.rs/v1/jurs?key='+API_KEY
+
+            names_parameter = generate_names_parameter_for_api(list_1000_potential_names, forename_or_surname)
+
+            
+            response = requests.post(api_url, data={'names':names_parameter})
+            
+
+            names_found = get_names_from_json_response(response.text)
+            for name in names_found:
+                all_names_found.add(name)
+            
+            #Opportunity of improvement: If i already found a name as a forename, dont query it as a surname
+
+    return list(all_names_found)

@@ -1,8 +1,8 @@
 from constant_strings import *
 import restricted_words as restricted_words_list
-import query_google_answer_boxes as google
+import api_queries
 import requests
-from secret_keys import get_forebears_api_key
+
 import json
 from datetime import datetime
 import spacy
@@ -44,45 +44,14 @@ def find_phone_numbers_in_list_strings(list_strings):
     return phone_numbers_found
 
 
-def generate_names_parameter_for_api(list_names, option):
-    #According to https://forebears.io/onograph/documentation/api/location/batch
 
-    list_of_names_json=[]
-    for name in list_names:
-        list_of_names_json.append('{"name":"'+name+'","type":"'+option+'","limit":2}')
-
-    names_parameter = '['+','.join(list_of_names_json)+']'
-    return names_parameter
-
-def get_names_from_json_response(response):
-    
-    names_found = []
-
-    json_response = json.loads(response)
-
-    if "results" in json_response:
-        for result in json_response["results"]:
-            #Names that exist come with the field 'jurisdictions'
-            #We will also ask a minimum of 50 world incidences 
-            if('jurisdictions' in result and len(result['jurisdictions'])>0):
-                try:
-                    world_incidences = int(result['world']['incidence'])
-
-                    if world_incidences > 50:
-                        names_found.append(result['name'])
-                except Exception as e:
-                    print("error in get_names_from_json_response")
-                    print(e)
-                    print(result)
-                    print(json_response["results"])
-    else:
-        print("NO RESULTS IN RESPONSE")
-        print(json_response)
-
-    return names_found
 
 def filter_based_type_of_word(list_strings, language):
     
+    # CHECK .ENT_TYPE_
+    #     if (token.ent_type_ == 'PERSON')
+    #     print(token+" is a name")
+
     if language == SPANISH:
         nlp = spacy.load("es_core_news_sm")
 
@@ -107,45 +76,7 @@ def filter_based_type_of_word(list_strings, language):
 
     return filtered_list
 
-def find_names_in_list_string(list_potential_names):
-    '''
-    Uses https://forebears.io/onograph/documentation/api/location/batch to find names in list_potential_names
 
-    If this approach seems to be slow or inaccurate, an alternative its to use spacy:
-    import spacy
-    string = "my name is felipe"
-    nlp = spacy.load("en_core_web_md")
-    doc = nlp(string)
-    for token in doc:
-        if (token.ent_type_ == 'PERSON')
-        print(token+" is a name")
-    '''
-    API_KEY = get_forebears_api_key()
-
-    all_names_found = set()
-
-    #Api calls must query at most 1,000 names.
-    n = 1000
-    list_of_list_1000_potential_names = [list_potential_names[i:i + n] for i in range(0, len(list_potential_names), n)]
-
-    for list_1000_potential_names in list_of_list_1000_potential_names:
-        #Need to 2 to API calls, one checking forenames and one checking surnames
-        for forename_or_surname in ['forename', 'surname']:
-            api_url = 'https://ono.4b.rs/v1/jurs?key='+API_KEY
-
-            names_parameter = generate_names_parameter_for_api(list_1000_potential_names, forename_or_surname)
-
-            
-            response = requests.post(api_url, data={'names':names_parameter})
-            
-
-            names_found = get_names_from_json_response(response.text)
-            for name in names_found:
-                all_names_found.add(name)
-            
-            #Opportunity of improvement: If i already found a name as a forename, dont query it as a surname
-
-    return list(all_names_found)
   
 
 #REPEATED FUNCTION FROM PII_DATA_PROCESSOR
@@ -227,7 +158,7 @@ def find_piis(dataset, label_dict, columns_to_check, language, country):
 
     #Find all names
     print("->Finding names")
-    names_found = find_names_in_list_string(strings_to_check)
+    names_found = api_queries.find_names_in_list_string(strings_to_check)
     print(f'Found {len(names_found)} names in open ended questions')
     if len(names_found)>0:
         print(names_found)
@@ -241,7 +172,7 @@ def find_piis(dataset, label_dict, columns_to_check, language, country):
 
     #Find all locations with pop less than 20,000
     print("-->Finding locations with low population")
-    locations_with_low_population_found = google.get_locations_with_low_population(strings_to_check, country)
+    locations_with_low_population_found = api_queries.get_locations_with_low_population(strings_to_check, country)
     print(f'Found {len(locations_with_low_population_found)} locations with low populations')
     if len(locations_with_low_population_found)>0:
         print(locations_with_low_population_found)

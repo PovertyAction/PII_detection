@@ -9,7 +9,7 @@ from constant_strings import *
 
 import urllib.request as urllib2
 
-import query_google_answer_boxes as google
+import api_queries
 
 import find_piis_in_unstructured_text as unstructured_text
 import warnings
@@ -238,7 +238,7 @@ def column_has_locations_with_low_populations(dataset, column_name, country):
     #Get unique values
     unique_locations = column_filtered.unique().tolist()
 
-    return google.get_locations_with_low_population(unique_locations, country=country, return_one=True)
+    return api_queries.get_locations_with_low_population(unique_locations, country=country, return_one=True)
 
 
 
