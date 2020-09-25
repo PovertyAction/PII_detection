@@ -40,6 +40,8 @@ check_locations_pop_checkbutton_var = None
 column_level_option_for_unstructured_text_checkbutton_var = None
 keep_unstructured_text_option_checkbutton_var = None
 
+piis_frame = None
+
 def display_title(title, frame_where_to_display):
     label = ttk.Label(frame_where_to_display, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     label.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
@@ -102,10 +104,35 @@ def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, d
 
     return pii_frame
 
+def create_goodbye_frame():
+
+    goodbye_frame = tk.Frame(master=frame, bg="white")
+    goodbye_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0)) 
+
+    if(new_file_path):
+        display_title("Congratulations! Task ready!", goodbye_frame)
+        display_message("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n", goodbye_frame)
+        
+        display_message("Do you want to work on a new file? Click Restart buttom.", goodbye_frame)
+        ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        
+        #Create a frame for the survey link
+        survey_frame = tk.Frame(master=goodbye_frame, bg="white")
+        survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+        survey_text = "Can you provide feedback to improve the app? Please click "
+        ttk.Label(survey_frame, text=survey_text, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
+        link = tk.Label(survey_frame, text="here", fg="blue", font=("Calibri Italic", 11), cursor="hand2", background='white')
+        link.grid(row = 0, column=1)
+        link.bind("<Button-1>", lambda e: open_survey())
+
+        #Este va?
+        # frame.update()
+
 def create_anonymized_dataset():
 
-    creating_new_dataset_message = tkinter_display("Creating new dataset...")
-    widgets_visible_ready_to_remove.append(creating_new_dataset_message)
+    display_message("Creating new dataset...", piis_frame)
+    
     #Automatic scroll down
     canvas.yview_moveto( 1 )
     frame.update()
@@ -125,25 +152,12 @@ def create_anonymized_dataset():
 
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action, columns_where_to_replace_piis, piis_found_in_ustructured_text)
     
-    clear_window_removing_all_widgets()
+    #Remove display of piis
+    piis_frame.pack_forget()
 
-    if(new_file_path):
-        tkinter_display_title("Congratulations! Task ready!")
-        tkinter_display("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n")
-        
-        tkinter_display("Do you want to work on a new file? Click Restart buttom.")
-        ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-        
-        #Create a frame for the survey link
-        survey_frame = tk.Frame(master=frame, bg="white")
-        survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-        survey_text = "Can you provide feedback to improve the app? Please click "
-        ttk.Label(survey_frame, text=survey_text, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
-        link = tk.Label(survey_frame, text="here", fg="blue", font=("Calibri Italic", 11), cursor="hand2", background='white')
-        link.grid(row = 0, column=1)
-        link.bind("<Button-1>", lambda e: open_survey())
+    #Create final frame
+    create_goodbye_frame()
 
-        frame.update()
 
 def clear_window_removing_all_widgets():
     #Remove widgets currently visible
@@ -205,6 +219,7 @@ def find_piis():
     global search_method
     global next_search_method
     global columns_where_to_replace_piis
+    global piis_frame
 
     #Update search method (considering find_piis() is recurrently called)
     search_method = next_search_method
@@ -257,12 +272,21 @@ def find_piis():
         next_search_method_button_text = "Create anonymized dataset"
         next_search_method = None
 
-    #Remove first page from view
-    first_view_frame.pack_forget()
 
+    #UPDATE VIEW
+
+    #Remove previous view
+    if (search_method == COLUMNS_NAMES_SEARCH_METHOD):
+        first_view_frame.pack_forget()
+    else:
+        if(piis_frame is None):
+            print("sip es none")
+        piis_frame.pack_forget()
+
+    #Create new frame
     piis_frame = create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text)
 
-    widgets_visible_ready_to_remove.append(piis_frame)
+    # widgets_visible_ready_to_remove.append(piis_frame)
 
 def restart_program():
     """Restarts the current program.
