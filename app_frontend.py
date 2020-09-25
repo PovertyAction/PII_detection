@@ -25,7 +25,6 @@ dataset_path = None
 new_file_path = None
 label_dict = None
 
-widgets_visible_ready_to_remove = []
 find_piis_options={}
 
 window_width=None
@@ -112,7 +111,9 @@ def create_goodbye_frame():
     if(new_file_path):
         display_title("Congratulations! Task ready!", goodbye_frame)
         display_message("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n", goodbye_frame)
-        
+
+#PENDING: ADD A BUTTOM TO FOLDER WITH OUTPUTS
+
         display_message("Do you want to work on a new file? Click Restart buttom.", goodbye_frame)
         ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
         
@@ -126,8 +127,8 @@ def create_goodbye_frame():
         link.grid(row = 0, column=1)
         link.bind("<Button-1>", lambda e: open_survey())
 
-        #Este va?
-        # frame.update()
+        #Need this?
+        #frame.update()
 
 def create_anonymized_dataset():
 
@@ -159,13 +160,6 @@ def create_anonymized_dataset():
     create_goodbye_frame()
 
 
-def clear_window_removing_all_widgets():
-    #Remove widgets currently visible
-    for widget in widgets_visible_ready_to_remove:
-        widget.pack_forget()
-    widgets_visible_ready_to_remove.clear()
-
-    canvas.yview_moveto(0)
 
 def display_piis_found_in_ustructured_text(piis_found_in_ustructured_text, frame_where_to_display):
     global piis_in_text_box
@@ -285,8 +279,6 @@ def find_piis():
 
     #Create new frame
     piis_frame = create_piis_frame(pii_candidates, next_search_method, next_search_method_button_text)
-
-    # widgets_visible_ready_to_remove.append(piis_frame)
 
 def restart_program():
     """Restarts the current program.
@@ -527,7 +519,7 @@ def create_first_view_page():
         print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
 
     keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
-    keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if really need to keep unstructured text]"
+    keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if ryou really need to keep unstructured text]"
     keep_unstructured_text_option_checkbutton = tk.Checkbutton(first_view_frame,
         text=keep_unstructured_text_option_checkbutton_text,
         bg="white",
