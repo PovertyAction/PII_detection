@@ -133,7 +133,7 @@ def column_is_sparse(dataset, column_name, sparse_threshold):
     else:
         return False
 
-def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshold=0.3):
+def column_has_sufficiently_sparse_strings(dataset, column_name, sparse_threshold=0.2):
     '''
     Checks if 'valid' column entries are sparse, defined as ratio between unique_entries/total_entries.
     Consider only valid stands, aka, exludet NaN, '', Other, Refuse to respond, Not Know
