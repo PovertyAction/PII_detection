@@ -7,7 +7,7 @@ survey_cto_strict = ['deviceid', 'subscriberid', 'simid', 'formdef_version', 'de
 #LOCATIONS VARIABLES
 locations_strict = ['vill', 'lc']
 
-locations_fuzzy = ['district', 'country', 'subcountry', 'parish', 'village', 'community', 'location', 'panchayat', 'compound', 'survey_location', 'county', 'subcounty', 'ciudad','distrito','villa','city', 'town', 'neighborhood','neighbourhood', 'barangay', 'brgy', 'municipio', 'colonia','alcaldia','alcaldía', 'upazila']
+locations_fuzzy = ['district', 'country', 'subcountry', 'parish', 'village', 'community', 'location', 'panchayat', 'compound', 'survey_location', 'county', 'subcounty', 'ciudad','distrito','villa','city', 'town', 'neighborhood','neighbourhood', 'barangay', 'brgy', 'municipio', 'colonia','alcaldia','alcaldía', 'upazila', 'tribe']
 
 #STATA VARIABLES
 stata_strict = ['nam','add','addr','addr1','addr2','dist','parish','loc','acc','plan','medic','insur','num','resid','home','spec','id','enum', 'info', 'data', 'comm', 'count', 'fo']

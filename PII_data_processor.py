@@ -495,7 +495,7 @@ def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, lan
 
     pii_candidates_unstructured_text = unstructured_text.find_piis(dataset, label_dict, columns_to_check, language, country)
 
-    log_and_print(f'Piis found in columns {column_with_unstructured_text} with unstructured text: {pii_candidates_unstructured_text}')
+    log_and_print(f'Piis found in columns {columns_to_check} with unstructured text: {pii_candidates_unstructured_text}')
 
     return pii_candidates_unstructured_text, columns_to_check
 

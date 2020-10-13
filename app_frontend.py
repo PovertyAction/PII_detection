@@ -14,7 +14,7 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.13"
+app_title = "IPA's PII Detector - v0.2.14"
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -94,7 +94,7 @@ def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, d
             pii_candidate_label = pii_candidate+"\t"
 
         ttk.Label(pii_frame, text=pii_candidate_label, wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 0, sticky = 'w', pady=(0,2))
-        
+
         ttk.Label(pii_frame, text=reason_detected+"\t", wraplength=546, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel').grid(row=idx, column = 1, sticky = 'w', pady=(0,2))
 
         dropdown = tk.StringVar(pii_frame)
@@ -109,7 +109,7 @@ def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, d
 def create_goodbye_frame():
 
     goodbye_frame = tk.Frame(master=frame, bg="white")
-    goodbye_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0)) 
+    goodbye_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
     if(new_file_path):
         display_title("Congratulations! Task ready!", goodbye_frame)
@@ -118,8 +118,8 @@ def create_goodbye_frame():
 #PENDING: ADD A BUTTOM TO FOLDER WITH OUTPUTS
 
         display_message("Do you want to work on a new file? Click Restart buttom.", goodbye_frame)
-        ttk.Button(frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-        
+        ttk.Button(goodbye_frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
         #Create a frame for the survey link
         survey_frame = tk.Frame(master=goodbye_frame, bg="white")
         survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
@@ -136,7 +136,7 @@ def create_goodbye_frame():
 def create_anonymized_dataset():
 
     display_message("Creating new dataset...", piis_frame)
-    
+
     #Automatic scroll down
     canvas.yview_moveto( 1 )
     frame.update()
@@ -147,7 +147,7 @@ def create_anonymized_dataset():
     pii_candidates_to_action = {}
     for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
         pii_candidates_to_action[pii] = dropdown_elem.get()
-    
+
     #Capture words to replace in unstructured text
     if(keep_unstructured_text_option_checkbutton_var.get()==1):
         piis_found_in_ustructured_text = [w.strip() for w in piis_in_text_box.get("1.0", "end").split(',')]
@@ -155,7 +155,7 @@ def create_anonymized_dataset():
         piis_found_in_ustructured_text = None
 
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action, columns_where_to_replace_piis, piis_found_in_ustructured_text)
-    
+
     #Remove display of piis
     piis_frame.pack_forget()
 
@@ -203,11 +203,11 @@ def create_piis_frame(next_search_method, next_search_method_button_text, pii_ca
     global columns_still_to_check
 
     piis_frame = tk.Frame(master=frame, bg="white")
-    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))    
+    piis_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
 
     display_title('PII candidates found using '+search_method+':', piis_frame)
-    
+
     if(len(pii_candidates)==0):
         display_message('No PII candidates found.', piis_frame)
     else:
@@ -217,7 +217,7 @@ def create_piis_frame(next_search_method, next_search_method_button_text, pii_ca
 
     #Update columns_still_to_check, removing pii candidates found
     columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-    
+
 
     if(next_search_method is not None):
         buttom_text = next_search_method_button_text
@@ -233,7 +233,7 @@ def create_piis_frame(next_search_method, next_search_method_button_text, pii_ca
     return piis_frame
 
 def find_piis():
-    global columns_still_to_check    
+    global columns_still_to_check
     global search_method
     global next_search_method
     global columns_where_to_replace_piis
@@ -320,7 +320,7 @@ def window_setup(master):
 
     #Add window title
     master.title(app_title)
-    
+
     #Add window icon
     if hasattr(sys, "_MEIPASS"):
         icon_location = os.path.join(sys._MEIPASS, 'app.ico')
@@ -343,7 +343,7 @@ def open_survey():
 def menubar_setup(root):
 
     def about():
-        webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection') 
+        webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/master/README.md#pii_detection')
 
     def contact():
         webbrowser.open('https://github.com/PovertyAction/PII_detection/issues')
@@ -357,7 +357,7 @@ def menubar_setup(root):
     def PII_field_names():
         webbrowser.open('https://github.com/PovertyAction/PII_detection/blob/fa1325094ecdd085864a58374d9f687181ac09fd/PII_data_processor.py#L115')
 
-    
+
 
     menubar = tk.Menu(root)
 
@@ -369,11 +369,11 @@ def menubar_setup(root):
     filemenu.add_command(label="Restart", command=restart_program)
     filemenu.add_separator()
     filemenu.add_command(label="Exit", command=root.quit)
-    
-    # Create help menu pulldown 
+
+    # Create help menu pulldown
     helpmenu = tk.Menu(menubar, tearoff=0)
     menubar.add_cascade(label="Help", menu=helpmenu)
-    
+
     # Add commands to help menu
     helpmenu.add_command(label="About", command=about)
     # helpmenu.add_command(label="- Knowledge Article", command=article)
@@ -398,12 +398,12 @@ def window_style_setup(root):
     root.style.configure('my.TMenubutton', background='white')
 
 def add_scrollbar(root, canvas, frame):
-    
+
     #Configure frame to recognize scrollregion
     def onFrameConfigure(canvas):
         '''Reset the scroll region to encompass the inner frame'''
         canvas.configure(scrollregion=canvas.bbox("all"))
-    
+
     frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
     def onMouseWheel(canvas, event):
@@ -432,13 +432,13 @@ def create_first_view_page(internet_connection):
     first_view_frame = tk.Frame(master=frame, bg="white")
     first_view_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))#padx=(30, 30), pady=(0, 5))
 
-    #Add intro text    
+    #Add intro text
     intro_text_1_label = ttk.Label(first_view_frame, text=intro_text, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_1_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
 
     intro_text_2_label = ttk.Label(first_view_frame, text=intro_text_p2, wraplength=746, justify=tk.LEFT, font=("Calibri", 11), style='my.TLabel')
     intro_text_2_label.pack(anchor='nw', padx=(30, 30), pady=(0, 12))
-    
+
     #Labels and checkbox for settings
     settings_label = ttk.Label(first_view_frame, text="Settings:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     settings_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
@@ -464,7 +464,7 @@ def create_first_view_page(internet_connection):
     #Labels and checkbox for options
     options_label = ttk.Label(first_view_frame, text="Options:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     options_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-    
+
     #SurveyCTO vars option
     check_survey_cto_checkbutton_var = tk.IntVar()
     check_survey_cto_checkbutton = tk.Checkbutton(first_view_frame, text="Consider surveyCTO variables for PII detection (ex: 'deviceid', 'subscriberid', 'simid', 'duration','starttime').",
@@ -473,7 +473,7 @@ def create_first_view_page(internet_connection):
             variable=check_survey_cto_checkbutton_var,
             onvalue=1, offvalue=0)
     check_survey_cto_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-   
+
     #Check locations population option
     check_locations_pop_checkbutton_var = tk.IntVar()
     check_locations_pop_checkbutton = tk.Checkbutton(first_view_frame, text="Flag locations columns (ex: Village) as PII only if population of a location is under 20,000 [Default is to flag all locations columns].",
@@ -528,7 +528,7 @@ def create_first_view_page(internet_connection):
         # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
         # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
         #If there is no internet connection, this feature should be disabled
-        
+
        #If both are now off, reselect this one
         if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
             messagebox.showinfo("Error", "You must have one option selected")
@@ -536,7 +536,7 @@ def create_first_view_page(internet_connection):
 
         else:#Disable other option
             column_level_option_for_unstructured_text_checkbutton.deselect()
-        
+
         # print("At the end of the method:")
         # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
         # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
@@ -572,7 +572,7 @@ def create_first_view_page(internet_connection):
             return
 
         display_message("Importing file...", first_view_frame)
-        
+
         #Scroll down
         canvas.yview_moveto( 1 )
         frame.update()
@@ -596,7 +596,7 @@ def create_first_view_page(internet_connection):
 
         find_piis_next_step_button = ttk.Button(first_view_frame, text=buttom_text, command=find_piis, style='my.TButton')
         find_piis_next_step_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-        
+
         #Scroll down
         frame.update()
         canvas.yview_moveto( 1 )
@@ -604,7 +604,7 @@ def create_first_view_page(internet_connection):
     #Labels and buttoms to run app
     start_application_label = ttk.Label(first_view_frame, text="Run application: ", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     start_application_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
-    
+
     select_dataset_button = ttk.Button(first_view_frame, text="Select Dataset", command=import_file, style='my.TButton')
     select_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
@@ -619,14 +619,14 @@ if __name__ == '__main__':
 
     #Check internet connection
     internet_connection = PII_data_processor.internet_on()
-    
-    # Create GUI window
-    root = tk.Tk()  
 
-    window_setup(root)  
+    # Create GUI window
+    root = tk.Tk()
+
+    window_setup(root)
 
     menubar_setup(root)
-    
+
     window_style_setup(root)
 
     # Create canvas where app will displayed
@@ -642,7 +642,7 @@ if __name__ == '__main__':
     add_scrollbar(root, canvas, frame)
 
     #Add logo
-    if hasattr(tk.sys, "_MEIPASS"):    
+    if hasattr(tk.sys, "_MEIPASS"):
         logo_location = os.path.join(sys._MEIPASS, 'ipa_logo.jpg')
     else:
         logo_location = 'ipa_logo.jpg'
@@ -657,4 +657,4 @@ if __name__ == '__main__':
     first_view_frame = create_first_view_page(internet_connection)
 
     # Constantly looping event listener
-    root.mainloop()  
+    root.mainloop()

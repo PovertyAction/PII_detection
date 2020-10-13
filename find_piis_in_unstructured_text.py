@@ -165,10 +165,7 @@ def find_piis(dataset, label_dict, columns_to_check, language, country):
 
 
     #Update strings_to_check
-    from datetime import datetime
-    print(datetime.now())
     strings_to_check = [s for s in strings_to_check if s not in names_found]
-    print(datetime.now())
 
     #Find all locations with pop less than 20,000
     print("-->Finding locations with low population")

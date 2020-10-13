@@ -49,6 +49,10 @@ def check_location_exists_and_population_size(location, country):
 		api_url = api_url+'&country='+country_iso
 
 	response = requests.get(api_url)
+
+	if location == 'el.aire':
+		print(api_url)
+		print(response)
 	
 	response_json = json.loads(response.text)
 
@@ -136,8 +140,9 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 	# print(locations)
 
 	for index, location in enumerate(locations):
-		print(str(index)+'/'+str(len(locations)))
-		print(location)
+		if(index%50==0):
+			print(str(index)+'/'+str(len(locations)))
+			print(location)
 
 		location_exists, population = check_location_exists_and_population_size(location, country)
 		if location_exists:
@@ -145,8 +150,9 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 				population = google_population(location)
 			
 			if population:
+				print(f"Found a population for {location}")
 				if population < low_populations_threshold:
-					# print(location+" is a location with LOW pop")
+					print(location+" is a location with LOW pop")
 					if return_one:
 						return location
 					else:
