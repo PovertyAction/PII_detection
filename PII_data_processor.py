@@ -1,7 +1,7 @@
 import restricted_words as restricted_words_list
 import pandas as pd
 # from nltk.stem.porter import PorterStemmer
-import time 
+import time
 
 LOG_FILE = None
 
@@ -20,13 +20,13 @@ def get_surveycto_restricted_vars():
     return restricted_words_list.get_surveycto_restricted_vars()
 
 def import_dataset(dataset_path):
-    
+
     dataset, label_dict, value_label_dict = False, False, False
     raise_error = False
     status_message = False
 
     # if dataset_path.endswith(('"', "'")):
-    #     dataset_path = dataset_path[1:-1] 
+    #     dataset_path = dataset_path[1:-1]
 
     # dataset_path_l = dataset_path.lower()
 
@@ -86,7 +86,7 @@ def import_dataset(dataset_path):
 
 #     restricted = restricted + restricted_stems
 #     restricted = list(set(restricted))
-    
+
 #     return restricted
 
 
@@ -100,7 +100,10 @@ def word_match(column_name, restricted_word, type_of_matching=STRICT):
 
 def remove_other_refuse_and_dont_know(column):
 
-    filtered_column = column.loc[(column != '777') & (column != '888') & (column != '999') & (column != '-888')]
+    #List of values to remove. All numbers with 3 digits where all digits are the same
+    values_to_remove = [str(111*i) for i in range(-9,10) if i !=0]
+
+    filtered_column = column[~column.isin(values_to_remove)]
 
     return filtered_column
 
@@ -118,7 +121,7 @@ def clean_column(column):
     return column_filtered
 
 def column_is_sparse(dataset, column_name, sparse_threshold):
-    
+
     column_filtered = clean_column(dataset[column_name])
 
     #Check sparcity
@@ -153,7 +156,7 @@ def column_has_sparse_value_label_dicts(column_name, value_label_dict, sparse_th
         return False
 
 def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_to_check, consider_locations_cols):
-    
+
     #Identifies columns whose names or labels match (strict or fuzzy) any word in the predefined list of restricted words. Also considers that data entries must be sufficiently sparse strings (Ideally, this method will capture columns with people names) or value label dictionaries (for locations)
 
     pii_strict_restricted_words = restricted_words_list.get_strict_restricted_words()
@@ -196,18 +199,18 @@ def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, column
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
 
-                #If column has strings and is sparse    
+                #If column has strings and is sparse
                 if column_has_sufficiently_sparse_strings(dataset, column_name):
 
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
                         log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
-                
+
                         possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sufficiently sparse strings"
-                    
+
                     elif(column_label_match):
                         log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has sufficiently sparse strings")
-                    
+
                         possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has sufficiently sparse strings"
                     #If found, I dont need to keep checking this column with other restricted words
                     break
@@ -217,12 +220,12 @@ def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, column
 
                     if(column_name_match):
                         log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and values labels are sparse")
-                
+
                         possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and values labels are sparse"
-                    
+
                     elif(column_label_match):
                         log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and values labels are sparse")
-                    
+
                         possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and values labels are sparse"
                     #If found, I dont need to keep checking this column with other restricted words
                     break
@@ -243,9 +246,9 @@ def column_has_locations_with_low_populations(dataset, column_name, country):
 
 
 def log_and_print(message):
-    file = open(LOG_FILE, "a") 
-    file.write(message+'\n') 
-    file.close() 
+    file = open(LOG_FILE, "a")
+    file.write(message+'\n')
+    file.close()
     print(message)
 
 def find_piis_based_on_locations_population(dataset, label_dict, columns_to_check, country):
@@ -282,19 +285,19 @@ def find_piis_based_on_locations_population(dataset, label_dict, columns_to_chec
 
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
-    
+
                 location_with_low_population = column_has_locations_with_low_populations(dataset, column_name, country)
 
                 if(location_with_low_population):
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
                         log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
-                
+
                         possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
-                    
+
                     elif(column_label_match):
                         log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
-                    
+
                         possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
                     #If found, I dont need to keep checking this column with other restricted words
                     break
@@ -308,7 +311,7 @@ def find_piis_based_on_sparse_entries(dataset, label_dict, columns_to_check, spa
     for column_name in columns_to_check:
 
         if column_is_sparse(dataset, column_name, sparse_threshold=sparse_values_threshold):
-            
+
             log_and_print("Column '"+column_name+"' considered possible pii given entries are sparse")
             possible_pii[column_name] = "Column entries are too sparse"
 
@@ -331,7 +334,7 @@ def find_columns_with_specific_format(dataset, format_to_search, columns_to_chec
         #yyyy/mm/dd, (with -, / or .)
         regex_date_3 = "([12]\d{3}(\/|-|\.)(0[1-9]|1[0-2])(\/|-|\.)(0[1-9]|[12]\d|3[01]))"
 
-        regex_expression = regex_date_1+'|'+regex_date_2+'|'+regex_date_3        
+        regex_expression = regex_date_1+'|'+regex_date_2+'|'+regex_date_3
 
     for column in columns_to_check:
 
@@ -413,7 +416,7 @@ def find_survey_cto_vars(dataset):
 def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
     all_piis_detected = {}
-    
+
     #Find columns with phone numbers formats
     columns_with_phone_numbers = find_columns_with_specific_format(dataset, PHONE_NUMBER, columns_to_check)
     all_piis_detected.update(columns_with_phone_numbers)
@@ -429,7 +432,7 @@ def create_log_file_path(dataset_path):
     path_without_extension = dataset_path[0:dataset_path.rfind(".")]
 
     global LOG_FILE
-    LOG_FILE = path_without_extension+"_log.txt" 
+    LOG_FILE = path_without_extension+"_log.txt"
 
 def import_file(dataset_path):
 
@@ -437,12 +440,12 @@ def import_file(dataset_path):
     create_log_file_path(dataset_path)
 
     #Read file
-    import_status, import_result = import_dataset(dataset_path)    
-    
+    import_status, import_result = import_dataset(dataset_path)
+
     #Check if error ocurr
     if import_status is False:
         return import_status, import_result
-    
+
     #If no error, decouple import result
     dataset, dataset_path, label_dict, value_label_dict = import_result
 
@@ -468,7 +471,7 @@ def recode(dataset, columns_to_encode):
 
         # Make dictionary of old and new values
         new_value = 1
-        old_to_new_dict = {}   
+        old_to_new_dict = {}
         for unique_val in dataset[var].unique():
             old_to_new_dict[unique_val] = new_value
             new_value += 1
@@ -486,11 +489,11 @@ def recode(dataset, columns_to_encode):
     return dataset, econding_used
 
 def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, language, country):
-    
+
     #Filter columns to those that have sparse entries
     columns_to_check = []
     for column_name in columns_still_to_check:
-        if column_has_sufficiently_sparse_strings(dataset, column_name):            
+        if column_has_sufficiently_sparse_strings(dataset, column_name):
             columns_to_check.append(column_name)
 
     pii_candidates_unstructured_text = unstructured_text.find_piis(dataset, label_dict, columns_to_check, language, country)
@@ -526,7 +529,7 @@ def export(dataset, dataset_path, variable_labels = None):
     else:
         log_and_print("Data type not supported")
         new_file_path = None
-            
+
     return new_file_path
 
 
@@ -535,7 +538,7 @@ def internet_on():
         urllib2.urlopen('http://google.com', timeout=2)
         return True
     except Exception as e:
-        print(e) 
+        print(e)
         return False
 
 def get_test_files_tuples():
@@ -558,7 +561,7 @@ def main_when_script_run_from_console():
         #Import dataset
         reading_status, reading_content = import_file(dataset_path)
         #Check if reading was succesful
-        if(reading_status is False):    
+        if(reading_status is False):
             return
 
         dataset = reading_content[DATASET]
@@ -593,7 +596,7 @@ def main_when_script_run_from_console():
         if search_pii_in_unstructured_text == 0:
             pii_candidates_unstructured_text = None
             column_with_unstructured_text = None
-            
+
             pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
             all_piis_found.update(pii_candidates)
             print("Piis based on sparse entries: "+",".join(pii_candidates.keys()))
@@ -615,7 +618,7 @@ def main_when_script_run_from_console():
 
         #Now we check identified PIIs are the correct ones based on ground truth
         reading_status, reading_content = import_file(true_piis_path)
-        if(reading_status is False):    
+        if(reading_status is False):
             return
         true_piis_dataset = reading_content[DATASET]
         true_piis = true_piis_dataset.iloc[:,0].to_list()
