@@ -14,7 +14,7 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.16"
+app_title = "IPA's PII Detector - v0.2.17"
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -43,6 +43,8 @@ country_dropdown = None
 language_dropdown = None
 
 piis_frame = None
+
+pii_search_in_unstructured_text_enabled = False
 
 def display_title(title, frame_where_to_display):
     label = ttk.Label(frame_where_to_display, text=title, wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
@@ -149,7 +151,7 @@ def create_anonymized_dataset():
         pii_candidates_to_action[pii] = dropdown_elem.get()
 
     #Capture words to replace in unstructured text
-    if(keep_unstructured_text_option_checkbutton_var.get()==1):
+    if(pii_search_in_unstructured_text_enabled and keep_unstructured_text_option_checkbutton_var.get()==1):
         piis_found_in_ustructured_text = [w.strip() for w in piis_in_text_box.get("1.0", "end").split(',')]
     else:
         piis_found_in_ustructured_text = None
@@ -273,7 +275,7 @@ def find_piis():
     elif(search_method == COLUMNS_FORMAT_SEARCH_METHOD):
         pii_candidates = PII_data_processor.find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
 
-        if(column_level_option_for_unstructured_text_checkbutton_var.get()==1):
+        if (not pii_search_in_unstructured_text_enabled or column_level_option_for_unstructured_text_checkbutton_var.get()==1):
             next_search_method_button_text = "Continue: Find columns with potential PIIs based on sparse entries"
             next_search_method = SPARSE_ENTRIES_SEARCH_METHOD
         else:
@@ -443,14 +445,15 @@ def create_first_view_page(internet_connection):
     settings_label = ttk.Label(first_view_frame, text="Settings:", wraplength=546, justify=tk.LEFT, font=("Calibri", 12, 'bold'), style='my.TLabel')
     settings_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    #Create a frame for the language selection
-    language_frame = tk.Frame(master=first_view_frame, bg="white")
-    language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+    if pii_search_in_unstructured_text_enabled:
+        #Create a frame for the language selection
+        language_frame = tk.Frame(master=first_view_frame, bg="white")
+        language_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
-    ttk.Label(language_frame, text='In which language are the answers in the dataset?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
+        ttk.Label(language_frame, text='In which language are the answers in the dataset?', wraplength=546, justify=tk.LEFT, font=("Calibri", 10), style='my.TLabel').grid(row=0, column = 0, sticky = 'w', pady=(0,2))
 
-    language_dropdown = tk.StringVar(language_frame)
-    w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
+        language_dropdown = tk.StringVar(language_frame)
+        w = ttk.OptionMenu(language_frame, language_dropdown, SPANISH, ENGLISH, SPANISH, OTHER, style='my.TMenubutton').grid(row=0, column = 1, sticky = 'w', pady=(0,2))
 
     #Create a frame for country selection
     country_frame = tk.Frame(master=first_view_frame, bg="white")
@@ -486,74 +489,64 @@ def create_first_view_page(internet_connection):
     if internet_connection:
         check_locations_pop_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    #Option related to unstructured text
-    unstructured_text_label = ttk.Label(first_view_frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
-    if internet_connection:
-        unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    def column_level_option_for_unstructured_text_checkbutton_command():
-        # print("As soon after the click:")
-        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+    if pii_search_in_unstructured_text_enabled:
 
-        #If both are now off, reselect this one
-        if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
-            messagebox.showinfo("Error", "You must have one option selected")
-            column_level_option_for_unstructured_text_checkbutton_var.set(True)
+        #Option related to unstructured text
+        unstructured_text_label = ttk.Label(first_view_frame, text="What would you like to do respect to searching PIIs in open ended questions (unstructured text)?", wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 10), style='my.TLabel')
+        if internet_connection:
+            unstructured_text_label.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-        #If the other one is on, turn it off.
-        if(column_level_option_for_unstructured_text_checkbutton_var.get()==1 and keep_unstructured_text_option_checkbutton_var.get()==1):
-            keep_unstructured_text_option_checkbutton.deselect()
+        def column_level_option_for_unstructured_text_checkbutton_command():
 
-        # print("At the end of the method:")
-        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+            #If both are now off, reselect this one
+            if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
+                messagebox.showinfo("Error", "You must have one option selected")
+                column_level_option_for_unstructured_text_checkbutton_var.set(True)
 
-    column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
-    column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
-    column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(first_view_frame,
-        text=column_level_option_for_unstructured_text_checkbutton_text,
-        bg="white",
-        activebackground="white",
-        variable=column_level_option_for_unstructured_text_checkbutton_var,
-        onvalue=1,
-        offvalue=0,
-        command = column_level_option_for_unstructured_text_checkbutton_command)
+            #If the other one is on, turn it off.
+            if(column_level_option_for_unstructured_text_checkbutton_var.get()==1 and keep_unstructured_text_option_checkbutton_var.get()==1):
+                keep_unstructured_text_option_checkbutton.deselect()
 
-    if internet_connection:
-        column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-    def keep_unstructured_text_option_checkbutton_command():
-        # print("As soon after the click:")
-        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
-        #If there is no internet connection, this feature should be disabled
+        column_level_option_for_unstructured_text_checkbutton_var = tk.IntVar(value=1)
+        column_level_option_for_unstructured_text_checkbutton_text = "Identify open ended questions and choose what to do with them at the column level (either drop or keep the whole column)"
+        column_level_option_for_unstructured_text_checkbutton = tk.Checkbutton(first_view_frame,
+            text=column_level_option_for_unstructured_text_checkbutton_text,
+            bg="white",
+            activebackground="white",
+            variable=column_level_option_for_unstructured_text_checkbutton_var,
+            onvalue=1,
+            offvalue=0,
+            command = column_level_option_for_unstructured_text_checkbutton_command)
 
-       #If both are now off, reselect this one
-        if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
-            messagebox.showinfo("Error", "You must have one option selected")
-            keep_unstructured_text_option_checkbutton_var.set(True)
+        if internet_connection:
+            column_level_option_for_unstructured_text_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
-        else:#Disable other option
-            column_level_option_for_unstructured_text_checkbutton.deselect()
+        def keep_unstructured_text_option_checkbutton_command():
 
-        # print("At the end of the method:")
-        # print(f'column_level_option_for_unstructured_text_checkbutton_var {column_level_option_for_unstructured_text_checkbutton_var.get()}')
-        # print(f'keep_unstructured_text_option_checkbutton_var {keep_unstructured_text_option_checkbutton_var.get()}')
+           #If both are now off, reselect this one
+            if(column_level_option_for_unstructured_text_checkbutton_var.get()==0 and keep_unstructured_text_option_checkbutton_var.get()==0):
+                messagebox.showinfo("Error", "You must have one option selected")
+                keep_unstructured_text_option_checkbutton_var.set(True)
 
-    keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
-    keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if ryou really need to keep unstructured text]"
-    keep_unstructured_text_option_checkbutton = tk.Checkbutton(first_view_frame,
-        text=keep_unstructured_text_option_checkbutton_text,
-        bg="white",
-        activebackground="white",
-        variable=keep_unstructured_text_option_checkbutton_var,
-        onvalue=1,
-        offvalue=0,
-        command=keep_unstructured_text_option_checkbutton_command)
+            else:#Disable other option
+                column_level_option_for_unstructured_text_checkbutton.deselect()
 
-    if internet_connection:
-        keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
+
+        keep_unstructured_text_option_checkbutton_var = tk.IntVar(value=0)
+        keep_unstructured_text_option_checkbutton_text = "Keep columns with open ended questions, but replace any PIIs found on them with a 'XXXX' string [Slow process, use only if ryou really need to keep unstructured text]"
+        keep_unstructured_text_option_checkbutton = tk.Checkbutton(first_view_frame,
+            text=keep_unstructured_text_option_checkbutton_text,
+            bg="white",
+            activebackground="white",
+            variable=keep_unstructured_text_option_checkbutton_var,
+            onvalue=1,
+            offvalue=0,
+            command=keep_unstructured_text_option_checkbutton_command)
+
+        if internet_connection:
+            keep_unstructured_text_option_checkbutton.pack(anchor='nw', padx=(30, 30), pady=(0, 10))
 
 
     def import_file():
