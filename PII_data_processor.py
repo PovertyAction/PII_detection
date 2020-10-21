@@ -75,21 +75,6 @@ def import_dataset(dataset_path):
     dataset_read_return = [dataset, dataset_path, label_dict, value_label_dict]
     return (True, dataset_read_return)
 
-
-# def add_stem_of_words(restricted):
-# # Identifies stems of restricted words and adds the stems to restricted list
-
-#     initialized_stemmer = PorterStemmer()
-#     restricted_stems = []
-#     for r in restricted:
-#         restricted_stems.append(initialized_stemmer.stem(r).lower())
-
-#     restricted = restricted + restricted_stems
-#     restricted = list(set(restricted))
-
-#     return restricted
-
-
 def word_match(column_name, restricted_word, type_of_matching=STRICT):
     if(type_of_matching == STRICT):
         return column_name.lower() == restricted_word.lower()
@@ -291,14 +276,14 @@ def find_piis_based_on_locations_population(dataset, label_dict, columns_to_chec
                 if(location_with_low_population):
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
-                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
+                        log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with population under 20,000: "+location_with_low_population)
 
-                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
+                        possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with population under 20,000: "+location_with_low_population
 
                     elif(column_label_match):
-                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population)
+                        log_and_print("Column '"+column_name+ "' considered possible pii given column label '"+column_label+"' had a "+type_of_matching+" match with restricted word '"+ restricted_word+"' and has a location with population under 20,000: "+location_with_low_population)
 
-                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with populations under 20,000: "+location_with_low_population
+                        possible_pii[column_name] = "Label had "+ type_of_matching + " match with restricted word '"+restricted_word+"' and has a location with population under 20,000: "+location_with_low_population
                     #If found, I dont need to keep checking this column with other restricted words
                     break
 

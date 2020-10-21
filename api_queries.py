@@ -5,6 +5,7 @@ import pandas as pd
 from secret_keys import get_geonames_username, get_forebears_api_key
 import requests
 import json
+from webdriver_manager.chrome import ChromeDriverManager
 
 from constant_strings import *
 
@@ -17,7 +18,7 @@ def ask_google(query):
 		chrome_options = Options()
 		chrome_options.add_argument("--window-size=1024x768")
 		chrome_options.add_argument("--headless")
-		driver = webdriver.Chrome(executable_path=r'chromedriver.exe',options=chrome_options)
+		driver = webdriver.Chrome(ChromeDriverManager().install(),options=chrome_options) #executable_path=r'chromedriver.exe'
 
 	# Search for query
 	query = query.replace(' ', '+')
@@ -42,7 +43,7 @@ def get_country_iso_code(country_name):
 
 def check_location_exists_and_population_size(location, country):
 	#https://www.geonames.org/export/geonames-search.html
-	
+
 	api_url = 'http://api.geonames.org/searchJSON?name='+location+'&name_equals='+location+'&maxRows=1&orderby=population&isNameRequired=true&username='+get_geonames_username()
 	country_iso = get_country_iso_code(country)
 	if country_iso:
@@ -53,7 +54,7 @@ def check_location_exists_and_population_size(location, country):
 	if location == 'el.aire':
 		print(api_url)
 		print(response)
-	
+
 	response_json = json.loads(response.text)
 
 	if 'totalResultsCount' in response_json and response_json['totalResultsCount'] > 0:
@@ -71,12 +72,12 @@ def check_location_exists_and_population_size(location, country):
 def get_population_from_google_query_result(query_result):
 	'''
 	Get ready to receive populations in different formats, such as:
-	 
+
 	3,685\n2010
 	91,411 (2018)
 	14,810,001 // New england
-	
-	 
+
+
 	17 million people
 	1.655 million (2010) // Ecatepec de Morelos
 	'''
@@ -103,7 +104,7 @@ def get_population_from_google_query_result(query_result):
 				result = result * 1000000
 
 			clean_query_result = result
-		
+
 		result =  int(clean_query_result)
 	except Exception as e:
 		# print("problem paring query result to int")
@@ -132,7 +133,7 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 	#Check which strings of locations correspond to locations whith low_populations
 	#If return_one is set to True, method returns first location with low population
 	#If consider_low_population_if_unknown_population is set to True, locations with unknown population will be labelled as low population (conservative approach)
-	
+
 	locations_with_low_population = []
 	locations_with_unknown_population = []
 
@@ -148,7 +149,7 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 		if location_exists:
 			if not population:
 				population = google_population(location)
-			
+
 			if population:
 				print(f"Found a population for {location}")
 				if population < low_populations_threshold:
@@ -163,12 +164,12 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 					#We want to activate consider_low_population_if_unknown_population as long as we are sure that this column has locations (aka, we have already found at least one location and we were able to extract its population)
 					#We also add all locations found so far with unkwon population to the list of locations with low population
 					if consider_low_population_if_unknown_population is False:
-						locations_with_low_population.extend(locations_with_unknown_population)				
+						locations_with_low_population.extend(locations_with_unknown_population)
 						consider_low_population_if_unknown_population = True
 
-			
+
 			else:
-				#If the population is unknown, there are 2 possibilities. 
+				#If the population is unknown, there are 2 possibilities.
 				#The first one is a conservative approach: a location with unkown population is considered to have low population
 				#The other is to discard them. This is useful for the case of columns that actually dont have locations, but some word might match a location
 				#For this second scenario, we will save all locations with unknown population, and if we happen to realize we are in the scenario of a column with locations, only then we will add them all to the list of location wit low populations.
@@ -180,7 +181,7 @@ def get_locations_with_low_population(locations, country, low_populations_thresh
 				else: #We still dont know if we are in a column with locations
 					locations_with_unknown_population.append(location)
 
-		
+
 	if return_one:
 		return False
 	else:
@@ -201,7 +202,7 @@ def generate_names_parameter_for_api(list_names, option):
     return names_parameter
 
 def get_names_from_json_response(response):
-    
+
     names_found = []
 
     json_response = json.loads(response)
@@ -209,7 +210,7 @@ def get_names_from_json_response(response):
     if "results" in json_response:
         for result in json_response["results"]:
             #Names that exist come with the field 'jurisdictions'
-            #We will also ask a minimum of 50 world incidences 
+            #We will also ask a minimum of 50 world incidences
             if('jurisdictions' in result and len(result['jurisdictions'])>0):
                 try:
                     world_incidences = int(result['world']['incidence'])
@@ -246,14 +247,14 @@ def find_names_in_list_string(list_potential_names):
 
             names_parameter = generate_names_parameter_for_api(list_1000_potential_names, forename_or_surname)
 
-            
+
             response = requests.post(api_url, data={'names':names_parameter})
-            
+
 
             names_found = get_names_from_json_response(response.text)
             for name in names_found:
                 all_names_found.add(name)
-            
+
             #Opportunity of improvement: If i already found a name as a forename, dont query it as a surname
 
     return list(all_names_found)
