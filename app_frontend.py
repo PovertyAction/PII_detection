@@ -235,6 +235,7 @@ def create_piis_frame(next_search_method, next_search_method_button_text, pii_ca
     return piis_frame
 
 def find_piis():
+
     global columns_still_to_check
     global search_method
     global next_search_method
@@ -243,6 +244,13 @@ def find_piis():
 
     #Update search method (considering find_piis() is recurrently called)
     search_method = next_search_method
+
+    #Add a 'Working on it...' message
+    if (search_method == COLUMNS_NAMES_SEARCH_METHOD):
+        display_message('Working on it...', first_view_frame)
+    else:
+        display_message('Working on it...', piis_frame)
+
 
     #Figure out what method for finding pii to use
     if (search_method == COLUMNS_NAMES_SEARCH_METHOD):
