@@ -1,7 +1,7 @@
 # PII Application
 
 ### About
-This application identifies likely PII (personally identifiable information) in a dataset. To use, download the .exe from the latest release and follow the in-app directions.
+This application identifies likely PII (personally identifiable information) in a dataset. To use, download the .exe installer from the [latest release](https://github.com/PovertyAction/PII_detection/releases/latest) and follow the in-app directions.
 
 This tool is current listed as an alpha release because it is still being tested on IPA PII-containing field datasets.
 
@@ -49,5 +49,11 @@ J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
 
 The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE).
 
-### To create .exe from source file
-`pyinstaller --onefile --windowed --icon=app.ico --add-data="app.ico;." --add-data="ipa_logo.jpg;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util app_frontend.py`
+### Distribution
+
+#### To create executable app
+`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util app_frontend.py`
+
+#### To create windows application installer
+Compile `create_installer.iss` using Inno Setup Compiler
+<!-- Reference: https://www.youtube.com/watch?v=RrpvNvklmFA -->

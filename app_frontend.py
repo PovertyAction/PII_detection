@@ -7,6 +7,7 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 import webbrowser
 import os
+import requests
 
 import PII_data_processor
 
@@ -14,7 +15,8 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-app_title = "IPA's PII Detector - v0.2.17"
+version_number = "0.2.18"
+app_title = "IPA's PII Detector - v"+version_number
 
 #Maps pii to action to do with them
 pii_candidates_to_dropdown_element = {}
@@ -333,9 +335,9 @@ def window_setup(master):
 
     #Add window icon
     if hasattr(sys, "_MEIPASS"):
-        icon_location = os.path.join(sys._MEIPASS, 'app.ico')
+        icon_location = os.path.join(sys._MEIPASS, 'app_icon.ico')
     else:
-        icon_location = 'app.ico'
+        icon_location = 'app_icon.ico'
     master.iconbitmap(icon_location)
 
     #Set window position and max size
@@ -616,6 +618,20 @@ def create_first_view_page(internet_connection):
 
     return first_view_frame
 
+def check_for_updates():
+    if internet_connection:
+        #Get version of latest release
+        response = requests.get("https://api.github.com/repos/PovertyAction/PII_detection/releases/latest")
+        latest_version = response.json()["tag_name"]
+
+        #Case it has a v before version number, remove it
+        latest_version = latest_version.replace("v","")
+
+        #Check if this version_number is different to latest
+        if version_number != latest_version:
+
+           messagebox.showinfo("Message", "Version "+latest_version+ " is available. You can uninstall this version from Control Panel and download latest from https://github.com/PovertyAction/PII_detection/releases/latest")
+
 if __name__ == '__main__':
 
     #Check internet connection
@@ -656,6 +672,9 @@ if __name__ == '__main__':
 
     #Create first view page
     first_view_frame = create_first_view_page(internet_connection)
+
+    #Check for updates of this program
+    check_for_updates()
 
     # Constantly looping event listener
     root.mainloop()
