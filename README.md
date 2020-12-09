@@ -9,9 +9,12 @@ This tool is current listed as an alpha release because it is still being tested
 
 There are a series of rules that are applied to a dataset's column to identify if a given column is a PII. Such rules are:
 
-* If column name or label match with any of the restricted words (check restricted_words.py to read the list) and has sparse string entries.
-* If entries in a given column have a specific format (at the moment checking phone number format, in future version we will include gps, birthday dates, national identifiers)
+* If column name or label match with any word of the list of restricted words ( ex 'name', 'surname', 'ssn', etc; check restricted_words.py) and has sufficiently sparse string entries.
+Ex: ‘What is your name?’ would be flagged, but ‘Do you like your name?’ not.
+* If entries in a given column have a specific format (at the moment checking phone number format and date format, we can expand to  gps, national identifiers, etc)
 * If all entries in a given column are sufficiently sparse (almost all unique). Ideal to identify open ended questions.
+
+Importantly, this is an arbitrary defined list of conditions, and for sure can be improved. Very open to feedback!
 
 Once the PIIs are identified, users have the opportunity to say what they would like to do with those columns. Options are: drop column, encode column or keep column. According to those instructions, a new de-identified dataset is created. Also, the system outputs a log .txt file and a .csv file that maps the new and encoded values.
 
