@@ -12,6 +12,11 @@ import urllib.request as urllib2
 import api_queries
 
 import find_piis_in_unstructured_text as unstructured_text
+
+import fileinput
+import shutil
+import os
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -339,6 +344,52 @@ def find_columns_with_specific_format(dataset, format_to_search, columns_to_chec
                 columns_with_phone_numbers[column]= "Column entries have "+format_to_search+" format"
 
     return columns_with_phone_numbers
+
+
+def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
+    '''
+    Using anonymize_script_tempalte.txt as a starting point, we create a .do file that deidentifies dataset according to pii_candidates_to_action
+    '''
+    #Make a copy of the template file
+    template_file = 'anonymize_script_tempalte.txt'
+    script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.txt'
+
+    print(f'filename {script_filename}')
+    shutil.copyfile(template_file, script_filename)
+
+    deidentified_dataset_path = dataset_path.split('.')[0] + '_deidentified.csv'
+
+    #Create list of vars to drop and encode
+    list_variables_to_drop = []
+    list_variables_to_encode = []
+    for pii_candidate, action in pii_candidates_to_action.items():
+        if action == 'Drop':
+            list_variables_to_drop.append(pii_candidate)
+        elif action == 'Encode':
+            list_variables_to_encode.append(pii_candidate)
+
+
+    #Read all lines and replace whenever we find one of the keywords
+    with fileinput.FileInput(script_filename, inplace=True) as file: #, backup='.bak'
+        for line in file:
+
+            #Create modified_line
+            modified_line = line
+
+            modified_line = modified_line.replace('[input_file_path]', dataset_path)
+            modified_line = modified_line.replace('[output_file_path]', deidentified_dataset_path)
+
+            modified_line = modified_line.replace('[list_variables_to_drop_space_delimited]', " ".join(list_variables_to_drop))
+            modified_line = modified_line.replace('[list_variables_to_hash_space_delimited]', " ".join(list_variables_to_encode))
+
+            #The template .do file has an option to only remove value labels, we are not using that option so we will by default select no variables for that.
+            modified_line = modified_line.replace('[list_variables_to_remove_value_labelling_space_delimited]', "")
+
+            #Save modified line in file
+            #print here will print in the file, not actually printing in console
+            print(modified_line, end='')
+
+
 
 
 

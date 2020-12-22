@@ -15,7 +15,7 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-version_number = "0.2.18"
+version_number = "0.2.19"
 app_title = "IPA's PII Detector - v"+version_number
 
 #Maps pii to action to do with them
@@ -173,7 +173,7 @@ def create_do_file():
     #Create dictionary that maps pii_candidate_to_action based on value of dropdown elements
     pii_candidates_to_action = create_pii_candidates_to_action()
 
-    # new_file_path = PII_data_processor.create_deidentifying_do_file(dataset, label_dict, dataset_path, pii_candidates_to_action)
+    new_file_path = PII_data_processor.create_deidentifying_do_file(dataset_path, pii_candidates_to_action)
 
     do_file_created_message(creating_do_file_message)
 
