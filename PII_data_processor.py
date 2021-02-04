@@ -16,6 +16,7 @@ import find_piis_in_unstructured_text as unstructured_text
 import fileinput
 import shutil
 import os
+from datetime import date
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -372,10 +373,11 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
     #Read all lines and replace whenever we find one of the keywords
     with fileinput.FileInput(script_filename, inplace=True) as file: #, backup='.bak'
         for line in file:
+            today_string = date.today().strftime("%m/%d/%y")
 
             #Create modified_line
             modified_line = line
-
+            modified_line = modified_line.replace('[date]', today_string)
             modified_line = modified_line.replace('[input_file_path]', dataset_path)
             modified_line = modified_line.replace('[output_file_path]', deidentified_dataset_path)
 
