@@ -15,6 +15,8 @@ import find_piis_in_unstructured_text as unstructured_text
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+from os import listdir
+from os.path import isfile, isdir, join
 
 def get_surveycto_restricted_vars():
     return restricted_words_list.get_surveycto_restricted_vars()
@@ -535,25 +537,73 @@ def internet_on():
         print(e)
         return False
 
+def get_directories_path_in_folder(folder_path):
+    only_directories = [join(folder_path, f) for f in listdir(folder_path) if isdir(join(folder_path, f))]
+    return only_directories
+
+def get_files_path_in_folder(folder_path):
+    only_files = [join(folder_path, f) for f in listdir(folder_path) if isfile(join(folder_path, f))]
+    return only_files
+
+def get_testing_tuple(folder_path):
+    only_files = get_files_path_in_folder(folder_path)
+
+    data_source = None
+    excel_with_ground_truth_pii = None
+    country_file = None
+
+    for file in only_files:
+        if file.split('.')[-1]=='dta':
+            data_source = file
+            continue
+        if file.split('-')[-1]=='true_piis.xlsx':
+            excel_with_ground_truth_pii = file
+            continue
+        if file.split('.')[-1]=='txt':
+            country_file = file
+            continue
+    if data_source and excel_with_ground_truth_pii and country_file:
+        return True, (data_source, excel_with_ground_truth_pii, country_file)
+    else:
+        return False, False
+
+
 def get_test_files_tuples():
 
     all_test_files_tuples = []
 
-    recover_mex_data = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_RD1_MEX\RECOVR_MEX_r1_Raw.dta'
-    recover_mex_true_piis = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\RECOVR_RD1_MEX\RECOVR_MEX_r1_Raw_true_piis.xlsx'
-    all_test_files_tuples.append((recover_mex_data, recover_mex_true_piis))
+    #Look for files in X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw\
+    #For every folder inside, if folder has .dta and .xlsx ending with -piis.xlsx, add it to list
+
+    folder_with_raw_data = 'X:\Box Sync\GRDS_Resources\Data Science\Test data\Raw'
+    only_directories = get_directories_path_in_folder(folder_with_raw_data)
+
+    for dir in only_directories:
+        #Check that dir has .dta and .xls
+        dir_has_testing_tuple, testing_tuple = get_testing_tuple(dir)
+        if dir_has_testing_tuple:
+             all_test_files_tuples.append((testing_tuple[0], testing_tuple[1], testing_tuple[2]))
 
     return all_test_files_tuples
 
-def main_when_script_run_from_console():
+def get_country(country_file_path):
+    with open(country_file_path) as f:
+        lines = f.readlines()
+    return lines[0]
+
+def run_tests():
 
     test_files_tuples = get_test_files_tuples()
 
     for test_files_tuple in test_files_tuples:
-        dataset_path, true_piis_path = test_files_tuple
+        dataset_path, true_piis_path, country_file_path = test_files_tuple
+        country = get_country(country_file_path)
+
+        print(f'RUNNING TEST FOR {dataset_path}.\nCountry {country}')
 
         #Import dataset
         reading_status, reading_content = import_file(dataset_path)
+
         #Check if reading was succesful
         if(reading_status is False):
             return
@@ -568,7 +618,7 @@ def main_when_script_run_from_console():
 
         #Options
         consider_locations_cols = 1
-        search_pii_in_unstructured_text = 1
+        search_pii_in_unstructured_text = 0
 
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
@@ -576,7 +626,7 @@ def main_when_script_run_from_console():
         print("Piis found using column names: "+",".join(pii_candidates.keys()))
 
         if(consider_locations_cols==0):
-            pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check)
+            pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check, country)
             all_piis_found.update(pii_candidates)
             columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
             print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
@@ -630,4 +680,4 @@ def main_when_script_run_from_console():
 
 
 if __name__ == "__main__":
-    main_when_script_run_from_console()
+    run_tests()
