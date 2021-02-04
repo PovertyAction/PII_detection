@@ -112,6 +112,9 @@ def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, d
 
 def create_goodbye_frame():
 
+    #Automatic scroll up
+    canvas.yview_moveto( 0 )
+
     goodbye_frame = tk.Frame(master=frame, bg="white")
     goodbye_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
