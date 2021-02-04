@@ -368,12 +368,8 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     #Drop columns
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
 
-<<<<<<< Updated upstream
-    dataset.drop(columns=columns_to_drop, inplace=True)
-=======
     dataset = dataset.drop(columns=columns_to_drop)
 
->>>>>>> Stashed changes
     log_and_print("Dropped columns: "+ " ".join(columns_to_drop))
 
     #Encode columns
