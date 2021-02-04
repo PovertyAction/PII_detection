@@ -3,7 +3,8 @@ import pandas as pd
 # from nltk.stem.porter import PorterStemmer
 import time
 
-LOG_FILE = None
+OUTPUTS_FOLDER = None
+LOG_FILE_PATH = None
 
 from constant_strings import *
 
@@ -15,8 +16,11 @@ import find_piis_in_unstructured_text as unstructured_text
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+import os
 from os import listdir
 from os.path import isfile, isdir, join
+import ntpath
+import shutil
 
 def get_surveycto_restricted_vars():
     return restricted_words_list.get_surveycto_restricted_vars()
@@ -241,7 +245,7 @@ def column_has_locations_with_low_populations(dataset, column_name, country):
 
 
 def log_and_print(message):
-    file = open(LOG_FILE, "a")
+    file = open(LOG_FILE_PATH, "a")
     file.write(message+'\n')
     file.close()
     print(message)
@@ -350,12 +354,12 @@ def find_columns_with_specific_format(dataset, format_to_search, columns_to_chec
 
     return columns_with_phone_numbers
 
-
-
-
-
 def export_encoding(dataset_path, encoding_dict):
-    encoding_file_path = dataset_path.split('.')[0] + '_encodingmap.csv'
+
+    dataset_complete_file_name = ntpath.basename(dataset_path)
+    dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_complete_file_name)
+
+    encoding_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_encodingmap.csv')
 
     encoding_df = pd.DataFrame(columns=['variable','orginial value', 'encoded value'])
 
@@ -422,16 +426,26 @@ def find_piis_based_on_column_format(dataset, label_dict, columns_to_check):
 
     return all_piis_detected
 
+def create_outputs_folder(dataset_path):
+    directory_path = os.path.dirname(dataset_path)
+
+    global OUTPUTS_FOLDER
+    OUTPUTS_FOLDER = directory_path+'/pii_detection_outputs'
+
+    if os.path.exists(OUTPUTS_FOLDER):
+        shutil.rmtree(OUTPUTS_FOLDER)
+    os.mkdir(OUTPUTS_FOLDER)
+
 
 def create_log_file_path(dataset_path):
 
-    path_without_extension = dataset_path[0:dataset_path.rfind(".")]
-
-    global LOG_FILE
-    LOG_FILE = path_without_extension+"_log.txt"
+    global LOG_FILE_PATH
+    LOG_FILE_PATH = OUTPUTS_FOLDER+"/log.txt"
 
 def import_file(dataset_path):
 
+    #Create outputs folder and log file
+    create_outputs_folder(dataset_path)
     #Create log file
     create_log_file_path(dataset_path)
 
@@ -500,26 +514,27 @@ def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, lan
 
 def export(dataset, dataset_path, variable_labels = None):
 
-    dataset_type = dataset_path.split('.')[-1]
+    dataset_complete_file_name = ntpath.basename(dataset_path)
 
-    if(dataset_type == 'csv'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'
+    dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_complete_file_name)
+
+    if(dataset_type == '.csv'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.csv')
         dataset.to_csv(new_file_path, index=False)
 
-    elif(dataset_type == 'dta'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
-
+    elif(dataset_type == '.dta'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.dta')
         try:
             dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
         except:
             dataset.to_stata(new_file_path, version = 118, variable_labels = variable_labels, write_index=False)
 
-    elif(dataset_type == 'xlsx'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
+    elif(dataset_type == '.xlsx'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xlsx')
         dataset.to_excel(new_file_path, index=False)
 
-    elif(dataset_type == 'xls'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.xls'
+    elif(dataset_type == '.xls'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xls')
         dataset.to_excel(new_file_path, index=False)
 
     else:

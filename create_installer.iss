@@ -6,8 +6,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{94D8F08C-01F1-46FF-89DF-EB240476F308}
 AppName=PII Detector
-AppVersion=0.2.18
-;AppVerName=PII Detector 0.2.18
+AppVersion=0.2.20
+;AppVerName=PII Detector 0.2.20
 AppPublisher=IPA
 AppPublisherURL=https://www.poverty-action.org/
 AppSupportURL=https://www.poverty-action.org/
@@ -108,7 +108,7 @@ Source: "C:\Users\felip\PII_detection\dist\app_frontend\win32trace.pyd"; DestDir
 Source: "C:\Users\felip\PII_detection\dist\app_frontend\win32ui.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\felip\PII_detection\dist\app_frontend\win32wnet.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\felip\PII_detection\dist\app_frontend\winpty.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\felip\PII_detection\dist\app_frontend\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Permissions: users-modify 
+Source: "C:\Users\felip\PII_detection\dist\app_frontend\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Permissions: users-modify
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -119,4 +119,3 @@ Name: "{autodesktop}\PII Detector"; Filename: "{app}\app_frontend.exe"; IconFile
 
 [Run]
 Filename: "{app}\app_frontend.exe"; Description: "{cm:LaunchProgram,PII Detector}"; Flags: nowait postinstall skipifsilent
-
