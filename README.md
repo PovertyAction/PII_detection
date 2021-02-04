@@ -32,6 +32,12 @@ Once the PIIs are identified, users have the opportunity to say what they would 
 * dist folder: Contains .exe file for execution
 * hook-spacy.py: Dependency file needed when creating .exe
 
+### Setup
+
+`sudo apt install python3.8-tk`
+
+
+
 ### Help and Support
 
 Please feel free to open an issue for fixes or new feature requests. You can also contact researchsupport@poverty-action.org

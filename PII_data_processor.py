@@ -76,6 +76,7 @@ def import_dataset(dataset_path):
     return (True, dataset_read_return)
 
 def word_match(column_name, restricted_word, type_of_matching=STRICT):
+
     if(type_of_matching == STRICT):
         return column_name.lower() == restricted_word.lower()
     else: # type_of_matching == FUZZY
@@ -184,8 +185,15 @@ def find_piis_based_on_column_name(dataset, label_dict, value_label_dict, column
             #If there was a match between column name or label with restricted word
             if column_name_match or column_label_match:
 
+                #If there was a strict match with restricted word
+                if type_of_matching == STRICT:
+                    log_and_print("Column '"+column_name+"' considered possible pii given column name had a "+type_of_matching+" match with restricted word '"+ restricted_word+"'")
+
+                    possible_pii[column_name] = "Name had "+ type_of_matching + " match with restricted word '"+restricted_word+"'"
+
+
                 #If column has strings and is sparse
-                if column_has_sufficiently_sparse_strings(dataset, column_name):
+                elif column_has_sufficiently_sparse_strings(dataset, column_name):
 
                     #Log result and save column as possible pii. Theres different log depending if match was with column or label
                     if(column_name_match):
@@ -360,7 +368,12 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     #Drop columns
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
 
+<<<<<<< Updated upstream
     dataset.drop(columns=columns_to_drop, inplace=True)
+=======
+    dataset = dataset.drop(columns=columns_to_drop)
+
+>>>>>>> Stashed changes
     log_and_print("Dropped columns: "+ " ".join(columns_to_drop))
 
     #Encode columns
@@ -489,7 +502,7 @@ def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, lan
 
 def export(dataset, dataset_path, variable_labels = None):
 
-    dataset_type = dataset_path.split('.')[1]
+    dataset_type = dataset_path.split('.')[-1]
 
     if(dataset_type == 'csv'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'

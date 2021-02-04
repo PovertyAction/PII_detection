@@ -13,7 +13,7 @@ locations_fuzzy = ['district', 'country', 'subcountry', 'parish', 'village', 'co
 stata_strict = ['nam','add','addr','addr1','addr2','dist','parish','loc','acc','plan','medic','insur','num','resid','home','spec','id','enum', 'info', 'data', 'comm', 'count', 'fo']
 
 #IPA GUIDELINE DOCUMENT
-other_strict = ['gps', 'lat', 'lon', 'coord', 'house', 'social', 'census', 'fax', 'ip', 'url', 'specify', 'enumerator', 'random', 'name', 'rand','uid','hh', 'age', 'gps','id', 'ip','red','fono','url', 'web', 'number', 'encuestador', 'escuela', 'colegio','edad', 'insurance', 'school', 'birth']
+other_strict = ['gps', 'lat', 'lon', 'coord', 'house', 'social', 'census', 'fax', 'ip', 'url', 'specify', 'enumerator', 'random', 'name', 'enum_name', 'rand','uid','hh', 'age', 'gps','id', 'ip','red','fono','url', 'web', 'number', 'encuestador', 'escuela', 'colegio','edad', 'insurance', 'school', 'birth']
 
 other_fuzzy = ['name', '_name','fname', 'lname', 'first_name', 'last_name', 'birthday', 'bday','address', 'network','email','beneficiary','mother','wife','father','husband', 'enumerator ','enumerator_', 'child_age', 'latitude', 'longitude', 'coordinates', 'website', 'nickname', 'nick_name', 'firstname', 'lastname', 'sublocation', 'alternativecontact', 'division', 'resp_name', 'head_name', 'headname', 'respname', 'subvillage']
 
