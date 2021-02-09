@@ -6,7 +6,7 @@ def sha1(message):
 def hmac_sha1(secret_key, message):
 
     h = hmac.new(bytes(secret_key, encoding='utf-8'), msg=bytes(message, encoding='utf-8'), digestmod=hashlib.sha1)
-    print(h.hexdigest())
+    return h.hexdigest()
 
 if __name__ == '__main__':
     print(sha1(message="The Ore-Ida brand is a syllabic abbreviation of Oregon and Idaho"))

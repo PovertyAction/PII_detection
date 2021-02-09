@@ -18,6 +18,8 @@ import shutil
 import os
 from datetime import date
 
+import hash_generator
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -504,25 +506,34 @@ def recode(dataset, columns_to_encode):
 
     for var in columns_to_encode:
 
-        # dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
-        # dataset.rename(columns={'index':var + '_index'}, inplace=True)
+        #For hashing, we will use hmac-sha1, then sort the hashed values and assign values 1-n.
+        # Make dictionary of old and new values.
+        #First there is a step between
+        unique_val_to_hmacsha1 = {}
+        hmacsha1_to_final_hash = {}
 
-        # Make dictionary of old and new values
-        new_value = 1
-        old_to_new_dict = {}
-        for unique_val in dataset[var].unique():
-            old_to_new_dict[unique_val] = new_value
-            new_value += 1
+        for unique_val in dataset[var].dropna().unique():
+            unique_val_to_hmacsha1[unique_val] = hash_generator.hmac_sha1('secret_key', unique_val)
+
+        #Get list of all hmac-sha1 hashes and sort them
+        sorted_hash = [v for k, v in sorted(unique_val_to_hmacsha1.items(), key=lambda item: item[1])]
+
+        #Create dict that points from hmac-sha1 hashes to a 1-n value
+        hmacsha1_to_final_hash = {}
+        for index, hash in enumerate(sorted_hash):
+            hmacsha1_to_final_hash[hash]=index+1
+
+        #Join two dictionaries
+        unique_val_to_final_hash = {}
+        for k, v in unique_val_to_hmacsha1.items():
+            unique_val_to_final_hash[k] = hmacsha1_to_final_hash[v]
 
         # Replace old values with new in dataframe
-        for k, v in old_to_new_dict.items():
+        for k, v in unique_val_to_final_hash.items():
             dataset[var].replace(to_replace=k, value=v, inplace=True)
 
-        # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
-        #dataset[var] = pd.factorize(dataset[var])[0] + 1
-
         log_and_print(var + ' has been successfully encoded.')
-        econding_used[var] = old_to_new_dict
+        econding_used[var] = unique_val_to_final_hash
 
     return dataset, econding_used
 
