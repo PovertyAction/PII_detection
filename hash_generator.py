@@ -1,5 +1,7 @@
 import hashlib
 import hmac
+import hmac_secret_key
+
 def sha1(message):
     return hashlib.sha1(bytes(message, encoding='utf-8')).hexdigest()
 
@@ -10,6 +12,11 @@ def hmac_sha1(secret_key, message):
 
 if __name__ == '__main__':
     print(sha1(message="The Ore-Ida brand is a syllabic abbreviation of Oregon and Idaho"))
-    #Should print 156a5e19b6301e43794afc5e5aff0584e25bfbe7
-    print(hmac_sha1(secret_key = "Secret Key", message = "Message to be sent"))
-    #Should print d5052c13e868ea7c932be9279752e9e67c8195bd
+
+
+    example = {}
+    for name in ['felipe', 'michael', 'lindsey']:
+        # example[name] = hmac_sha1(secret_key = 'a', message = name)
+
+        secret_key = hmac_secret_key.get_secret_key()
+        example[name] = hmac_sha1(secret_key = secret_key, message = name)

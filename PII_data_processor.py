@@ -393,12 +393,6 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
             #print here will print in the file, not actually printing in console
             print(modified_line, end='')
 
-
-
-
-
-
-
 def export_encoding(dataset_path, encoding_dict):
     encoding_file_path = dataset_path.split('.')[0] + '_encodingmap.csv'
 
