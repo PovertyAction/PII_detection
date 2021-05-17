@@ -387,19 +387,36 @@ end
 
 **D. Hash an ID
 	/*
-		We hash the ID using the following [hash function]
-		with the following properties
+		We hash the vairable using the hashfunction. It requires inputs as 
+		strings, so variables are treated differently based on storage format:
 
-		[check]
+			(1) String 			- No change
+			(2) Encoded numeric - Converted to string and reencoded to 1-N
+			(3) Numeric 		- Converted to string with display format
 	*/
 	foreach var of local hashvars {
 
 		di "Hashing variable `var'"
 
-		confirm string variable `var' 											// Ensure only string variables to hash
-
 		*Save label
 		loc varlab : variable label `var'
+		
+		* Convert format to string based on value label
+		cap confirm string variable `var' 											// Ensure only string variables to hash
+		if _rc & "`: value label `var''" != "" { 									// Decode labeled variables
+
+			* Create hashed variable
+			tempvar `var'_dec
+			decode `var', gen(``var'_dec') 											// Decode to string while retaining the value label
+
+			*Replace variable with hashed output
+			drop `var'
+			qui gen `var' = ``var'_dec'
+			label var `var' "`varlab'"
+		}
+		else if _rc & "`: value label `var''" == "" { 								// Encode labeled variables
+			tostring `var', replace usedisplayformat 
+		}
 
 		*Create tempvar
 		qui levelsof `var', loc(hash`var')
@@ -439,7 +456,7 @@ end
 ***************************************
 	*Save file
 	cap drop __* 																// Ensure no tempvar artifiacts are saved
-	save `outfile', replace
+	save "`outfile'", replace
 
 
 
