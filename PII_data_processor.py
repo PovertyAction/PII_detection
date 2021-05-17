@@ -393,8 +393,15 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
             #print here will print in the file, not actually printing in console
             print(modified_line, end='')
 
+def delete_if_exists(file_path):
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
 def export_encoding(dataset_path, encoding_dict):
     encoding_file_path = dataset_path.split('.')[0] + '_encodingmap.csv'
+
+    #Delete if file exists
+    delete_if_exists(encoding_file_path)
 
     encoding_df = pd.DataFrame(columns=['variable','orginial value', 'encoded value'])
 
@@ -467,6 +474,8 @@ def create_log_file_path(dataset_path):
 
     global LOG_FILE
     LOG_FILE = path_without_extension+"_log.txt"
+
+    delete_if_exists(LOG_FILE)
 
 def import_file(dataset_path):
 
@@ -556,11 +565,12 @@ def export(dataset, dataset_path, variable_labels = None):
 
     if(dataset_type == 'csv'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'
+        delete_if_exists(new_file_path)
         dataset.to_csv(new_file_path, index=False)
 
     elif(dataset_type == 'dta'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
-
+        delete_if_exists(new_file_path)
         try:
             dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
         except:
@@ -568,10 +578,12 @@ def export(dataset, dataset_path, variable_labels = None):
 
     elif(dataset_type == 'xlsx'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
+        delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
     elif(dataset_type == 'xls'):
         new_file_path = dataset_path.split('.')[0] + '_deidentified.xls'
+        delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
     else:
