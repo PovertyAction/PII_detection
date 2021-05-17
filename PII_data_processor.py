@@ -2,7 +2,7 @@ import restricted_words as restricted_words_list
 import pandas as pd
 # from nltk.stem.porter import PorterStemmer
 import time
-
+import numpy as np
 LOG_FILE = None
 
 from constant_strings import *
@@ -354,7 +354,7 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
     Using anonymize_script_tempalte.txt as a starting point, we create a .do file that deidentifies dataset according to pii_candidates_to_action
     '''
     #Make a copy of the template file
-    template_file = 'anonymize_script_tempalte.txt'
+    template_file = 'anonymize_script_template_v2.txt'
     script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.txt'
 
     print(f'filename {script_filename}')
@@ -507,7 +507,7 @@ def recode(dataset, columns_to_encode):
         hmacsha1_to_final_hash = {}
 
         for unique_val in dataset[var].dropna().unique():
-            unique_val_to_hmacsha1[unique_val] = hash_generator.hmac_sha1('secret_key', unique_val)
+            unique_val_to_hmacsha1[unique_val] = hash_generator.hmac_sha1('[SECRET KEY]', unique_val)
 
         #Get list of all hmac-sha1 hashes and sort them
         sorted_hash = [v for k, v in sorted(unique_val_to_hmacsha1.items(), key=lambda item: item[1])]
@@ -522,9 +522,14 @@ def recode(dataset, columns_to_encode):
         for k, v in unique_val_to_hmacsha1.items():
             unique_val_to_final_hash[k] = hmacsha1_to_final_hash[v]
 
-        # Replace old values with new in dataframe
-        for k, v in unique_val_to_final_hash.items():
-            dataset[var].replace(to_replace=k, value=v, inplace=True)
+        #Replace column with its hashes. First create list of all hashed values
+        hashed_column = []
+        for value in dataset[var].tolist():
+            if value is np.nan:
+                hashed_column.append(np.nan)
+            else:
+                hashed_column.append(unique_val_to_final_hash[value])
+        dataset[var] = hashed_column
 
         log_and_print(var + ' has been successfully encoded.')
         econding_used[var] = unique_val_to_final_hash
