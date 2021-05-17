@@ -360,7 +360,7 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
     print(f'filename {script_filename}')
     shutil.copyfile(template_file, script_filename)
 
-    deidentified_dataset_path = dataset_path.split('.')[0] + '_deidentified.csv'
+    deidentified_dataset_path = dataset_path.split('.')[0] + '_deidentified.dta'
 
     #Create list of vars to drop and encode
     list_variables_to_drop = []
