@@ -133,7 +133,7 @@ def do_file_created_message(creating_do_file_message):
     do_file_message_frame = tk.Frame(master=anonymized_dataset_creation_frame, bg="white")
     do_file_message_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
-    display_message("anonymize_script.do has been created and saved in the original file directory.\n", do_file_message_frame)
+    display_message("anonymize_script.do has been created and saved in the 'pii_detection_outputs' folder, in the same directory as the input file.\nYou will also find all_piis_identified.txt with a list of all the pii variables", do_file_message_frame)
     display_goodby_message(do_file_message_frame)
 
 def display_goodby_message(goodbye_frame):

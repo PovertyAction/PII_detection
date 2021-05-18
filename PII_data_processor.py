@@ -252,6 +252,12 @@ def column_has_locations_with_low_populations(dataset, column_name, country):
     return api_queries.get_locations_with_low_population(unique_locations, country=country, return_one=True)
 
 
+def log_and_print(message):
+    file = open(LOG_FILE_PATH, "a")
+    file.write(message+'\n')
+    file.close()
+    print(message)
+
 
 def log_and_print(message):
     file = open(LOG_FILE_PATH, "a")
@@ -369,15 +375,26 @@ def export_encoding(dataset_path, encoding_dict):
 
     encoding_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_encodingmap.csv')
 
+def save_all_piis_in_txt_file(list_variables_to_drop, list_variables_to_encode):
+
+    all_piis_txt_file = os.path.join(OUTPUTS_FOLDER,'all_piis_identified.txt')
+    delete_if_exists(all_piis_txt_file)
+    file = open(all_piis_txt_file, "a")
+    if len(list_variables_to_drop)>0:
+        file.write(f'Columns to drop: {" ".join(list_variables_to_drop)}\n')
+    if len(list_variables_to_encode)>0:
+        file.write(f'Columns to encode: {" ".join(list_variables_to_encode)}')
+    file.close()
+
+
 def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
     '''
     Using anonymize_script_tempalte.txt as a starting point, we create a .do file that deidentifies dataset according to pii_candidates_to_action
     '''
     #Make a copy of the template file
     template_file = 'anonymize_script_template_v2.do'
-    script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.do'
+    script_filename= os.path.join(OUTPUTS_FOLDER, 'anonymize_script.do')
 
-    print(f'filename {script_filename}')
     delete_if_exists(script_filename)
     shutil.copyfile(template_file, script_filename)
 
@@ -413,6 +430,9 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
             #print here will print in the file, not actually printing in console
             print(modified_line, end='')
 
+    #Write down list of variables in a document
+    save_all_piis_in_txt_file(list_variables_to_drop, list_variables_to_encode)
+
 def delete_if_exists(file_path):
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -443,7 +463,7 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     columns_to_encode = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Encode']
 
     if(len(columns_to_encode)>0):
-        log_and_print("Will encode following columns: "+ " ".join(columns_to_encode))
+        log_and_print("Hashed columns: "+ " ".join(columns_to_encode))
         dataset, encoding_used = recode(dataset, columns_to_encode)
         log_and_print("Map file for encoded values created.")
         export_encoding(dataset_path, encoding_used)
@@ -461,8 +481,6 @@ def find_survey_cto_vars(dataset):
     surveycto_vars = restricted_words_list.get_surveycto_vars()
 
     possible_pii = {}
-    log_and_print("List of identified PIIs: ")
-
     #For every column name in our dataset
     for column_name in dataset.columns:
         #For every restricted word
@@ -502,13 +520,13 @@ def create_log_file_path(dataset_path):
 
     global LOG_FILE_PATH
     LOG_FILE_PATH = OUTPUTS_FOLDER+"/log.txt"
-
     delete_if_exists(LOG_FILE_PATH)
 
 def import_file(dataset_path):
 
     #Create outputs folder and log file
     create_outputs_folder(dataset_path)
+
     #Create log file
     create_log_file_path(dataset_path)
 
@@ -570,7 +588,7 @@ def recode(dataset, columns_to_encode):
                 hashed_column.append(unique_val_to_final_hash[value])
         dataset[var] = hashed_column
 
-        log_and_print(var + ' has been successfully encoded.')
+        print(var + ' has been successfully encoded.')
         econding_used[var] = unique_val_to_final_hash
 
     return dataset, econding_used
@@ -639,7 +657,7 @@ def internet_on():
         urllib2.urlopen('http://google.com', timeout=2)
         return True
     except Exception as e:
-        print(e)
+        log_and_print(e)
         return False
 
 def get_directories_path_in_folder(folder_path):
@@ -728,19 +746,19 @@ def run_tests():
         pii_candidates = find_piis_based_on_column_name(dataset, label_dict, value_label_dict, columns_still_to_check, consider_locations_cols)
         all_piis_found.update(pii_candidates)
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-        print("Piis found using column names: "+",".join(pii_candidates.keys()))
+        log_and_print("Piis found using column names: "+",".join(pii_candidates.keys()))
 
         if(consider_locations_cols==0):
             pii_candidates = find_piis_based_on_locations_population(dataset, label_dict, columns_still_to_check, country)
             all_piis_found.update(pii_candidates)
             columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-            print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
+            log_and_print("Piis found basen on locations with low population: "+",".join(pii_candidates.keys()))
 
 
         pii_candidates = find_piis_based_on_column_format(dataset, label_dict, columns_still_to_check)
         all_piis_found.update(pii_candidates)
         columns_still_to_check = [c for c in columns_still_to_check if c not in pii_candidates]
-        print("Piis found using column formats: "+",".join(pii_candidates.keys()))
+        log_and_print("Piis found using column formats: "+",".join(pii_candidates.keys()))
 
         if search_pii_in_unstructured_text == 0:
             pii_candidates_unstructured_text = None
@@ -748,13 +766,13 @@ def run_tests():
 
             pii_candidates = find_piis_based_on_sparse_entries(dataset, label_dict, columns_still_to_check)
             all_piis_found.update(pii_candidates)
-            print("Piis based on sparse entries: "+",".join(pii_candidates.keys()))
+            log_and_print("Piis based on sparse entries: "+",".join(pii_candidates.keys()))
 
         else:
             pii_candidates_unstructured_text, column_with_unstructured_text = find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, SPANISH, MEXICO)
 
-            print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
-            print(len(pii_candidates_unstructured_text))
+            log_and_print("Piis found in unstructured text: "+",".join(pii_candidates_unstructured_text))
+            log_and_print(len(pii_candidates_unstructured_text))
 
 
         #Create fake pii_candidate_to_action
