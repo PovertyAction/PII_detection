@@ -6,7 +6,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{94D8F08C-01F1-46FF-89DF-EB240476F308}
 AppName=PII Detector
-AppVersion=0.2.20
+AppVersion=0.2.21
 ;AppVerName=PII Detector 0.2.20
 AppPublisher=IPA
 AppPublisherURL=https://www.poverty-action.org/
