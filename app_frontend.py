@@ -15,7 +15,7 @@ from constant_strings import *
 
 intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
 intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-version_number = "0.2.20"
+version_number = "0.2.21"
 app_title = "IPA's PII Detector - v"+version_number
 
 #Maps pii to action to do with them
@@ -45,6 +45,9 @@ country_dropdown = None
 language_dropdown = None
 
 piis_frame = None
+anonymized_dataset_creation_frame = None
+new_dataset_message_frame = None
+do_file_message_frame = None
 
 pii_search_in_unstructured_text_enabled = False
 
@@ -110,7 +113,8 @@ def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, d
 
     return pii_frame
 
-def create_goodbye_frame():
+def do_file_created_message(creating_do_file_message):
+    creating_do_file_message.pack_forget()
 
     #Automatic scroll up
     canvas.yview_moveto( 0 )
@@ -118,31 +122,99 @@ def create_goodbye_frame():
     goodbye_frame = tk.Frame(master=frame, bg="white")
     goodbye_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
+    do_file_message_frame = tk.Frame(master=anonymized_dataset_creation_frame, bg="white")
+    do_file_message_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
+
+    display_message("The .do file that creates a deidentified dataset has been created and saved in the original file directory.\n", do_file_message_frame)
+    display_goodby_message(do_file_message_frame)
+
+def display_goodby_message(goodbye_frame):
+    display_message("Do you want to work on a new file? Click File/Restart in the menu bar.", goodbye_frame)
+
+    #Create a frame for the survey link
+    survey_frame = tk.Frame(master=goodbye_frame, bg="white")
+    survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    survey_text = "Can you provide feedback to improve the app? Please click "
+    ttk.Label(survey_frame, text=survey_text, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
+    link = tk.Label(survey_frame, text="here", fg="blue", font=("Calibri Italic", 11), cursor="hand2", background='white')
+    link.grid(row = 0, column=1)
+    link.bind("<Button-1>", lambda e: open_survey())
+
+def new_dataset_created_message(creating_dataset_message):
+
+    creating_dataset_message.pack_forget()
+
+    global new_dataset_message_frame
+
+    new_dataset_message_frame = tk.Frame(master=anonymized_dataset_creation_frame, bg="white")
+    new_dataset_message_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
+
     if(new_file_path):
-        display_title("Congratulations! Task ready!", goodbye_frame)
-        display_message("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n", goodbye_frame)
+        display_message("The new dataset has been created and saved in the original file directory.\nYou will also find a log file describing the detection process.\nIf you encoded variables, you will find a .csv file that maps original to encoded values.\n", new_dataset_message_frame)
 
-#PENDING: ADD A BUTTOM TO FOLDER WITH OUTPUTS
+        #PENDING: ADD A BUTTOM TO FOLDER WITH OUTPUTS
 
-        display_message("Do you want to work on a new file? Click Restart buttom.", goodbye_frame)
-        ttk.Button(goodbye_frame, text="Restart program", command=restart_program, style='my.TButton').pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-
-        #Create a frame for the survey link
-        survey_frame = tk.Frame(master=goodbye_frame, bg="white")
-        survey_frame.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
-
-        survey_text = "Can you provide feedback to improve the app? Please click "
-        ttk.Label(survey_frame, text=survey_text, wraplength=546, justify=tk.LEFT, font=("Calibri Italic", 11), style='my.TLabel').grid(row=0, column = 0)
-        link = tk.Label(survey_frame, text="here", fg="blue", font=("Calibri Italic", 11), cursor="hand2", background='white')
-        link.grid(row = 0, column=1)
-        link.bind("<Button-1>", lambda e: open_survey())
-
+        display_goodby_message(new_dataset_message_frame)
         #Need this?
         #frame.update()
 
+def remove_previous_dataset_do_file_message():
+    global new_dataset_message_frame
+    global do_file_message_frame
+
+    if new_dataset_message_frame is not None:
+        new_dataset_message_frame.pack_forget()
+
+    if do_file_message_frame is not None:
+        do_file_message_frame.pack_forget()
+
+def create_do_file():
+    remove_previous_dataset_do_file_message()
+
+    creating_do_file_message = display_message("Creating .do file...", anonymized_dataset_creation_frame)
+
+    #Create dictionary that maps pii_candidate_to_action based on value of dropdown elements
+    pii_candidates_to_action = create_pii_candidates_to_action()
+
+    new_file_path = PII_data_processor.create_deidentifying_do_file(dataset_path, pii_candidates_to_action)
+
+    do_file_created_message(creating_do_file_message)
+
+def create_anonymized_dataset_creation_frame():
+
+    global anonymized_dataset_creation_frame
+    piis_frame.forget()
+
+    anonymized_dataset_creation_frame = tk.Frame(master=frame, bg="white")
+    anonymized_dataset_creation_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
+
+    display_title('Decide how to export your deidentified dataset', anonymized_dataset_creation_frame)
+
+    display_message('You can either directly download a deidentified dataset, and/or download a .do file that creates the deidentified dataset', anonymized_dataset_creation_frame)
+
+
+    create_dataset_button = ttk.Button(anonymized_dataset_creation_frame, text='Download deidentified dataset', command=create_anonymized_dataset, style='my.TButton')
+    create_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    create_do_file_button = ttk.Button(anonymized_dataset_creation_frame, text='Create .do file for deidentification', command=create_do_file, style='my.TButton')
+    create_do_file_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+
+    frame.update()
+
+
+def create_pii_candidates_to_action():
+
+    pii_candidates_to_action = {}
+    for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
+        pii_candidates_to_action[pii] = dropdown_elem.get()
+    return pii_candidates_to_action
+
 def create_anonymized_dataset():
 
-    display_message("Creating new dataset...", piis_frame)
+    remove_previous_dataset_do_file_message()
+
+    creating_dataset_message = display_message("Creating new dataset...", anonymized_dataset_creation_frame)
 
     #Automatic scroll down
     canvas.yview_moveto( 1 )
@@ -151,9 +223,7 @@ def create_anonymized_dataset():
     global new_file_path
 
     #We create a new dictionary that maps pii_candidate_to_action based on value of dropdown elements
-    pii_candidates_to_action = {}
-    for pii, dropdown_elem in pii_candidates_to_dropdown_element.items():
-        pii_candidates_to_action[pii] = dropdown_elem.get()
+    pii_candidates_to_action = create_pii_candidates_to_action()
 
     #Capture words to replace in unstructured text
     if(pii_search_in_unstructured_text_enabled and keep_unstructured_text_option_checkbutton_var.get()==1):
@@ -163,11 +233,7 @@ def create_anonymized_dataset():
 
     new_file_path = PII_data_processor.create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidates_to_action, columns_where_to_replace_piis, piis_found_in_ustructured_text)
 
-    #Remove display of piis
-    piis_frame.pack_forget()
-
-    #Create final frame
-    create_goodbye_frame()
+    new_dataset_created_message(creating_dataset_message)
 
 
 
@@ -196,8 +262,8 @@ def create_unstructured_piis_frame(next_search_method, next_search_method_button
         buttom_text = next_search_method_button_text
         next_command = find_piis
     else:
-        buttom_text = 'Create anonymized dataset'
-        next_command = create_anonymized_dataset
+        buttom_text = 'Create anonymized dataset and download .do files'
+        next_command = create_anonymized_dataset_creation_frame
 
     next_method_button = ttk.Button(piis_frame, text=buttom_text, command=next_command, style='my.TButton')
     next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
@@ -230,8 +296,8 @@ def create_piis_frame(next_search_method, next_search_method_button_text, pii_ca
         buttom_text = next_search_method_button_text
         next_command = find_piis
     else:
-        buttom_text = 'Create anonymized dataset'
-        next_command = create_anonymized_dataset
+        buttom_text = 'Create anonymized dataset and download .do files'
+        next_command = create_anonymized_dataset_creation_frame
 
     next_method_button = ttk.Button(piis_frame, text=buttom_text, command=next_command, style='my.TButton')
     next_method_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))

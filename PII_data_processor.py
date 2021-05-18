@@ -2,9 +2,8 @@ import restricted_words as restricted_words_list
 import pandas as pd
 # from nltk.stem.porter import PorterStemmer
 import time
-
-OUTPUTS_FOLDER = None
-LOG_FILE_PATH = None
+import numpy as np
+LOG_FILE = None
 
 from constant_strings import *
 
@@ -13,6 +12,14 @@ import urllib.request as urllib2
 import api_queries
 
 import find_piis_in_unstructured_text as unstructured_text
+
+import fileinput
+import shutil
+import os
+from datetime import date
+
+import hash_generator
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -355,11 +362,64 @@ def find_columns_with_specific_format(dataset, format_to_search, columns_to_chec
     return columns_with_phone_numbers
 
 def export_encoding(dataset_path, encoding_dict):
-
     dataset_complete_file_name = ntpath.basename(dataset_path)
     dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_complete_file_name)
 
     encoding_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_encodingmap.csv')
+
+def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
+    '''
+    Using anonymize_script_tempalte.txt as a starting point, we create a .do file that deidentifies dataset according to pii_candidates_to_action
+    '''
+    #Make a copy of the template file
+    template_file = 'anonymize_script_template_v2.txt'
+    script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.txt'
+
+    print(f'filename {script_filename}')
+    shutil.copyfile(template_file, script_filename)
+
+    deidentified_dataset_path = dataset_path.split('.')[0] + '_deidentified.dta'
+
+    #Create list of vars to drop and encode
+    list_variables_to_drop = []
+    list_variables_to_encode = []
+    for pii_candidate, action in pii_candidates_to_action.items():
+        if action == 'Drop':
+            list_variables_to_drop.append(pii_candidate)
+        elif action == 'Encode':
+            list_variables_to_encode.append(pii_candidate)
+
+
+    #Read all lines and replace whenever we find one of the keywords
+    with fileinput.FileInput(script_filename, inplace=True) as file: #, backup='.bak'
+        for line in file:
+            today_string = date.today().strftime("%m/%d/%y")
+
+            #Create modified_line
+            modified_line = line
+            modified_line = modified_line.replace('[date]', today_string)
+            modified_line = modified_line.replace('[input_file_path]', dataset_path)
+            modified_line = modified_line.replace('[output_file_path]', deidentified_dataset_path)
+
+            modified_line = modified_line.replace('[list_variables_to_drop_space_delimited]', " ".join(list_variables_to_drop))
+            modified_line = modified_line.replace('[list_variables_to_hash_space_delimited]', " ".join(list_variables_to_encode))
+
+            #The template .do file has an option to only remove value labels, we are not using that option so we will by default select no variables for that.
+            modified_line = modified_line.replace('[list_variables_to_remove_value_labelling_space_delimited]', "")
+
+            #Save modified line in file
+            #print here will print in the file, not actually printing in console
+            print(modified_line, end='')
+
+def delete_if_exists(file_path):
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+def export_encoding(dataset_path, encoding_dict):
+    encoding_file_path = dataset_path.split('.')[0] + '_encodingmap.csv'
+
+    #Delete if file exists
+    delete_if_exists(encoding_file_path)
 
     encoding_df = pd.DataFrame(columns=['variable','orginial value', 'encoded value'])
 
@@ -375,7 +435,6 @@ def create_anonymized_dataset(dataset, label_dict, dataset_path, pii_candidate_t
     columns_to_drop = [column for column in pii_candidate_to_action if pii_candidate_to_action[column]=='Drop']
 
     dataset = dataset.drop(columns=columns_to_drop)
-
     log_and_print("Dropped columns: "+ " ".join(columns_to_drop))
 
     #Encode columns
@@ -442,6 +501,8 @@ def create_log_file_path(dataset_path):
     global LOG_FILE_PATH
     LOG_FILE_PATH = OUTPUTS_FOLDER+"/log.txt"
 
+    delete_if_exists(LOG_FILE)
+
 def import_file(dataset_path):
 
     #Create outputs folder and log file
@@ -476,25 +537,39 @@ def recode(dataset, columns_to_encode):
 
     for var in columns_to_encode:
 
-        # dataset = dataset.sample(frac=1).reset_index(drop=False) # reorders dataframe randomly, while storing old index
-        # dataset.rename(columns={'index':var + '_index'}, inplace=True)
+        #For hashing, we will use hmac-sha1, then sort the hashed values and assign values 1-n.
+        # Make dictionary of old and new values.
+        #First there is a step between
+        unique_val_to_hmacsha1 = {}
+        hmacsha1_to_final_hash = {}
 
-        # Make dictionary of old and new values
-        new_value = 1
-        old_to_new_dict = {}
-        for unique_val in dataset[var].unique():
-            old_to_new_dict[unique_val] = new_value
-            new_value += 1
+        for unique_val in dataset[var].dropna().unique():
+            unique_val_to_hmacsha1[unique_val] = hash_generator.hmac_sha1('[SECRET KEY]', unique_val)
 
-        # Replace old values with new in dataframe
-        for k, v in old_to_new_dict.items():
-            dataset[var].replace(to_replace=k, value=v, inplace=True)
+        #Get list of all hmac-sha1 hashes and sort them
+        sorted_hash = [v for k, v in sorted(unique_val_to_hmacsha1.items(), key=lambda item: item[1])]
 
-        # Alternative approach, likely to be significantly quicker. Replaces the lines that employ values_dict.
-        #dataset[var] = pd.factorize(dataset[var])[0] + 1
+        #Create dict that points from hmac-sha1 hashes to a 1-n value
+        hmacsha1_to_final_hash = {}
+        for index, hash in enumerate(sorted_hash):
+            hmacsha1_to_final_hash[hash]=index+1
+
+        #Join two dictionaries
+        unique_val_to_final_hash = {}
+        for k, v in unique_val_to_hmacsha1.items():
+            unique_val_to_final_hash[k] = hmacsha1_to_final_hash[v]
+
+        #Replace column with its hashes. First create list of all hashed values
+        hashed_column = []
+        for value in dataset[var].tolist():
+            if value is np.nan:
+                hashed_column.append(np.nan)
+            else:
+                hashed_column.append(unique_val_to_final_hash[value])
+        dataset[var] = hashed_column
 
         log_and_print(var + ' has been successfully encoded.')
-        econding_used[var] = old_to_new_dict
+        econding_used[var] = unique_val_to_final_hash
 
     return dataset, econding_used
 
@@ -516,25 +591,27 @@ def export(dataset, dataset_path, variable_labels = None):
 
     dataset_complete_file_name = ntpath.basename(dataset_path)
 
-    dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_complete_file_name)
-
-    if(dataset_type == '.csv'):
-        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.csv')
+    if(dataset_type == 'csv'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'
+        delete_if_exists(new_file_path)
         dataset.to_csv(new_file_path, index=False)
 
-    elif(dataset_type == '.dta'):
-        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.dta')
+    elif(dataset_type == 'dta'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
+        delete_if_exists(new_file_path)
         try:
             dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
         except:
             dataset.to_stata(new_file_path, version = 118, variable_labels = variable_labels, write_index=False)
 
-    elif(dataset_type == '.xlsx'):
-        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xlsx')
+    elif(dataset_type == 'xlsx'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
+        delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
-    elif(dataset_type == '.xls'):
-        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xls')
+    elif(dataset_type == 'xls'):
+        new_file_path = dataset_path.split('.')[0] + '_deidentified.xls'
+        delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
     else:
