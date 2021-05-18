@@ -13,8 +13,16 @@ import PII_data_processor
 
 from constant_strings import *
 
-intro_text = "This script is meant to assist in the detection of PII (personally identifiable information) and subsequent removal from a dataset. This is an alpha program, not fully tested yet."
-intro_text_p2 = "You will first load a dataset that might contain PII variables. The system will try to identify the PII candidates. Please indicate if you would like to Drop, Encode or Keep them to then generate a new de-identified dataset."#, built without access to datasets containing PII on which to test or train it. Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
+intro_text = "This script is meant to assist in the detection of PII\
+(personally identifiable information) and subsequent removal from a dataset. \
+This is an alpha program, not fully tested yet."
+intro_text_p2 = "You will first load a dataset that might contain PII variables. \
+The system will try to identify the PII candidates. \
+Please indicate if you would like to Drop, Encode or Keep them.\n\n\
+Once finished, you will be able to export a list of the PII detected, a do-file \
+to generate a deidentified dataset according to your options, and an already \
+deidentified dataset in case your input file is not a .dta\n\n\
+Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
 version_number = "0.2.21"
 app_title = "IPA's PII Detector - v"+version_number
 
@@ -125,7 +133,7 @@ def do_file_created_message(creating_do_file_message):
     do_file_message_frame = tk.Frame(master=anonymized_dataset_creation_frame, bg="white")
     do_file_message_frame.pack(anchor='nw', padx=(0, 0), pady=(0, 0))
 
-    display_message("The .do file that creates a deidentified dataset has been created and saved in the original file directory.\n", do_file_message_frame)
+    display_message("anonymize_script.do has been created and saved in the original file directory.\n", do_file_message_frame)
     display_goodby_message(do_file_message_frame)
 
 def display_goodby_message(goodbye_frame):
@@ -191,11 +199,12 @@ def create_anonymized_dataset_creation_frame():
 
     display_title('Decide how to export your deidentified dataset', anonymized_dataset_creation_frame)
 
-    display_message('You can either directly download a deidentified dataset, and/or download a .do file that creates the deidentified dataset', anonymized_dataset_creation_frame)
+    #If input is not .dta, users can either download deidentified dataset and download .do file for deidentificaiton. If its a .dta, only second option
+    if not PII_data_processor.input_file_is_dta(dataset_path):
+        display_message('You can either directly download a deidentified dataset, and/or download a .do file that creates the deidentified dataset', anonymized_dataset_creation_frame)
 
-
-    create_dataset_button = ttk.Button(anonymized_dataset_creation_frame, text='Download deidentified dataset', command=create_anonymized_dataset, style='my.TButton')
-    create_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
+        create_dataset_button = ttk.Button(anonymized_dataset_creation_frame, text='Download deidentified dataset', command=create_anonymized_dataset, style='my.TButton')
+        create_dataset_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))
 
     create_do_file_button = ttk.Button(anonymized_dataset_creation_frame, text='Create .do file for deidentification', command=create_do_file, style='my.TButton')
     create_do_file_button.pack(anchor='nw', padx=(30, 30), pady=(0, 5))

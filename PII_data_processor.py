@@ -3,7 +3,6 @@ import pandas as pd
 # from nltk.stem.porter import PorterStemmer
 import time
 import numpy as np
-LOG_FILE = None
 
 from constant_strings import *
 
@@ -28,6 +27,9 @@ from os import listdir
 from os.path import isfile, isdir, join
 import ntpath
 import shutil
+
+OUTPUTS_FOLDER = None
+LOG_FILE_PATH = None
 
 def get_surveycto_restricted_vars():
     return restricted_words_list.get_surveycto_restricted_vars()
@@ -372,10 +374,11 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
     Using anonymize_script_tempalte.txt as a starting point, we create a .do file that deidentifies dataset according to pii_candidates_to_action
     '''
     #Make a copy of the template file
-    template_file = 'anonymize_script_template_v2.txt'
-    script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.txt'
+    template_file = 'anonymize_script_template_v2.do'
+    script_filename= os.path.dirname(dataset_path)+ '/anonymize_script.do'
 
     print(f'filename {script_filename}')
+    delete_if_exists(script_filename)
     shutil.copyfile(template_file, script_filename)
 
     deidentified_dataset_path = dataset_path.split('.')[0] + '_deidentified.dta'
@@ -392,9 +395,8 @@ def create_deidentifying_do_file(dataset_path, pii_candidates_to_action):
 
     #Read all lines and replace whenever we find one of the keywords
     with fileinput.FileInput(script_filename, inplace=True) as file: #, backup='.bak'
+        today_string = date.today().strftime("%m/%d/%y")
         for line in file:
-            today_string = date.today().strftime("%m/%d/%y")
-
             #Create modified_line
             modified_line = line
             modified_line = modified_line.replace('[date]', today_string)
@@ -501,7 +503,7 @@ def create_log_file_path(dataset_path):
     global LOG_FILE_PATH
     LOG_FILE_PATH = OUTPUTS_FOLDER+"/log.txt"
 
-    delete_if_exists(LOG_FILE)
+    delete_if_exists(LOG_FILE_PATH)
 
 def import_file(dataset_path):
 
@@ -587,30 +589,41 @@ def find_piis_unstructured_text(dataset, label_dict, columns_still_to_check, lan
 
     return pii_candidates_unstructured_text, columns_to_check
 
+
+
+def input_file_is_dta(dataset_path):
+    dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_path)
+
+    if dataset_type == '.dta':
+        return True
+    else:
+        return False
+
 def export(dataset, dataset_path, variable_labels = None):
 
     dataset_complete_file_name = ntpath.basename(dataset_path)
+    dataset_file_name_no_extension, dataset_type = os.path.splitext(dataset_complete_file_name)
 
-    if(dataset_type == 'csv'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.csv'
+    if(dataset_type == '.csv'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.csv')
         delete_if_exists(new_file_path)
         dataset.to_csv(new_file_path, index=False)
 
-    elif(dataset_type == 'dta'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.dta'
+    elif(dataset_type == '.dta'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.dta')
         delete_if_exists(new_file_path)
         try:
             dataset.to_stata(new_file_path, variable_labels = variable_labels, write_index=False)
         except:
             dataset.to_stata(new_file_path, version = 118, variable_labels = variable_labels, write_index=False)
 
-    elif(dataset_type == 'xlsx'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.xlsx'
+    elif(dataset_type == '.xlsx'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xlsx')
         delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
-    elif(dataset_type == 'xls'):
-        new_file_path = dataset_path.split('.')[0] + '_deidentified.xls'
+    elif(dataset_type == '.xls'):
+        new_file_path = os.path.join(OUTPUTS_FOLDER, dataset_file_name_no_extension + '_deidentified.xls')
         delete_if_exists(new_file_path)
         dataset.to_excel(new_file_path, index=False)
 
