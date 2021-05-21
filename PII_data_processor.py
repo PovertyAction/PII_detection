@@ -117,7 +117,8 @@ def clean_column(column):
     column_filtered = column_filtered[column_filtered!='']
 
     #Remove other, refuses and dont knows
-    column_filtered = remove_other_refuse_and_dont_know(column_filtered)
+    if len(column_filtered)!=0:
+        column_filtered = remove_other_refuse_and_dont_know(column_filtered)
 
     return column_filtered
 
