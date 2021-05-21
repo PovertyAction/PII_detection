@@ -23,7 +23,7 @@ Once finished, you will be able to export a list of the PII detected, a do-file 
 to generate a deidentified dataset according to your options, and an already \
 deidentified dataset in case your input file is not a .dta\n\n\
 Please help improve the program by filling out the survey on your experience using it (Help -> Provide Feedback)."
-version_number = "0.2.21"
+version_number = "0.2.23"
 app_title = "IPA's PII Detector - v"+version_number
 
 #Maps pii to action to do with them
@@ -85,6 +85,9 @@ def tkinter_display(the_message):
     return label
 
 def display_pii_candidates(pii_candidates, label_dict, frame_where_to_display, default_dropdown_option="Drop"):
+
+    #Automatic scroll up
+    canvas.yview_moveto( 0 )
 
     #Create a frame for the pii labels and actions dropdown
     #padx determines space between label and dropdown
@@ -190,6 +193,9 @@ def create_do_file():
     do_file_created_message(creating_do_file_message)
 
 def create_anonymized_dataset_creation_frame():
+
+    #Scroll up
+    canvas.yview_moveto( 0 )
 
     global anonymized_dataset_creation_frame
     piis_frame.forget()
@@ -330,6 +336,9 @@ def find_piis():
         display_message('Working on it...', first_view_frame)
     else:
         display_message('Working on it...', piis_frame)
+    #Scroll down
+    canvas.yview_moveto( 1 )
+    frame.update()
 
 
     #Figure out what method for finding pii to use
