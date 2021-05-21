@@ -61,7 +61,7 @@ The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/
 ### Distribution
 
 #### To create executable app
-`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --add-data="anonymize_script_template_v2.do;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util app_frontend.py`
+`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --add-data="anonymize_script_template_v2.do;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util --noconfirm app_frontend.py`
 
 #### To create windows application installer
 Compile `create_installer.iss` using Inno Setup Compiler
