@@ -18,6 +18,10 @@ Importantly, this is an arbitrary defined list of conditions, and for sure can b
 
 Once the PIIs are identified, users have the opportunity to say what they would like to do with those columns. Options are: drop column, encode column or keep column. According to those instructions, a new de-identified dataset is created. Also, the system outputs a log .txt file and a .csv file that maps the new and encoded values.
 
+### Finding PII in unstructured text
+
+The repo has code written to identify PII in text, and replace the PIIs for a 'xxxxxx' string. So, rather than flagging a whole column and dropping/encoding it, they user might prefer to replace the PII by this string and keep everything else. The code searches for PII based on classic common names of people and cities. This functionality is finished but super slow at the moment, so it is currently not enabled.
+
 ### Files included
 
 #### Main files
@@ -32,19 +36,20 @@ Once the PIIs are identified, users have the opportunity to say what they would 
 * dist folder: Contains .exe file for execution
 * hook-spacy.py: Dependency file needed when creating .exe
 
-### Setup
+### How to run
 
-`sudo apt install python3.8-tk`
+`python app_frontend.py`
 
+Remember to install dependencies mentioned in `requirements.txt`.
 
+### Distribution
 
-### Help and Support
+#### To create executable app
+`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --add-data="anonymize_script_template_v2.do;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util --noconfirm app_frontend.py`
 
-Please feel free to open an issue for fixes or new feature requests. You can also contact researchsupport@poverty-action.org
-
-### Contributing
-
-We welcome contributions in any form! To contribute please fork the project, make your changes and submit a pull request. We will do our best to work through any issues with you and get your code merged into the main branch.
+#### To create windows application installer
+Compile `create_installer.iss` using Inno Setup Compiler
+Reference: https://www.youtube.com/watch?v=RrpvNvklmFA https://www.youtube.com/watch?v=DTQ-atboQiI&t=135s
 
 ### Credit
 
@@ -57,12 +62,3 @@ J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
 ### Licensing
 
 The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE).
-
-### Distribution
-
-#### To create executable app
-`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --add-data="anonymize_script_template_v2.do;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util --noconfirm app_frontend.py`
-
-#### To create windows application installer
-Compile `create_installer.iss` using Inno Setup Compiler
-<!-- Reference: https://www.youtube.com/watch?v=RrpvNvklmFA https://www.youtube.com/watch?v=DTQ-atboQiI&t=135s-->
