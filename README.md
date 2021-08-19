@@ -9,10 +9,12 @@ This tool is current listed as an alpha release because it is still being tested
 
 There are a series of rules that are applied to a dataset's column to identify if a given column is a PII. Such rules are:
 
-* If column name or label match with any word of the list of restricted words ( ex 'name', 'surname', 'ssn', etc; check restricted_words.py) and has sufficiently sparse string entries.
-Ex: ‘What is your name?’ would be flagged, but ‘Do you like your name?’ not.
-* If entries in a given column have a specific format (at the moment checking phone number format and date format, we can expand to  gps, national identifiers, etc)
+* If column name or label match with any word of the list of restricted words ( ex 'name', 'surname', 'ssn', etc; check restricted_words.py). The match could be strict or fuzzy. Check `find_piis_based_on_column_name()` in `PII_data_processory.py`.
+* If entries in a given column have a specific format (at the moment checking phone number format and date format, we can expand to  gps, national identifiers, etc).
+Check `find_piis_based_on_column_format()` in `PII_data_processory.py`.
 * If all entries in a given column are sufficiently sparse (almost all unique). Ideal to identify open ended questions.
+Check `find_piis_based_on_sparse_entries()` in `PII_data_processory.py`.
+* If columns with locations have any location with population under 20,000. Check `find_piis_based_on_locations_population()` in `PII_data_processory.py`.
 
 Importantly, this is an arbitrary defined list of conditions, and for sure can be improved. Very open to feedback!
 
