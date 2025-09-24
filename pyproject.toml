@@ -1,0 +1,129 @@
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[project]
+name = "pii-detector"
+version = "0.2.23"
+description = "A tool to identify and handle personally identifiable information (PII) in datasets"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "IPA Global Research and Data Science", email = "researchsupport@poverty-action.org" },
+]
+keywords = ["pii", "data-privacy", "anonymization", "data-processing", "ipa"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Security",
+]
+dependencies = [
+    "pandas>=2.0.0",
+    "requests>=2.25.0",
+    "selenium>=4.0.0",
+    "Pillow>=8.0.0",
+    "numpy>=1.20.0",
+    "openpyxl>=3.0.0",  # For Excel file support
+]
+
+[dependency-groups]
+dev = [
+    "codespell>=2.4.1",
+    "pre-commit>=4.2.0",
+    "ruff>=0.7.4",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pyinstaller>=5.0.0",
+    "jupyterlab>=4.4.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/PovertyAction/PII_detection"
+Repository = "https://github.com/PovertyAction/PII_detection"
+Issues = "https://github.com/PovertyAction/PII_detection/issues"
+"Bug Reports" = "https://github.com/PovertyAction/PII_detection/issues"
+
+[project.scripts]
+pii-detector = "pii_detector.gui.frontend:main"
+
+[project.gui-scripts]
+pii-detector-gui = "pii_detector.gui.frontend:main"
+
+[tool.ruff]
+line-length = 88
+fix = true
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# docs: https://docs.astral.sh/ruff/rules/
+select = [
+    "F",   # Pyflakes
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "D",   # flake8-docstrings
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+ignore = [
+    # do not enable if formatting
+    # docs: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",   # tab indentation
+    "E111",   # indentation
+    "E114",   # indentation
+    "E117",   # over indented
+    "D206",   # indent with spaces
+    "D300",   # triple single quotes
+    "E501",   # line length regulated by formatter
+    "D105",   # missing docstring in magic method
+    "D100",   # missing docstring in public module
+    "D104",   # missing docstring in public package
+    "SIM110", # Use all instead of `for` loop
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "D205",   # 1 blank line required between summary line and description
+    "D203",
+    "D213",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 88
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D",
+    "S101",
+    "PLR2004",
+] # Allow missing docstrings and assert statements in tests
+
+[tool.codespell]
+builtin = "clear,rare,informal,usage,code,names"
+ignore-words-list = "pii,piis,thead,som,selv,alle,ned,vor,mange,thi,allo,contro,vill,nam,fo,direccion,informacion,mata,als,deine,deines,ist,oder,sie,unser,unter,ba,meu,te,que,sur,toi,bu,siz,doen,ons,wil,ro,sizin,teh,kake,vas,rade,od,sme,mis,mot,vart,datas,noen,noe,somme,vai,eles,meus,couldn,wasn,lama,maka,makin,meni"
+skip = "src/pii_detector/data/stopwords/,*.ipynb,.github/workflows/ci.yml,tests/data/clean_data.csv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=pii_detector",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]

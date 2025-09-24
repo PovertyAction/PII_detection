@@ -1,0 +1,9 @@
+survey_id,region,age_group,education_level,income_bracket,satisfaction_score,completion_date,product_category
+S001,North,25-34,Bachelor,Medium,4.2,2024-01-15,Electronics
+S002,South,25-34,Master,Medium,3.8,2024-01-16,Electronics
+S003,East,25-34,Bachelor,Low,4.5,2024-01-17,Clothing
+S004,West,25-34,PhD,High,3.9,2024-01-18,Electronics
+S005,North,35-44,Bachelor,Medium,4.1,2024-01-19,Electronics
+S006,South,35-44,Bachelor,Medium,4.0,2024-01-20,Clothing
+S007,East,35-44,Master,Low,4.3,2024-01-21,Electronics
+S008,West,35-44,PhD,High,3.7,2024-01-22,Clothing

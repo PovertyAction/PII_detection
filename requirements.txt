@@ -1,4 +1,0 @@
-image
-pandas
-requests
-selenium

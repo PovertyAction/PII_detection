@@ -1,66 +1,245 @@
-# PII Application
+# PII Detector
 
-### About
-This application identifies likely PII (personally identifiable information) in a dataset. To use, download the .exe installer from the [latest release](https://github.com/PovertyAction/PII_detection/releases/latest) and follow the in-app directions.
+A modern Python tool for identifying and handling personally identifiable information (PII) in datasets.
 
-This tool is current listed as an alpha release because it is still being tested on IPA PII-containing field datasets.
+## About
 
-### How does it work?
+This application identifies likely PII (personally identifiable information) in a dataset. To use:
 
-There are a series of rules that are applied to a dataset's column to identify if a given column is a PII. Such rules are:
+- **End users**: Download the .exe installer from the [latest release](https://github.com/PovertyAction/PII_detection/releases/latest)
+- **Developers**: Use the modern Python package with `uv` for development
 
-* If column name or label match with any word of the list of restricted words ( ex 'name', 'surname', 'ssn', etc; check restricted_words.py). The match could be strict or fuzzy. Check `find_piis_based_on_column_name()` in `PII_data_processory.py`.
-* If entries in a given column have a specific format (at the moment checking phone number format and date format, we can expand to  gps, national identifiers, etc).
-Check `find_piis_based_on_column_format()` in `PII_data_processory.py`.
-* If all entries in a given column are sufficiently sparse (almost all unique). Ideal to identify open ended questions.
-Check `find_piis_based_on_sparse_entries()` in `PII_data_processory.py`.
-* If columns with locations have any location with population under 20,000. Check `find_piis_based_on_locations_population()` in `PII_data_processory.py`.
+This tool is currently in beta as it continues to be tested on IPA PII-containing field datasets.
 
-Importantly, this is an arbitrary defined list of conditions, and for sure can be improved. Very open to feedback!
+## Quick Start
 
-Once the PIIs are identified, users have the opportunity to say what they would like to do with those columns. Options are: drop column, encode column or keep column. According to those instructions, a new de-identified dataset is created. Also, the system outputs a log .txt file and a .csv file that maps the new and encoded values.
+### For End Users
 
-### Finding PII in unstructured text
+Download and run the latest installer from [GitHub Releases](https://github.com/PovertyAction/PII_detection/releases/latest).
 
-The repo has code written to identify PII in text, and replace the PIIs for a 'xxxxxx' string. So, rather than flagging a whole column and dropping/encoding it, they user might prefer to replace the PII by this string and keep everything else. The code searches for PII based on classic common names of people and cities. This functionality is finished but super slow at the moment, so it is currently not enabled.
+### For Developers
 
-### Files included
+```bash
+# Clone the repository
+git clone https://github.com/PovertyAction/PII_detection.git
+cd PII_detection
 
-#### Main files
-* app_frontend.py: App GUI script using tkinter.
-* PII_data_processor.py: App backend, it reads data files, identifies PIIs and creates new de-identified data files.
-* find_piis_in_unstructed_text.py: Script used by PII_data_processor to particularly detect piis in unstructured text
+# Set up development environment
+just get-started
 
-### Other utility files
-* restricted_words.py: Script to get restricted words for PII identification
-* constant_strings.py: Declares strings used across app.
-* query_google_answer_boxes.py: Script to query locations and populations
-* dist folder: Contains .exe file for execution
-* hook-spacy.py: Dependency file needed when creating .exe
+# Run the GUI application
+just run-gui
 
-### How to run
+# Or use the CLI
+just run-cli --help
+```
 
-`python app_frontend.py`
+## How it Works
 
-Remember to install dependencies mentioned in `requirements.txt`.
+The PII detector uses multiple detection strategies to identify potential PII in dataset columns:
 
-### Distribution
+### Detection Methods
 
-#### To create executable app
-`pyinstaller --windowed --icon=app_icon.ico --add-data="app_icon.ico;." --add-data="ipa_logo.jpg;." --add-data="anonymize_script_template_v2.do;." --additional-hooks-dir=. --hiddenimport srsly.msgpack.util --noconfirm app_frontend.py`
+1. **Column Name/Label Matching** - Matches column names against restricted word lists using strict or fuzzy matching
+   - Check `find_piis_based_on_column_name()` in `src/pii_detector/core/processor.py`
+   - Supports multiple languages (English, Spanish, Swahili)
+   - Includes domain-specific terms (SurveyCTO, medical, locations)
 
-#### To create windows application installer
-Compile `create_installer.iss` using Inno Setup Compiler
-Reference: https://www.youtube.com/watch?v=RrpvNvklmFA https://www.youtube.com/watch?v=DTQ-atboQiI&t=135s
+2. **Format Pattern Detection** - Identifies phone numbers, dates, and other formatted data
+   - Check `find_piis_based_on_column_format()` in `src/pii_detector/core/processor.py`
+   - Expandable to GPS coordinates, national identifiers, etc.
 
-### Credit
+3. **Sparsity Analysis** - Flags columns where most values are unique (open-ended questions)
+   - Check `find_piis_based_on_sparse_entries()` in `src/pii_detector/core/processor.py`
+   - Ideal for identifying free-text name/address fields
 
-IPA's RT-DEG teams.
+4. **Location Population Analysis** - Identifies small locations (< 20,000 people) that may be PII
+   - Check `find_piis_based_on_locations_population()` in `src/pii_detector/core/processor.py`
+   - Uses external APIs for population lookups
 
-J-PAL: stata_PII_scan. 2020. https://github.com/J-PAL/stata_PII_scan
+### User Workflow
 
-J-PAL: PII-Scan. 2017. https://github.com/J-PAL/PII-Scan
+1. Load your dataset (supports CSV, Excel, Stata formats)
+2. Configure detection options (language, country, detection methods)
+3. Review detected PII candidates
+4. Choose actions for each column: **Drop**, **Encode**, or **Keep**
+5. Export de-identified dataset, mapping files, and audit logs
 
-### Licensing
+### Unstructured Text PII Detection
 
-The PII script is [MIT Licensed](https://github.com/PovertyAction/PII_detection/blob/master/LICENSE).
+The tool includes functionality to identify PII within text content and replace it with placeholder strings (e.g., 'XXXXXX'). This allows preserving most text content while removing personal identifiers.
+
+*Note: This feature is currently optimized for performance and may be disabled by default.*
+
+## Project Structure
+
+### Modern Python Package Layout
+
+```
+src/pii_detector/
+├── core/                    # Core PII detection algorithms
+│   ├── processor.py         # Main data processing engine
+│   ├── text_analysis.py     # Unstructured text PII detection
+│   └── hash_utils.py        # Anonymization utilities
+├── data/                    # Static data and configurations
+│   ├── constants.py         # Application constants
+│   ├── restricted_words.py  # Multi-language PII word lists
+│   └── stopwords/           # Language-specific stopwords
+├── gui/                     # Graphical user interface
+│   └── frontend.py          # Modern tkinter application
+├── cli/                     # Command-line interface
+│   └── main.py              # CLI entry point
+└── api/                     # External API integrations
+    └── queries.py           # Location/population lookup services
+```
+
+### Supporting Files
+
+- `assets/` - Application icons, logos, and templates
+- `tests/` - Test suite with pytest
+- `pyproject.toml` - Modern Python project configuration
+- `Justfile` - Development workflow commands
+
+## Development
+
+### Requirements
+
+- Python 3.9+
+- [uv](https://docs.astral.sh/uv/) - Fast Python package manager
+- [just](https://github.com/casey/just) - Command runner
+
+### Development Commands
+
+```bash
+# Environment setup
+just get-started           # Complete development setup
+just venv                  # Create virtual environment
+just install-deps         # Install dependencies
+
+# Running the application
+just run-gui              # Launch GUI interface
+just run-cli              # Launch CLI interface
+
+# Testing
+just test                 # Run test suite (unit + integration)
+uv run pytest tests/test_integration.py -v  # Run integration tests only
+uv run pytest -m "slow"   # Run slow tests (includes API calls)
+uv run pytest -m "not slow"  # Skip slow tests
+
+# Code quality
+just fmt-all              # Format and lint code
+just pre-commit-run       # Run all pre-commit hooks
+
+# Building and distribution
+just build                # Build Python package
+just build-exe            # Create Windows executable
+just create-installer     # Generate Windows installer
+```
+
+### Test Data
+
+The project includes comprehensive test datasets for integration testing:
+
+- `tests/data/sample_pii_data.csv` - Dataset containing various PII types for testing detection algorithms
+- `tests/data/clean_data.csv` - Clean dataset with minimal PII for testing false positive rates
+- `tests/data/comprehensive_pii_data.csv` - Complex dataset with multiple PII types for anonymization testing
+- `tests/data/qualitative_data.csv` - Text-based data for testing text anonymization techniques
+- `tests/data/test_data.csv` - Simple dataset for basic functionality testing
+
+These datasets are used by the integration test suite to verify that PII detection and anonymization work correctly across different scenarios.
+
+### Anonymization Capabilities
+
+The system provides extensive anonymization techniques based on academic research and FSD guidelines:
+
+**Data Anonymization Methods:**
+- Variable removal and record suppression
+- Hash-based and systematic pseudonymization
+- Age, income, and geographic categorization
+- Statistical noise addition and permutation
+- K-anonymity enforcement
+- Text pattern masking and redaction
+
+**Example Usage:**
+```python
+from pii_detector.core.anonymization import AnonymizationTechniques
+
+anonymizer = AnonymizationTechniques()
+
+# Remove direct identifiers
+clean_data = anonymizer.remove_variables(dataset, ['name', 'ssn', 'email'])
+
+# Categorize sensitive data
+clean_data['age_group'] = anonymizer.age_categorization(dataset['age'])
+clean_data['income_bracket'] = anonymizer.income_categorization(dataset['income'])
+
+# Apply k-anonymity
+final_data = anonymizer.achieve_k_anonymity(clean_data, ['age_group', 'city'], k=3)
+```
+
+See `examples/anonymization_demo.py` for a complete demonstration.
+
+### Environment Variables
+
+For API integrations, set these optional environment variables:
+
+- `GEONAMES_USERNAME` - GeoNames API for location population lookups
+- `FOREBEARS_API_KEY` - Forebears API for name validation
+- `PII_HASH_SECRET_KEY` - Secret key for hashing (uses default if not set)
+
+## File Format Support
+
+- **CSV files** (`.csv`)
+- **Excel files** (`.xlsx`, `.xls`)
+- **Stata files** (`.dta`) - Preserves variable labels and value labels
+
+## Distribution
+
+### For End Users (Windows Executable)
+
+```bash
+# Create executable and installer
+just build-exe
+just create-installer
+
+# Output locations:
+# - Executable: dist/
+# - Installer: compile create_installer.iss with Inno Setup
+```
+
+### For Python Package Distribution
+
+```bash
+# Build package for PyPI
+just build
+
+# Install locally in development mode
+uv pip install -e .
+```
+
+## Contributing
+
+1. Fork the repository
+2. Set up development environment: `just get-started`
+3. Make your changes
+4. Run tests and formatting: `just fmt-all && just test`
+5. Submit a pull request
+
+## Credits
+
+**Development Team:**
+
+- IPA Global Research and Data Science Team
+
+**Inspiration:**
+
+- J-PAL: [stata_PII_scan](https://github.com/J-PAL/stata_PII_scan) (2020)
+- J-PAL: [PII-Scan](https://github.com/J-PAL/PII-Scan) (2017)
+
+## License
+
+The PII Detector is [MIT Licensed](LICENSE).
+
+---
+
+**Feedback Welcome!** Help us improve this tool by reporting issues or suggestions on [GitHub Issues](https://github.com/PovertyAction/PII_detection/issues).
