@@ -49,8 +49,29 @@ run-gui:
     uv run python -m pii_detector.gui.frontend
 
 run-cli:
-    @echo "Launching PII Detector CLI..."
+    @echo "PII Detector CLI - Available commands:"
     uv run python -m pii_detector.cli.main
+
+# CLI subcommands for direct usage
+cli-help:
+    @echo "Available CLI commands:"
+    uv run python -m pii_detector.cli.main --help
+
+cli-analyze file *args:
+    @echo "Analyzing file: {{ file }}"
+    uv run python -m pii_detector.cli.main analyze {{ file }} {{ args }}
+
+cli-batch pattern *args:
+    @echo "Batch processing: {{ pattern }}"
+    uv run python -m pii_detector.cli.main batch {{ pattern }} {{ args }}
+
+cli-anonymize file *args:
+    @echo "Anonymizing file: {{ file }}"
+    uv run python -m pii_detector.cli.main anonymize {{ file }} {{ args }}
+
+cli-report file *args:
+    @echo "Generating report for: {{ file }}"
+    uv run python -m pii_detector.cli.main report {{ file }} {{ args }}
 
 # Development tools
 test:
@@ -61,6 +82,26 @@ test-cov:
     @echo "Running tests with coverage report..."
     uv run pytest --cov-report=html
     @echo "Coverage report generated in htmlcov/"
+
+# Test batch processing functionality specifically
+test-batch:
+    @echo "Testing batch processing functionality..."
+    uv run python tests/test_runner.py
+
+# Test batch processing with minimal dependencies
+test-batch-basic:
+    @echo "Testing batch processing with basic dependencies only..."
+    uv run python -c "import sys; sys.path.append('src'); from tests.test_runner import check_imports; check_imports()"
+
+# Run batch processing tests with pytest
+test-batch-full:
+    @echo "Running full batch processing test suite..."
+    uv run pytest tests/test_batch_processing.py -v
+
+# Test presidio integration
+test-presidio:
+    @echo "Running Presidio integration tests..."
+    uv run pytest tests/test_presidio_integration.py -v
 
 # Code quality
 lint-py:
@@ -116,6 +157,54 @@ install-local:
 build-exe:
     @echo "Creating Windows executable with PyInstaller..."
     uv run pyinstaller --windowed --name=pii_detector --icon=assets/app-icon.ico --add-data="assets/app-icon.ico;." --add-data="assets/ipa-logo.jpg;." --add-data="assets/anonymize_script_template_v2.do;." --additional-hooks-dir=assets --hiddenimport srsly.msgpack.util --noconfirm src/pii_detector/gui/frontend.py
+
+# Executable creation with Presidio support
+build-exe-presidio:
+    @echo "Creating Windows executable with Presidio support..."
+    uv sync --extra presidio
+    uv run pyinstaller --windowed --name=pii_detector_presidio --icon=assets/app-icon.ico --add-data="assets/app-icon.ico;." --add-data="assets/ipa-logo.jpg;." --add-data="assets/anonymize_script_template_v2.do;." --additional-hooks-dir=assets --hiddenimport presidio_analyzer --hiddenimport presidio_anonymizer --hiddenimport spacy --hiddenimport en_core_web_sm --hiddenimport srsly.msgpack.util --noconfirm src/pii_detector/gui/frontend.py
+
+# Install Presidio dependencies
+install-presidio language="en" model_size="sm":
+    @echo "Installing Presidio dependencies..."
+    uv sync --extra presidio
+    @echo "Installing spaCy model for {{ language }} ({{ model_size }} size)..."
+    uv run python -c "from pii_detector.core.model_manager import ensure_spacy_model; ensure_spacy_model('{{ language }}', '{{ model_size }}')"
+    @echo "Presidio installation complete!"
+    @echo "Test installation with: uv run python examples/presidio_demo.py"
+
+# Install specific spaCy model
+install-spacy-model model_name:
+    @echo "Installing spaCy model: {{ model_name }}..."
+    uv run python -c "from pii_detector.core.model_manager import install_spacy_model; install_spacy_model('{{ model_name }}')"
+
+# List available spaCy models
+list-spacy-models:
+    @echo "Available spaCy models:"
+    uv run python scripts/manage_models.py list
+
+# Model management utility
+manage-models *args:
+    @echo "Running model management utility..."
+    uv run python scripts/manage_models.py {{ args }}
+
+# Install Presidio with structured data support for batch processing
+install-presidio-batch:
+    @echo "Installing Presidio with batch processing support..."
+    uv sync --extra batch
+    uv run python -c "from pii_detector.core.model_manager import ensure_spacy_model; ensure_spacy_model('en', 'sm')"
+    @echo "Batch processing installation complete!"
+    @echo "Test with: just run-batch-demo"
+
+# Run batch processing demo
+run-batch-demo:
+    @echo "Running batch processing demonstration..."
+    uv run python examples/run_batch_examples.py
+
+# Run presidio demo
+run-presidio-demo:
+    @echo "Running Presidio demonstration..."
+    uv run python examples/presidio_demo.py
 
 # Documentation
 docs-serve:

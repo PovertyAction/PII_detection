@@ -31,6 +31,22 @@ uv run python -m pii_detector.gui.frontend
 just run-cli
 # or
 uv run python -m pii_detector.cli.main --help
+
+# Install Presidio for enhanced PII detection (default: English, small model)
+just install-presidio
+
+# Install Presidio with specific language and model size
+just install-presidio spanish md  # Spanish, medium model
+just install-presidio german lg   # German, large model
+
+# Install specific spaCy model
+just install-spacy-model en_core_web_md
+
+# List available spaCy models
+just list-spacy-models
+
+# Run Presidio demonstration
+uv run python examples/presidio_demo.py
 ```
 
 ### Development Workflow
@@ -55,6 +71,9 @@ just build
 # Create Windows executable (maintains backward compatibility)
 just build-exe
 
+# Create Windows executable with Presidio support
+just build-exe-presidio
+
 # Create installer
 just create-installer
 ```
@@ -67,8 +86,11 @@ just create-installer
 src/pii_detector/
 ├── __init__.py              # Package initialization
 ├── core/                    # Core PII detection logic
-│   ├── processor.py         # Main data processing engine
-│   ├── text_analysis.py     # Unstructured text PII detection
+│   ├── processor.py         # Main data processing engine (legacy methods)
+│   ├── text_analysis.py     # Basic text PII detection
+│   ├── presidio_engine.py   # NEW: Presidio ML-powered text analysis
+│   ├── unified_processor.py # NEW: Hybrid structural + ML detection
+│   ├── hybrid_anonymizer.py # NEW: Combined anonymization methods
 │   ├── hash_utils.py        # Basic hashing utilities
 │   └── anonymization.py     # Comprehensive anonymization techniques
 ├── data/                    # Static data and configurations
@@ -96,7 +118,10 @@ src/pii_detector/
 **Data Processing Layer:**
 
 - `src/pii_detector/core/processor.py` - Core backend engine with type hints, improved error handling, and modern Python patterns
-- `src/pii_detector/core/text_analysis.py` - Text-based PII detection with simplified NLP processing
+- `src/pii_detector/core/text_analysis.py` - Basic text-based PII detection with regex patterns
+- `src/pii_detector/core/presidio_engine.py` - **NEW**: Microsoft Presidio integration for ML-powered text analysis
+- `src/pii_detector/core/unified_processor.py` - **NEW**: Hybrid detection combining structural analysis with Presidio
+- `src/pii_detector/core/hybrid_anonymizer.py` - **NEW**: Advanced anonymization using both statistical and ML methods
 
 **Configuration and Data:**
 

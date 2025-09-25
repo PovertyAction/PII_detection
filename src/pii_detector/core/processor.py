@@ -255,13 +255,14 @@ def find_piis_based_on_sparse_entries(
 
 
 def find_piis_based_on_locations_population(
-    dataset: pd.DataFrame, population_threshold: int = 20000
+    dataset: pd.DataFrame, population_threshold: int = 20000, country: str = "US"
 ) -> list[str]:
     """Find PIIs based on location population analysis (small locations may be PII).
 
     Args:
         dataset: The pandas DataFrame to analyze
         population_threshold: Maximum population size to consider as PII
+        country: Country code for location lookups (default: 'US')
 
     Returns:
         List of column names identified as potential PII based on location population
@@ -270,7 +271,9 @@ def find_piis_based_on_locations_population(
     pii_columns = []
 
     for column_name in dataset.columns:
-        if _contains_small_locations(dataset[column_name], population_threshold):
+        if _contains_small_locations(
+            dataset[column_name], population_threshold, country
+        ):
             pii_columns.append(column_name)
             log_and_print(f"PII detected (small location): {column_name}")
 
@@ -368,7 +371,7 @@ def _contains_email_patterns(column_data: pd.Series) -> bool:
 
 
 def _contains_small_locations(
-    column_data: pd.Series, population_threshold: int
+    column_data: pd.Series, population_threshold: int, country: str = "US"
 ) -> bool:
     """Check if column contains locations with small populations."""
     sample_size = min(50, len(column_data))  # Limit API calls
@@ -378,7 +381,7 @@ def _contains_small_locations(
     for location in sample_data:
         if isinstance(location, str) and len(location.strip()) > 2:
             try:
-                population = query_location_population(location.strip())
+                population = query_location_population(location.strip(), country)
                 if population and population < population_threshold:
                     small_location_count += 1
             except Exception as e:
