@@ -458,7 +458,7 @@ class TestAdvancedAnonymization:
         """Test l-diversity mock implementation."""
         df = pd.DataFrame({"quasi": [1, 2, 3], "sensitive": ["A", "B", "C"]})
         result = AdvancedAnonymization.l_diversity_check(
-            df, ["quasi"], "sensitive", l=2
+            df, ["quasi"], "sensitive", diversity_l=2
         )
         # Mock should return False
         assert result is False

@@ -65,6 +65,36 @@ class ConfigurationScreen:
         self.location_check = ft.Checkbox(value=False)
         self.presidio_check = ft.Checkbox(value=False)
 
+        # Column Name Detection controls
+        self.fuzzy_threshold = None
+        self.matching_dropdown = None
+        self.fuzzy_value_text = None
+
+        # Format Pattern Detection controls
+        self.format_confidence_slider = None
+        self.format_confidence_value_text = None
+        self.phone_checkbox = None
+        self.email_checkbox = None
+        self.ssn_checkbox = None
+        self.date_checkbox = None
+
+        # Sparsity Analysis controls
+        self.uniqueness_slider = None
+        self.min_entries_slider = None
+        self.uniqueness_value_text = None
+        self.min_entries_value_text = None
+
+        # Location Population controls
+        self.population_slider = None
+        self.population_value_text = None
+
+        # Presidio controls
+        self.presidio_confidence_slider = None
+        self.presidio_confidence_value_text = None
+        self.presidio_language_dropdown = None
+        self.presidio_person_checkbox = None
+        self.presidio_org_checkbox = None
+
     def build(self) -> ft.Container:
         """Build the configuration screen."""
         # Create the detection methods container
@@ -282,12 +312,12 @@ class ConfigurationScreen:
         """Get detailed settings for each detection method."""
         if method_id == "column_name":
             # Create value display text
-            fuzzy_value_text = ft.Text(
+            self.fuzzy_value_text = ft.Text(
                 "0.8 (80%)", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
 
             # Create fuzzy threshold slider (initially enabled based on default "fuzzy" value)
-            fuzzy_threshold = ft.Slider(
+            self.fuzzy_threshold = ft.Slider(
                 label="Fuzzy Match Threshold",
                 value=0.8,
                 min=0.5,
@@ -299,22 +329,22 @@ class ConfigurationScreen:
 
             def on_fuzzy_threshold_change(e):
                 value = e.control.value
-                fuzzy_value_text.value = f"{value:.1f} ({value * 100:.0f}%)"
+                self.fuzzy_value_text.value = f"{value:.1f} ({value * 100:.0f}%)"
                 self.page.update()
 
-            fuzzy_threshold.on_change = on_fuzzy_threshold_change
+            self.fuzzy_threshold.on_change = on_fuzzy_threshold_change
 
             def on_matching_type_change(e):
                 # Enable/disable fuzzy threshold based on matching type
                 matching_type = e.control.value
-                fuzzy_threshold.disabled = matching_type == "strict"
+                self.fuzzy_threshold.disabled = matching_type == "strict"
                 if matching_type == "strict":
-                    fuzzy_value_text.value = "N/A (Strict mode)"
+                    self.fuzzy_value_text.value = "N/A (Strict mode)"
                 else:
-                    fuzzy_value_text.value = f"{fuzzy_threshold.value:.1f} ({fuzzy_threshold.value * 100:.0f}%)"
+                    self.fuzzy_value_text.value = f"{self.fuzzy_threshold.value:.1f} ({self.fuzzy_threshold.value * 100:.0f}%)"
                 self.page.update()
 
-            matching_dropdown = ft.Dropdown(
+            self.matching_dropdown = ft.Dropdown(
                 label="Matching Type",
                 value="fuzzy",
                 options=[
@@ -333,11 +363,11 @@ class ConfigurationScreen:
                         size=IPATypography.BODY_SMALL,
                         weight=ft.FontWeight.W_500,
                     ),
-                    matching_dropdown,
+                    self.matching_dropdown,
                     ft.Row(
                         [
-                            fuzzy_threshold,
-                            fuzzy_value_text,
+                            self.fuzzy_threshold,
+                            self.fuzzy_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
@@ -347,11 +377,11 @@ class ConfigurationScreen:
             )
 
         elif method_id == "format_pattern":
-            confidence_value_text = ft.Text(
+            self.format_confidence_value_text = ft.Text(
                 "0.7 (70%)", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
 
-            confidence_slider = ft.Slider(
+            self.format_confidence_slider = ft.Slider(
                 label="Detection Confidence",
                 value=0.7,
                 min=0.5,
@@ -362,10 +392,18 @@ class ConfigurationScreen:
 
             def on_confidence_change(e):
                 value = e.control.value
-                confidence_value_text.value = f"{value:.1f} ({value * 100:.0f}%)"
+                self.format_confidence_value_text.value = (
+                    f"{value:.1f} ({value * 100:.0f}%)"
+                )
                 self.page.update()
 
-            confidence_slider.on_change = on_confidence_change
+            self.format_confidence_slider.on_change = on_confidence_change
+
+            # Store checkboxes as instance variables
+            self.phone_checkbox = ft.Checkbox(label="Phone Numbers", value=True)
+            self.email_checkbox = ft.Checkbox(label="Email Addresses", value=True)
+            self.ssn_checkbox = ft.Checkbox(label="Social Security Numbers", value=True)
+            self.date_checkbox = ft.Checkbox(label="Date Formats", value=True)
 
             return ft.Column(
                 [
@@ -376,22 +414,22 @@ class ConfigurationScreen:
                     ),
                     ft.Row(
                         [
-                            ft.Checkbox(label="Phone Numbers", value=True),
-                            ft.Checkbox(label="Email Addresses", value=True),
+                            self.phone_checkbox,
+                            self.email_checkbox,
                         ],
                         spacing=IPASpacing.SM,
                     ),
                     ft.Row(
                         [
-                            ft.Checkbox(label="Social Security Numbers", value=True),
-                            ft.Checkbox(label="Date Formats", value=True),
+                            self.ssn_checkbox,
+                            self.date_checkbox,
                         ],
                         spacing=IPASpacing.SM,
                     ),
                     ft.Row(
                         [
-                            confidence_slider,
-                            confidence_value_text,
+                            self.format_confidence_slider,
+                            self.format_confidence_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
@@ -401,14 +439,14 @@ class ConfigurationScreen:
             )
 
         elif method_id == "sparsity":
-            uniqueness_value_text = ft.Text(
+            self.uniqueness_value_text = ft.Text(
                 "0.8 (80%)", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
-            min_entries_value_text = ft.Text(
+            self.min_entries_value_text = ft.Text(
                 "10 entries", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
 
-            uniqueness_slider = ft.Slider(
+            self.uniqueness_slider = ft.Slider(
                 label="Uniqueness Threshold",
                 value=0.8,
                 min=0.5,
@@ -417,7 +455,7 @@ class ConfigurationScreen:
                 width=200,
             )
 
-            min_entries_slider = ft.Slider(
+            self.min_entries_slider = ft.Slider(
                 label="Minimum Entries Required",
                 value=10,
                 min=5,
@@ -428,16 +466,16 @@ class ConfigurationScreen:
 
             def on_uniqueness_change(e):
                 value = e.control.value
-                uniqueness_value_text.value = f"{value:.1f} ({value * 100:.0f}%)"
+                self.uniqueness_value_text.value = f"{value:.1f} ({value * 100:.0f}%)"
                 self.page.update()
 
             def on_min_entries_change(e):
                 value = int(e.control.value)
-                min_entries_value_text.value = f"{value} entries"
+                self.min_entries_value_text.value = f"{value} entries"
                 self.page.update()
 
-            uniqueness_slider.on_change = on_uniqueness_change
-            min_entries_slider.on_change = on_min_entries_change
+            self.uniqueness_slider.on_change = on_uniqueness_change
+            self.min_entries_slider.on_change = on_min_entries_change
 
             return ft.Column(
                 [
@@ -448,16 +486,16 @@ class ConfigurationScreen:
                     ),
                     ft.Row(
                         [
-                            uniqueness_slider,
-                            uniqueness_value_text,
+                            self.uniqueness_slider,
+                            self.uniqueness_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
                     ),
                     ft.Row(
                         [
-                            min_entries_slider,
-                            min_entries_value_text,
+                            self.min_entries_slider,
+                            self.min_entries_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
@@ -467,11 +505,11 @@ class ConfigurationScreen:
             )
 
         elif method_id == "location":
-            population_value_text = ft.Text(
+            self.population_value_text = ft.Text(
                 "50,000 people", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
 
-            population_slider = ft.Slider(
+            self.population_slider = ft.Slider(
                 label="Small Population Threshold",
                 value=50000,
                 min=1000,
@@ -482,10 +520,10 @@ class ConfigurationScreen:
 
             def on_population_change(e):
                 value = int(e.control.value)
-                population_value_text.value = f"{value:,} people"
+                self.population_value_text.value = f"{value:,} people"
                 self.page.update()
 
-            population_slider.on_change = on_population_change
+            self.population_slider.on_change = on_population_change
 
             # API Key status display - check if API key is configured
             has_api_key = bool(self.state_manager.state.geonames_api_key)
@@ -622,8 +660,8 @@ class ConfigurationScreen:
                     api_info,
                     ft.Row(
                         [
-                            population_slider,
-                            population_value_text,
+                            self.population_slider,
+                            self.population_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
@@ -633,11 +671,11 @@ class ConfigurationScreen:
             )
 
         elif method_id == "presidio":
-            presidio_confidence_value_text = ft.Text(
+            self.presidio_confidence_value_text = ft.Text(
                 "0.8 (80%)", size=IPATypography.BODY_SMALL, color=IPAColors.CHARCOAL
             )
 
-            confidence_slider = ft.Slider(
+            self.presidio_confidence_slider = ft.Slider(
                 label="Confidence Threshold",
                 value=0.8,
                 min=0.5,
@@ -648,12 +686,30 @@ class ConfigurationScreen:
 
             def on_presidio_confidence_change(e):
                 value = e.control.value
-                presidio_confidence_value_text.value = (
+                self.presidio_confidence_value_text.value = (
                     f"{value:.1f} ({value * 100:.0f}%)"
                 )
                 self.page.update()
 
-            confidence_slider.on_change = on_presidio_confidence_change
+            self.presidio_confidence_slider.on_change = on_presidio_confidence_change
+
+            # Store language dropdown as instance variable
+            self.presidio_language_dropdown = ft.Dropdown(
+                label="Language Model",
+                value="en_core_web_sm",
+                options=[
+                    ft.dropdown.Option("en_core_web_sm", "English (Small)"),
+                    ft.dropdown.Option("en_core_web_md", "English (Medium)"),
+                    ft.dropdown.Option("en_core_web_lg", "English (Large)"),
+                ],
+                width=250,
+            )
+
+            # Store Presidio entity checkboxes
+            self.presidio_person_checkbox = ft.Checkbox(
+                label="Person Names", value=True
+            )
+            self.presidio_org_checkbox = ft.Checkbox(label="Organizations", value=True)
 
             return ft.Column(
                 [
@@ -662,28 +718,19 @@ class ConfigurationScreen:
                         size=IPATypography.BODY_SMALL,
                         weight=ft.FontWeight.W_500,
                     ),
-                    ft.Dropdown(
-                        label="Language Model",
-                        value="en_core_web_sm",
-                        options=[
-                            ft.dropdown.Option("en_core_web_sm", "English (Small)"),
-                            ft.dropdown.Option("en_core_web_md", "English (Medium)"),
-                            ft.dropdown.Option("en_core_web_lg", "English (Large)"),
-                        ],
-                        width=250,
-                    ),
+                    self.presidio_language_dropdown,
                     ft.Row(
                         [
-                            confidence_slider,
-                            presidio_confidence_value_text,
+                            self.presidio_confidence_slider,
+                            self.presidio_confidence_value_text,
                         ],
                         alignment=ft.MainAxisAlignment.START,
                         spacing=IPASpacing.SM,
                     ),
                     ft.Row(
                         [
-                            ft.Checkbox(label="Person Names", value=True),
-                            ft.Checkbox(label="Organizations", value=True),
+                            self.presidio_person_checkbox,
+                            self.presidio_org_checkbox,
                         ],
                         spacing=IPASpacing.SM,
                     ),
@@ -789,15 +836,51 @@ class ConfigurationScreen:
 
         # Collect configuration and save to state
         config = DetectionConfig(
-            # Detection methods
+            # Detection method enabled/disabled states
             column_name_enabled=self.column_name_check.value,
             format_pattern_enabled=self.format_pattern_check.value,
             sparsity_enabled=self.sparsity_check.value,
             location_population_enabled=self.location_check.value,
             ai_text_enabled=self.presidio_check.value,
-            # Configuration values (using defaults from DetectionConfig for now)
-            sparsity_threshold=0.6,  # Default from DetectionConfig
-            population_threshold=15000,  # Default from DetectionConfig
+            # Column Name Detection settings
+            fuzzy_match_threshold=self.fuzzy_threshold.value
+            if self.fuzzy_threshold
+            else 0.8,
+            matching_type=self.matching_dropdown.value
+            if self.matching_dropdown
+            else "fuzzy",
+            # Format Pattern Detection settings
+            format_confidence_threshold=self.format_confidence_slider.value
+            if self.format_confidence_slider
+            else 0.7,
+            detect_phone=self.phone_checkbox.value if self.phone_checkbox else True,
+            detect_email=self.email_checkbox.value if self.email_checkbox else True,
+            detect_ssn=self.ssn_checkbox.value if self.ssn_checkbox else True,
+            detect_dates=self.date_checkbox.value if self.date_checkbox else True,
+            # Sparsity Analysis settings
+            sparsity_threshold=self.uniqueness_slider.value
+            if self.uniqueness_slider
+            else 0.8,
+            min_entries_required=int(self.min_entries_slider.value)
+            if self.min_entries_slider
+            else 10,
+            # Location Population settings
+            population_threshold=int(self.population_slider.value)
+            if self.population_slider
+            else 50000,
+            # Presidio settings
+            presidio_confidence_threshold=self.presidio_confidence_slider.value
+            if self.presidio_confidence_slider
+            else 0.8,
+            presidio_language_model=self.presidio_language_dropdown.value
+            if self.presidio_language_dropdown
+            else "en_core_web_sm",
+            presidio_detect_person=self.presidio_person_checkbox.value
+            if self.presidio_person_checkbox
+            else True,
+            presidio_detect_org=self.presidio_org_checkbox.value
+            if self.presidio_org_checkbox
+            else True,
         )
 
         # Save configuration to state

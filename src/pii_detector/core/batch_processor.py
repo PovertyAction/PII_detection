@@ -6,6 +6,7 @@ incorporating Presidio's BatchAnalyzerEngine and presidio-structured capabilitie
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -82,6 +83,21 @@ class BatchPIIProcessor:
             except Exception as e:
                 logger.warning(f"Failed to initialize BatchAnalyzerEngine: {e}")
 
+    def _safe_callback(self, callback: Callable | None, progress: float, message: str):
+        """Safely call progress callback, catching any exceptions.
+
+        Args:
+            callback: Progress callback function
+            progress: Progress percentage (0-100)
+            message: Progress message
+
+        """
+        if callback:
+            try:
+                callback(progress, message)
+            except Exception as e:
+                logger.warning(f"Progress callback raised exception: {e}")
+
     def _init_structured_engine(self):
         """Initialize the structured engine for advanced processing."""
         try:
@@ -118,7 +134,7 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         label_dict: dict[str, str] | None = None,
         detection_config: dict[str, Any] | None = None,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> dict[str, PIIDetectionResult]:
         """Perform batch PII detection with optimized processing.
 
@@ -158,7 +174,7 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         label_dict: dict[str, str] | None,
         config: dict[str, Any],
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> dict[str, PIIDetectionResult]:
         """Use presidio-structured for efficient batch processing."""
         logger.info("Using presidio-structured for batch detection")
@@ -219,8 +235,7 @@ class BatchPIIProcessor:
             logger.error(f"Error in structured engine processing: {e}")
             return self._detect_standard(dataset, label_dict, config, progress_callback)
 
-        if progress_callback:
-            progress_callback(100, "Structured analysis complete")
+        self._safe_callback(progress_callback, 100, "Structured analysis complete")
 
         return results
 
@@ -229,7 +244,7 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         label_dict: dict[str, str] | None,
         config: dict[str, Any],
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> dict[str, PIIDetectionResult]:
         """Process large datasets in chunks with parallel processing."""
         logger.info(f"Processing dataset in chunks of {self.chunk_size} rows")
@@ -270,12 +285,12 @@ class BatchPIIProcessor:
                         for col, result in chunk_results.items():
                             text_results[col].append(result)
 
-                        if progress_callback:
-                            progress = ((chunk_idx + 1) / total_chunks) * 100
-                            progress_callback(
-                                progress,
-                                f"Processed chunk {chunk_idx + 1}/{total_chunks}",
-                            )
+                        progress = ((chunk_idx + 1) / total_chunks) * 100
+                        self._safe_callback(
+                            progress_callback,
+                            progress,
+                            f"Processed chunk {chunk_idx + 1}/{total_chunks}",
+                        )
 
                     except Exception as e:
                         logger.error(f"Error processing chunk {chunk_idx}: {e}")
@@ -377,15 +392,14 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         label_dict: dict[str, str] | None,
         config: dict[str, Any],
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> dict[str, PIIDetectionResult]:
         """Run standard detection for smaller datasets."""
         results = self.unified_processor.detect_pii_comprehensive(
             dataset, label_dict, config
         )
 
-        if progress_callback:
-            progress_callback(100, "Standard detection complete")
+        self._safe_callback(progress_callback, 100, "Standard detection complete")
 
         return results
 
@@ -394,7 +408,7 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         pii_results: dict[str, PIIDetectionResult],
         anonymization_config: dict[str, Any] | None = None,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> tuple[pd.DataFrame, dict[str, Any]]:
         """Perform batch anonymization with optimized processing."""
         logger.info(f"Starting batch anonymization of {len(pii_results)} PII columns")
@@ -413,7 +427,7 @@ class BatchPIIProcessor:
         dataset: pd.DataFrame,
         pii_results: dict[str, PIIDetectionResult],
         config: dict[str, Any] | None,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> tuple[pd.DataFrame, dict[str, Any]]:
         """Anonymize large datasets in chunks."""
         logger.info(f"Anonymizing dataset in chunks of {self.chunk_size} rows")
@@ -459,9 +473,10 @@ class BatchPIIProcessor:
 
             anonymized_chunks.append(chunk)
 
-            if progress_callback:
-                progress = ((i + 1) / total_chunks) * 100
-                progress_callback(progress, f"Anonymized chunk {i + 1}/{total_chunks}")
+            progress = ((i + 1) / total_chunks) * 100
+            self._safe_callback(
+                progress_callback, progress, f"Anonymized chunk {i + 1}/{total_chunks}"
+            )
 
         # Combine chunks
         final_dataset = pd.concat(anonymized_chunks, ignore_index=True)
@@ -564,7 +579,7 @@ def process_dataset_batch(
     anonymization_config: dict[str, Any] | None = None,
     chunk_size: int = 1000,
     max_workers: int = 4,
-    progress_callback: callable | None = None,
+    progress_callback: Callable | None = None,
 ) -> tuple[dict[str, PIIDetectionResult], pd.DataFrame, dict[str, Any]]:
     """Complete batch processing workflow for PII detection and anonymization.
 

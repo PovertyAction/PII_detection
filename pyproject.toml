@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "pii-detector"
-version = "0.2.23"
+version = "1.0.0"
 description = "A tool to identify and handle personally identifiable information (PII) in datasets"
 readme = "README.md"
 requires-python = ">=3.9"

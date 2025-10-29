@@ -87,6 +87,105 @@ class StateManager:
         """Clear all messages."""
         self.update_state(error_messages=[], success_messages=[])
 
+    def add_file(self, file_info):
+        """Add a file to the selected files list.
+
+        Args:
+            file_info: FileInfo object containing file details
+
+        """
+        files = self.state.selected_files.copy()
+        files.append(file_info)
+        self.update_state(selected_files=files)
+
+    def remove_file(self, file_path):
+        """Remove a file from the selected files list.
+
+        Args:
+            file_path: Path of the file to remove
+
+        """
+        files = [f for f in self.state.selected_files if f.path != file_path]
+        self.update_state(selected_files=files)
+
+    def clear_files(self):
+        """Clear all selected files."""
+        self.update_state(selected_files=[])
+
+    def add_detection_result(self, result):
+        """Add a detection result to the state.
+
+        Args:
+            result: DetectionResult object
+
+        """
+        results = self.state.detection_results.copy()
+        results.append(result)
+        self.update_state(detection_results=results)
+
+    def set_user_action(self, column_name: str, action: str):
+        """Set user action for a column.
+
+        Args:
+            column_name: Name of the column
+            action: Action to perform (remove, encode, mask, keep, etc.)
+
+        """
+        actions = self.state.user_actions.copy()
+        actions[column_name] = action
+        self.update_state(user_actions=actions)
+
+    def update_progress(
+        self,
+        progress: float = None,
+        stage: str = None,
+        current_file: str = None,
+        estimated_time_remaining: int = None,
+    ):
+        """Update processing progress.
+
+        Args:
+            progress: Progress value (0.0 to 1.0)
+            stage: Current processing stage description
+            current_file: Name of file currently being processed
+            estimated_time_remaining: Estimated seconds remaining
+
+        """
+        updates = {}
+        if progress is not None:
+            updates["current_progress"] = progress
+        if stage is not None:
+            updates["processing_stage"] = stage
+        if current_file is not None:
+            updates["current_file"] = current_file
+        if estimated_time_remaining is not None:
+            updates["estimated_time_remaining"] = estimated_time_remaining
+
+        self.update_state(**updates)
+
+    def set_processing(self, is_processing: bool):
+        """Set processing state.
+
+        Args:
+            is_processing: True if processing is active, False otherwise
+
+        """
+        self.update_state(is_processing=is_processing)
+
+    def set_api_key(self, api_key: str | None):
+        """Set GeoNames API key.
+
+        Args:
+            api_key: API key string or None to clear
+
+        """
+        self.update_state(geonames_api_key=api_key)
+
+    def reset_state(self):
+        """Reset state to initial defaults."""
+        self.state = AppState()
+        self.notify_observers()
+
 
 class PIIDetectorApp:
     """Main application class."""

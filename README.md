@@ -329,6 +329,7 @@ just install-deps         # Install dependencies
 
 # Running the application
 just run-gui              # Launch GUI interface
+just run-gui-legacy       # Launch Legacy (0.23.0) GUI interface built in TKinter
 just run-cli              # Launch CLI interface
 
 # Enhanced PII detection (optional)

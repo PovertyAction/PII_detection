@@ -16,20 +16,36 @@ class DetectionConfig:
     ai_text_enabled: bool = True
     location_population_enabled: bool = False
 
-    # Method-specific settings
+    # Column Name Detection settings
+    fuzzy_match_threshold: float = 0.8
+    matching_type: str = "fuzzy"  # strict, fuzzy, or both
+
+    # Format Pattern Detection settings
+    format_confidence_threshold: float = 0.7
+    detect_phone: bool = True
+    detect_email: bool = True
+    detect_ssn: bool = True
+    detect_dates: bool = True
+
+    # Sparsity analysis settings
+    sparsity_threshold: float = 0.8
+    min_entries_required: int = 10
+
+    # Location population settings
+    population_threshold: int = 50000
+
+    # Presidio (AI Text) settings
+    presidio_confidence_threshold: float = 0.8
+    presidio_language_model: str = "en_core_web_sm"
+    presidio_detect_person: bool = True
+    presidio_detect_org: bool = True
+
+    # General settings
     confidence_threshold: float = 0.7
     language: str = "en"
     sample_size: int = 100
     chunk_size: int = 1000
     max_workers: int = 4
-
-    # Sparsity analysis settings
-    sparsity_threshold: float = 0.6
-
-    # Location population settings
-    population_threshold: int = 15000
-
-    # Text analysis settings
     text_analysis_mode: str = "comprehensive"  # quick, balanced, comprehensive
 
 
