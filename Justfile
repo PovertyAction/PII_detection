@@ -43,10 +43,15 @@ update-reqs:
     uv sync --upgrade
     uv run pre-commit autoupdate
 
+# Legacy application execution
+run-gui-legacy:
+    @echo "Launching PII Detector GUI..."
+    uv run python -m pii_detector.gui.frontend
+
 # Application execution
 run-gui:
     @echo "Launching PII Detector GUI..."
-    uv run python -m pii_detector.gui.frontend
+    uv run python -m pii_detector.gui.flet_main
 
 run-cli:
     @echo "PII Detector CLI - Available commands:"

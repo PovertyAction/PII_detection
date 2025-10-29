@@ -22,6 +22,7 @@ DATE = "date"
 # Language options
 ENGLISH = "English"
 SPANISH = "Spanish"
+FRENCH = "French"
 OTHER = "Other"
 
 # Return value keys
