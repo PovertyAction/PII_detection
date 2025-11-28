@@ -479,8 +479,16 @@ class ResultsScreen:
                             padding=8,
                             border_radius=4,
                         ),
+                        # ft.Container(
+                        #    content=preview_table,
+                        #    width=800,
+                        # ),
+                        # ),
                         ft.Container(
-                            content=preview_table,
+                            content=ft.Row(
+                                controls=[preview_table],
+                                scroll=ft.ScrollMode.AUTO,  # I added this to enable horizontal scroll
+                            ),
                             width=800,
                         ),
                     ],
