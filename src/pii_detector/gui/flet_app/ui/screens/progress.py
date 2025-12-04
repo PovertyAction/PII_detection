@@ -541,7 +541,7 @@ class ProgressScreen:
 
     def on_screen_enter(self):
         """Enter this screen and reset analysis state."""
-        print("DEBUG: on_screen_enter() called")
+        # print("DEBUG: on_screen_enter() called")
         # Reset analysis state for new analysis
         self.is_analysis_running = False
         self.analysis_cancelled = False
