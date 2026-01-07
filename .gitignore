@@ -104,3 +104,31 @@ t.csv
 # exe packaging
 PII Charts Update.pdf
 *.msi
+
+# Modern Python tooling
+dist/
+share/python-wheels/
+MANIFEST
+.nox/
+*.py,cover
+.pytest_cache/
+cover/
+
+# uv
+uv.lock
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# PII Detector specific
+temp_files/
+output_files/
+test_data_private/

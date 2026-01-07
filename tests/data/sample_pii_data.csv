@@ -1,0 +1,5 @@
+participant_id,first_name,last_name,email,phone_number,date_of_birth,address,city,country,survey_score,deviceid,gps_lat,gps_lon
+001,John,Doe,john.doe@email.com,555-123-4567,1990-01-15,"123 Main St",Springfield,USA,85,DEV001,40.7128,-74.0060
+002,Jane,Smith,jane.smith@gmail.com,555-987-6543,1985-06-22,"456 Oak Ave",Riverside,USA,92,DEV002,34.0522,-118.2437
+003,Maria,Rodriguez,maria.r@hotmail.com,555-555-1212,1992-03-10,"789 Pine Rd",Smalltown,USA,78,DEV003,41.8781,-87.6298
+004,Ahmed,Hassan,ahmed.hassan@yahoo.com,555-444-3333,1988-11-05,"321 Elm Dr",Riverside,USA,88,DEV004,25.7617,-80.1918

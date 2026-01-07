@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Detector - Desktop App Wireframes</title>
+    <style>
+        :root {
+            --ipa-green: #49ac57;
+            --dark-green: #155240;
+            --light-blue: #84d0d4;
+            --dark-blue: #2b4085;
+            --red-orange: #f26529;
+            --light-grey: #f1f2f2;
+            --dark-grey: #c9c9c8;
+            --charcoal: #414042;
+            --blue-accent: #ceecee;
+            --category-4: #be9ffa;
+            --category-5: #f5cb57;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light-grey);
+            color: var(--charcoal);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .wireframe-section {
+            background: white;
+            margin-bottom: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .wireframe-header {
+            background: var(--dark-blue);
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .wireframe-content {
+            padding: 30px;
+        }
+
+        .screen-mockup {
+            border: 2px solid var(--dark-grey);
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 30px;
+            min-height: 600px;
+            position: relative;
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: grid;
+            grid-template-rows: 60px 1fr 100px;
+            height: 600px;
+        }
+
+        .app-header {
+            background: var(--dark-blue);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .settings-btn {
+            background: var(--ipa-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .action-card {
+            background: var(--light-grey);
+            border: 2px solid var(--dark-grey);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-card:hover {
+            border-color: var(--ipa-green);
+            background: var(--blue-accent);
+        }
+
+        .action-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--ipa-green);
+            border-radius: 50%;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--charcoal);
+        }
+
+        .action-desc {
+            font-size: 14px;
+            color: var(--charcoal);
+        }
+
+        .system-status {
+            background: var(--blue-accent);
+            padding: 20px;
+            margin: 0 20px;
+            border-radius: 8px;
+        }
+
+        .status-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--charcoal);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-success {
+            background: var(--ipa-green);
+        }
+
+        .status-warning {
+            background: var(--category-5);
+        }
+
+        /* File Selection Layout */
+        .file-selection {
+            padding: 30px;
+            height: 600px;
+        }
+
+        .selection-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--charcoal);
+        }
+
+        .drop-zone {
+            border: 3px dashed var(--dark-grey);
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            background: var(--light-grey);
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--ipa-green);
+            background: var(--blue-accent);
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            color: var(--dark-grey);
+            margin-bottom: 15px;
+        }
+
+        .drop-text {
+            font-size: 18px;
+            color: var(--charcoal);
+            margin-bottom: 10px;
+        }
+
+        .drop-subtext {
+            font-size: 14px;
+            color: var(--dark-grey);
+        }
+
+        .selected-files {
+            background: white;
+            border: 1px solid var(--dark-grey);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .files-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--charcoal);
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--light-grey);
+        }
+
+        .file-check {
+            color: var(--ipa-green);
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .file-name {
+            flex: 1;
+            font-size: 14px;
+            color: var(--charcoal);
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: var(--dark-grey);
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-secondary {
+            background: var(--dark-grey);
+            color: var(--charcoal);
+        }
+
+        .btn-primary {
+            background: var(--ipa-green);
+            color: white;
+        }
+
+        /* Configuration Panel */
+        .config-panel {
+            padding: 30px;
+            height: 600px;
+        }
+
+        .config-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--charcoal);
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .preset-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--dark-grey);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn.active,
+        .preset-btn:hover {
+            border-color: var(--ipa-green);
+            background: var(--blue-accent);
+        }
+
+        .config-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .option-group {
+            background: var(--light-grey);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .option-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--charcoal);
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            accent-color: var(--ipa-green);
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: var(--charcoal);
+        }
+
+        /* Expandable Configuration Sections */
+        .method-section {
+            background: white;
+            border: 1px solid var(--dark-grey);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .method-header {
+            background: var(--light-grey);
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--dark-grey);
+        }
+
+        .method-header:hover {
+            background: var(--blue-accent);
+        }
+
+        .method-title {
+            font-weight: 600;
+            color: var(--charcoal);
+        }
+
+        .method-toggle {
+            color: var(--ipa-green);
+            font-size: 18px;
+        }
+
+        .method-content {
+            padding: 20px;
+            display: none;
+        }
+
+        .method-content.expanded {
+            display: block;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--light-grey);
+        }
+
+        .setting-label {
+            font-size: 14px;
+            color: var(--charcoal);
+            flex: 1;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mini-slider {
+            width: 120px;
+            height: 4px;
+            accent-color: var(--ipa-green);
+        }
+
+        .setting-value {
+            font-size: 12px;
+            color: var(--dark-grey);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .method-description {
+            font-size: 12px;
+            color: var(--dark-grey);
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--blue-accent);
+            border-radius: 4px;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: between;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: var(--charcoal);
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--dark-grey);
+            outline: none;
+            accent-color: var(--ipa-green);
+        }
+
+        .start-btn {
+            background: var(--ipa-green);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Progress Tracking */
+        .progress-screen {
+            padding: 30px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .progress-file {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--charcoal);
+        }
+
+        .overall-progress {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 30px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: var(--charcoal);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--dark-grey);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--ipa-green), var(--light-blue));
+            width: 73%;
+            transition: width 0.3s ease;
+        }
+
+        .task-list {
+            width: 100%;
+            max-width: 500px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .task-status {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .task-complete {
+            color: var(--ipa-green);
+        }
+
+        .task-running {
+            color: var(--category-5);
+        }
+
+        .task-pending {
+            color: var(--dark-grey);
+        }
+
+        .progress-stats {
+            margin-bottom: 30px;
+            color: var(--dark-grey);
+            font-size: 14px;
+        }
+
+        .progress-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Results Display */
+        .results-screen {
+            padding: 30px;
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+        }
+
+        .results-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--charcoal);
+        }
+
+        .results-summary {
+            display: flex;
+            gap: 30px;
+            background: var(--light-grey);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-number {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: var(--dark-grey);
+        }
+
+        .high-conf {
+            color: var(--red-orange);
+        }
+
+        .med-conf {
+            color: var(--category-5);
+        }
+
+        .low-conf {
+            color: var(--dark-grey);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-table th {
+            background: var(--dark-blue);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--light-grey);
+            font-size: 14px;
+        }
+
+        .results-table tr:nth-child(even) {
+            background: var(--blue-accent);
+        }
+
+        .confidence-score {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .conf-high {
+            background: var(--red-orange);
+        }
+
+        .conf-med {
+            background: var(--category-5);
+        }
+
+        .conf-low {
+            background: var(--dark-grey);
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .action-anonymize {
+            background: var(--ipa-green);
+            color: white;
+        }
+
+        .action-remove {
+            background: var(--red-orange);
+            color: white;
+        }
+
+        .action-keep {
+            background: var(--dark-grey);
+            color: white;
+        }
+
+        .results-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .description {
+            background: var(--blue-accent);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--ipa-green);
+        }
+
+        .screen-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--dark-grey);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .nav-dot.active {
+            background: var(--ipa-green);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: var(--dark-blue); margin-bottom: 40px; font-size: 32px;">
+            IPA PII Detector Desktop Application - Wireframes
+        </h1>
+
+        <!-- Dashboard Screen -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                1. Dashboard / Landing Page
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Main entry point providing quick access to core functions and system
+                    status. Users can immediately start single analysis, batch processing, or access recent projects.
+                </div>
+
+                <div class="screen-mockup dashboard">
+                    <div class="app-header">
+                        <div>🔍 IPA PII Detector v3.0</div>
+                        <button class="settings-btn">⚙️ Settings</button>
+                    </div>
+
+                    <div class="quick-actions">
+                        <div class="action-card">
+                            <div class="action-icon">📄</div>
+                            <div class="action-title">Single Analysis</div>
+                            <div class="action-desc">Analyze one file for PII detection</div>
+                        </div>
+
+                        <div class="action-card">
+                            <div class="action-icon">📊</div>
+                            <div class="action-title">Batch Process</div>
+                            <div class="action-desc">Process multiple files at once</div>
+                        </div>
+
+                        <div class="action-card">
+                            <div class="action-icon">📋</div>
+                            <div class="action-title">Recent Projects</div>
+                            <div class="action-desc">View and reopen past analyses</div>
+                        </div>
+                    </div>
+
+                    <div class="system-status">
+                        <div class="status-title">System Status</div>
+                        <div class="status-item">
+                            <div class="status-indicator status-success"></div>
+                            Detection Methods: ✅ Standard ✅ AI Ready
+                        </div>
+                        <div class="status-item">
+                            <div class="status-indicator status-success"></div>
+                            Last Processing: 3 files, 10 minutes ago
+                        </div>
+                        <div class="status-item">
+                            <div class="status-indicator status-success"></div>
+                            Performance: All systems active
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Selection Screen -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                2. File Selection Interface
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Intuitive file selection with drag-and-drop functionality. Supports
+                    multiple file formats (.csv, .xlsx, .dta) with size validation and preview.
+                </div>
+
+                <div class="screen-mockup file-selection">
+                    <div class="selection-title">Select Dataset Files</div>
+
+                    <div class="drop-zone">
+                        <div class="drop-icon">📁</div>
+                        <div class="drop-text">Drag files here or click to browse</div>
+                        <div class="drop-subtext">Supports: .csv, .xlsx, .dta (max 100MB per file)</div>
+                    </div>
+
+                    <div class="selected-files">
+                        <div class="files-title">Selected Files:</div>
+
+                        <div class="file-item">
+                            <div class="file-check">✓</div>
+                            <div class="file-name">survey_data.csv</div>
+                            <div class="file-size">(2.1MB)</div>
+                        </div>
+
+                        <div class="file-item">
+                            <div class="file-check">✓</div>
+                            <div class="file-name">responses.dta</div>
+                            <div class="file-size">(5.8MB)</div>
+                        </div>
+
+                        <div class="file-item">
+                            <div class="file-check">✓</div>
+                            <div class="file-name">participant_info.xlsx</div>
+                            <div class="file-size">(1.3MB)</div>
+                        </div>
+
+                        <div class="file-actions">
+                            <button class="btn btn-secondary">Clear All</button>
+                            <button class="btn btn-secondary">Add More</button>
+                            <button class="btn btn-primary">Next: Configure Analysis →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                3. Detection Configuration Panel
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Configure detection methods with granular control over each technique.
+                    Users can expand sections to fine-tune parameters for Column Name Analysis, Format Patterns,
+                    Sparsity thresholds, Location Population lookup, and AI-powered Presidio engine settings.
+                </div>
+
+                <div class="screen-mockup config-panel">
+                    <div class="config-title">Detection Configuration</div>
+
+                    <div class="preset-buttons">
+                        <button class="preset-btn">Quick</button>
+                        <button class="preset-btn active">Balanced</button>
+                        <button class="preset-btn">Thorough</button>
+                    </div>
+
+                    <!-- Method 1: Column Name Analysis -->
+                    <div class="method-section">
+                        <div class="method-header">
+                            <div>
+                                <input type="checkbox" class="checkbox" checked style="margin-right: 8px;">
+                                <span class="method-title">Column Name/Label Analysis</span>
+                            </div>
+                            <span class="method-toggle">▼</span>
+                        </div>
+                        <div class="method-content expanded">
+                            <div class="method-description">
+                                Analyzes column headers against restricted word lists for data collection variables,
+                                location identifiers, personal identifiers, and sensitive account information.
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Strict matching (exact matches)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Fuzzy matching (substring matching)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Personal identifiers (names, addresses, IDs)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Location identifiers (district, village, coordinates)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Data collection variables (deviceid, caseid)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 2: Format Pattern Detection -->
+                    <div class="method-section">
+                        <div class="method-header">
+                            <div>
+                                <input type="checkbox" class="checkbox" checked style="margin-right: 8px;">
+                                <span class="method-title">Format Pattern Detection</span>
+                            </div>
+                            <span class="method-toggle">▼</span>
+                        </div>
+                        <div class="method-content">
+                            <div class="method-description">
+                                Detects structured data patterns for phone numbers, emails, dates, and identification
+                                numbers across various international formats.
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Phone number patterns (international formats)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Email address patterns</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Date patterns (birthdate detection)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">ID patterns (SSN, account numbers)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 3: Sparsity Analysis -->
+                    <div class="method-section">
+                        <div class="method-header">
+                            <div>
+                                <input type="checkbox" class="checkbox" checked style="margin-right: 8px;">
+                                <span class="method-title">Sparsity Analysis</span>
+                            </div>
+                            <span class="method-toggle">▼</span>
+                        </div>
+                        <div class="method-content">
+                            <div class="method-description">
+                                Identifies columns with high uniqueness and open-ended responses that likely contain
+                                personally identifiable information.
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Uniqueness threshold</div>
+                                <div class="setting-control">
+                                    <input type="range" class="mini-slider" value="60" min="0" max="100">
+                                    <span class="setting-value">60%</span>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Open-ended question detection</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Free text response analysis</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 4: Location Population Analysis -->
+                    <div class="method-section">
+                        <div class="method-header">
+                            <div>
+                                <input type="checkbox" class="checkbox" style="margin-right: 8px;">
+                                <span class="method-title">Location Population Analysis</span>
+                            </div>
+                            <span class="method-toggle">▼</span>
+                        </div>
+                        <div class="method-content">
+                            <div class="method-description">
+                                Uses geographic APIs to identify small locations where individuals could be
+                                re-identified. Requires internet connection and may be slower.
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Population threshold</div>
+                                <div class="setting-control">
+                                    <input type="range" class="mini-slider" value="15" min="1" max="50">
+                                    <span class="setting-value">15K</span>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">GeoNames API integration</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Re-identification risk assessment</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Method 5: AI-Powered Analysis -->
+                    <div class="method-section">
+                        <div class="method-header">
+                            <div>
+                                <input type="checkbox" class="checkbox" checked style="margin-right: 8px;">
+                                <span class="method-title">AI-Powered Text Analysis (Presidio)</span>
+                            </div>
+                            <span class="method-toggle">▼</span>
+                        </div>
+                        <div class="method-content">
+                            <div class="method-description">
+                                Uses advanced machine learning models for Named Entity Recognition to detect persons,
+                                locations, organizations, and sensitive data patterns.
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Language model</div>
+                                <div class="setting-control">
+                                    <select
+                                        style="padding: 4px 8px; border: 1px solid var(--dark-grey); border-radius: 4px;">
+                                        <option>English</option>
+                                        <option>Spanish</option>
+                                        <option>German</option>
+                                        <option>French</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Confidence threshold</div>
+                                <div class="setting-control">
+                                    <input type="range" class="mini-slider" value="70" min="0" max="100">
+                                    <span class="setting-value">0.7</span>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Person names (PERSON entities)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Location names (LOCATION entities)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Organization names</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                            <div class="setting-row">
+                                <div class="setting-label">Financial data (credit cards, SSN)</div>
+                                <div class="setting-control">
+                                    <input type="checkbox" class="checkbox" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="start-btn">🚀 Start Analysis</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tracking -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                4. Real-time Progress Tracking
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Keep users informed during processing with detailed progress indicators,
+                    estimated time remaining, and ability to pause/cancel operations.
+                </div>
+
+                <div class="screen-mockup progress-screen">
+                    <div class="progress-file">Processing: survey_responses.csv</div>
+
+                    <div class="overall-progress">
+                        <div class="progress-label">
+                            <span>Overall Progress</span>
+                            <span>73%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="task-list">
+                        <div class="task-item">
+                            <span class="task-status task-complete">✅</span>
+                            <span>Loading data: Complete (1.2s)</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="task-status task-complete">✅</span>
+                            <span>Column analysis: Complete (0.8s)</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="task-status task-running">🔄</span>
+                            <span>AI detection: Running... (45%)</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="task-status task-pending">⏳</span>
+                            <span>Report generation: Pending</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-stats">
+                        <div>Time remaining: ~1m 23s</div>
+                        <div>Processing 2 of 5 files</div>
+                    </div>
+
+                    <div class="progress-actions">
+                        <button class="btn btn-secondary">⏸️ Pause</button>
+                        <button class="btn btn-secondary">❌ Cancel</button>
+                        <button class="btn btn-primary">📊 Show Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Display -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                5. Results Display with Actions
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Present detection results clearly with actionable options. Users can
+                    review confidence levels, preview data, download a Python script for reproducible processing, and
+                    choose specific anonymization strategies for each column.
+                </div>
+
+                <div class="screen-mockup results-screen">
+                    <div class="results-header">
+                        <div class="results-title">PII Detection Results</div>
+
+                        <div class="results-summary">
+                            <div class="summary-item">
+                                <div class="summary-number">5</div>
+                                <div class="summary-label">PII Columns Found</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-number high-conf">3</div>
+                                <div class="summary-label">High Confidence</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-number med-conf">1</div>
+                                <div class="summary-label">Medium Confidence</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-number low-conf">1</div>
+                                <div class="summary-label">Low Confidence</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Detection Method</th>
+                                <th>Confidence</th>
+                                <th>PII Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>email</strong></td>
+                                <td>Presidio</td>
+                                <td><span class="confidence-score conf-high">0.95</span></td>
+                                <td>Email Address</td>
+                                <td>
+                                    <button class="action-btn action-anonymize">🔒 Anonymize</button>
+                                    <button class="action-btn action-remove">❌ Remove</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>phone_number</strong></td>
+                                <td>Pattern</td>
+                                <td><span class="confidence-score conf-high">0.87</span></td>
+                                <td>Phone Number</td>
+                                <td>
+                                    <button class="action-btn action-anonymize">🔒 Anonymize</button>
+                                    <button class="action-btn action-remove">❌ Remove</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>full_name</strong></td>
+                                <td>ML-Text</td>
+                                <td><span class="confidence-score conf-high">0.82</span></td>
+                                <td>Person Name</td>
+                                <td>
+                                    <button class="action-btn action-remove">❌ Remove</button>
+                                    <button class="action-btn action-keep">✅ Keep</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>birth_date</strong></td>
+                                <td>Column Name</td>
+                                <td><span class="confidence-score conf-med">0.65</span></td>
+                                <td>Date of Birth</td>
+                                <td>
+                                    <button class="action-btn action-anonymize">🔒 Anonymize</button>
+                                    <button class="action-btn action-keep">✅ Keep</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>survey_id</strong></td>
+                                <td>Sparsity</td>
+                                <td><span class="confidence-score conf-low">0.45</span></td>
+                                <td>Identifier</td>
+                                <td>
+                                    <button class="action-btn action-keep">✅ Keep</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="results-actions">
+                        <button class="btn btn-secondary">👁️ Preview Data</button>
+                        <button class="btn btn-primary">📄 Download Python Script</button>
+                        <button class="btn btn-primary">📊 Generate Report</button>
+                        <button class="btn btn-primary">💾 Export Cleaned Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Python Script Export Feature -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                6. Python Script Export Feature
+            </div>
+            <div class="wireframe-content">
+                <div class="description">
+                    <strong>Purpose:</strong> Generate a reproducible Python script using the pii-detector package that
+                    implements the exact same processing steps configured in the GUI. This enables users to automate
+                    their workflow and integrate PII detection into existing data pipelines.
+                </div>
+
+                <div class="screen-mockup"
+                    style="padding: 20px; font-family: monospace; font-size: 12px; background: var(--charcoal); color: #00ff00; overflow-x: auto;">
+                    <pre style="color: #00ff00; line-height: 1.4;">
+<span style="color: #ff6b6b;">#!/usr/bin/env python3</span>
+<span style="color: #4ecdc4;">"""
+Generated PII Detection Script
+Created by: IPA PII Detector v3.0
+Date: 2025-09-25 14:30:22
+Dataset: survey_responses.csv
+"""</span>
+
+<span style="color: #ffe66d;">import</span> pandas <span style="color: #ffe66d;">as</span> pd
+<span style="color: #ffe66d;">from</span> pii_detector <span style="color: #ffe66d;">import</span> PIIDetector
+
+<span style="color: #4ecdc4;"># Initialize detector with your configuration</span>
+detector = PIIDetector(
+    column_name_analysis=True,
+    format_pattern_detection=True,
+    sparsity_analysis=True,
+    sparsity_threshold=0.60,
+    location_population_analysis=False,
+    presidio_analysis=True,
+    presidio_language='en',
+    presidio_confidence_threshold=0.7
+)
+
+<span style="color: #4ecdc4;"># Load your dataset</span>
+df = pd.read_csv(<span style="color: #ff6b6b;">'survey_responses.csv'</span>)
+
+<span style="color: #4ecdc4;"># Run PII detection</span>
+results = detector.detect_pii(df)
+
+<span style="color: #4ecdc4;"># Apply your anonymization choices:</span>
+<span style="color: #4ecdc4;"># - email: Anonymize (hash)</span>
+df[<span style="color: #ff6b6b;">'email'</span>] = detector.anonymize_column(df[<span style="color: #ff6b6b;">'email'</span>], method=<span style="color: #ff6b6b;">'hash'</span>)
+
+<span style="color: #4ecdc4;"># - phone_number: Anonymize (mask)</span>
+df[<span style="color: #ff6b6b;">'phone_number'</span>] = detector.anonymize_column(df[<span style="color: #ff6b6b;">'phone_number'</span>], method=<span style="color: #ff6b6b;">'mask'</span>)
+
+<span style="color: #4ecdc4;"># - full_name: Remove column</span>
+df = df.drop(columns=[<span style="color: #ff6b6b;">'full_name'</span>])
+
+<span style="color: #4ecdc4;"># - birth_date: Anonymize (generalize to year)</span>
+df[<span style="color: #ff6b6b;">'birth_date'</span>] = detector.anonymize_column(df[<span style="color: #ff6b6b;">'birth_date'</span>], method=<span style="color: #ff6b6b;">'generalize_date'</span>)
+
+<span style="color: #4ecdc4;"># - survey_id: Keep as-is (low confidence)</span>
+
+<span style="color: #4ecdc4;"># Save cleaned dataset</span>
+df.to_csv(<span style="color: #ff6b6b;">'survey_responses_cleaned.csv'</span>, index=False)
+
+<span style="color: #ffe66d;">print</span>(<span style="color: #ff6b6b;">f"✅ Cleaned dataset saved with {len(df)} rows and {len(df.columns)} columns"</span>)
+<span style="color: #ffe66d;">print</span>(<span style="color: #ff6b6b;">f"📊 Original PII detection results saved to: pii_detection_report.json"</span>)
+</pre>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
+                    <button class="btn btn-primary">💾 Download Script</button>
+                    <button class="btn btn-secondary">📋 Copy to Clipboard</button>
+                    <button class="btn btn-secondary">📧 Email Script</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="screen-nav">
+            <div class="nav-dot active"></div>
+            <div class="nav-dot"></div>
+            <div class="nav-dot"></div>
+            <div class="nav-dot"></div>
+            <div class="nav-dot"></div>
+            <div class="nav-dot"></div>
+        </div>
+
+        <!-- Implementation Notes -->
+        <div class="wireframe-section">
+            <div class="wireframe-header">
+                Implementation Notes & Design System
+            </div>
+            <div class="wireframe-content">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h3 style="color: var(--dark-blue); margin-bottom: 15px;">Color Usage</h3>
+                        <div style="margin-bottom: 10px;">
+                            <div
+                                style="display: inline-block; width: 20px; height: 20px; background: var(--ipa-green); margin-right: 10px; border-radius: 3px;">
+                            </div>
+                            <strong>IPA Green (#49ac57):</strong> Primary actions, success states, progress bars
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div
+                                style="display: inline-block; width: 20px; height: 20px; background: var(--dark-blue); margin-right: 10px; border-radius: 3px;">
+                            </div>
+                            <strong>Dark Blue (#2b4085):</strong> Headers, navigation, table headers
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div
+                                style="display: inline-block; width: 20px; height: 20px; background: var(--red-orange); margin-right: 10px; border-radius: 3px;">
+                            </div>
+                            <strong>Red-Orange (#f26529):</strong> High-confidence PII alerts, remove actions
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div
+                                style="display: inline-block; width: 20px; height: 20px; background: var(--light-blue); margin-right: 10px; border-radius: 3px;">
+                            </div>
+                            <strong>Light Blue (#84d0d4):</strong> Accent colors, hover states, progress fills
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div
+                                style="display: inline-block; width: 20px; height: 20px; background: var(--category-5); margin-right: 10px; border-radius: 3px;">
+                            </div>
+                            <strong>Yellow (#f5cb57):</strong> Medium confidence, warnings, processing states
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--dark-blue); margin-bottom: 15px;">Key Components</h3>
+                        <ul style="color: var(--charcoal); line-height: 1.8;">
+                            <li><strong>Cards:</strong> 12px border-radius, subtle shadows</li>
+                            <li><strong>Buttons:</strong> 6px border-radius, hover elevation</li>
+                            <li><strong>Progress bars:</strong> Gradient fills, smooth animations</li>
+                            <li><strong>Tables:</strong> Alternating row colors using blue-accent</li>
+                            <li><strong>Icons:</strong> System-appropriate sizes (24px, 48px)</li>
+                            <li><strong>Typography:</strong> System fonts, clear hierarchy</li>
+                        </ul>
+
+                        <h3 style="color: var(--dark-blue); margin: 20px 0 15px 0;">Material Design & Flet
+                            Implementation</h3>
+                        <ul style="color: var(--charcoal); line-height: 1.8;">
+                            <li><strong>Icons:</strong> Use Material Design icons instead of emojis</li>
+                            <li><strong>Cards:</strong> <code>ft.Card</code> with elevation and rounded corners</li>
+                            <li><strong>Expansion Panels:</strong> <code>ft.ExpansionTile</code> for method
+                                configuration</li>
+                            <li><strong>Buttons:</strong> <code>ft.ElevatedButton</code>, <code>ft.OutlinedButton</code>
+                            </li>
+                            <li><strong>Progress:</strong> <code>ft.ProgressBar</code> with smooth animations</li>
+                            <li><strong>Data Tables:</strong> <code>ft.DataTable</code> with sorting</li>
+                            <li><strong>File Picker:</strong> <code>ft.FilePicker</code> with drag-drop support</li>
+                            <li><strong>Sliders:</strong> <code>ft.Slider</code> for threshold controls</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
