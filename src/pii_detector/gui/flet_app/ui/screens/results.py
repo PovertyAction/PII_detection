@@ -480,7 +480,10 @@ class ResultsScreen:
                             border_radius=4,
                         ),
                         ft.Container(
-                            content=preview_table,
+                            content=ft.Row(
+                                controls=[preview_table],
+                                scroll=ft.ScrollMode.AUTO,
+                            ),
                             width=800,
                         ),
                     ],

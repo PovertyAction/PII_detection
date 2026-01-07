@@ -349,9 +349,9 @@ class ProgressScreen:
 
     def start_analysis(self):
         """Start the PII detection analysis."""
-        # print("DEBUG: start_analysis() called")
+        print("DEBUG: start_analysis() called")
         if not self.is_analysis_running:
-            # print("DEBUG: Analysis is not running, starting new analysis")
+            print("DEBUG: Analysis is not running, starting new analysis")
             self.is_analysis_running = True
             self.analysis_cancelled = False
             self.analysis_complete = False
@@ -529,22 +529,24 @@ class ProgressScreen:
         self.page.open(dialog)
 
     def on_state_changed(self, state: AppState):
-        """Handle state changes."""
-        # Only start analysis when we actually navigate TO the progress screen
+        "Handle state changes."
+        # Always start a new analysis if not currently running
         if (
             state.current_screen == AppConstants.SCREEN_PROGRESS
             and not self.is_analysis_running
-            and not self.analysis_complete
         ):
-            # Small delay to ensure UI is fully loaded
+            # Reset completed flag before starting a new run
+            self.analysis_complete = False
             threading.Timer(0.5, self.start_analysis).start()
 
     def on_screen_enter(self):
         """Enter this screen and reset analysis state."""
+        # print("DEBUG: on_screen_enter() called")
         # Reset analysis state for new analysis
         self.is_analysis_running = False
         self.analysis_cancelled = False
         self.analysis_complete = False
+        print("DEBUG: Analysis state reset")
 
         if self.overall_progress_bar:
             self.overall_progress_bar.value = 0
@@ -567,6 +569,11 @@ class ProgressScreen:
 
         # Reset progress messages for copying
         self.progress_messages = ["Ready to start analysis"]
+        print("DEBUG: UI components reset")
+
+        # Reset background processor
+        self.background_processor = BackgroundProcessor(self.adapter)
+        print("DEBUG: BackgroundProcessor recreated")
 
     def _initialize_default_anonymization_methods(self, results):
         """Initialize smart default anonymization methods for detected PII columns.
